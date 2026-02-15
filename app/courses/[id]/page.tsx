@@ -1,7 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, use, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   Star,
   Clock,
@@ -14,14 +16,61 @@ import {
   Award,
   Layout,
   MessageSquare,
+  Loader2,
+  LogOut,
+  User,
+  Layers,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth-context"
+import { publicCourseApi, studentCoursesApi, CourseListResponse, CourseCurriculumResponse, CourseReviewsListResponse } from "@/lib/api"
+import { toast } from "sonner"
+import { PaymentModal } from "@/components/payment-modal"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
-export default function CourseDetailsPage({ params }: { params: { id: string } }) {
+export default function CourseDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: slug } = use(params)
+  const router = useRouter()
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
+  const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState("curriculum")
-  const [openModules, setOpenModules] = useState<Record<string, boolean>>({
-    "module-1": true,
+  const [openModules, setOpenModules] = useState<Record<string, boolean>>({})
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [isEnrolling, setIsEnrolling] = useState(false)
+
+  // Fetch course details by slug
+  const { data: course, isLoading: courseLoading, error: courseError } = useQuery<CourseListResponse>({
+    queryKey: ["public-course", slug],
+    queryFn: () => publicCourseApi.getCourseBySlug(slug),
+    enabled: !!slug,
   })
+
+  // Fetch curriculum by slug
+  const { data: curriculum, isLoading: curriculumLoading } = useQuery<CourseCurriculumResponse>({
+    queryKey: ["public-curriculum", slug],
+    queryFn: () => publicCourseApi.getCurriculumBySlug(slug),
+    enabled: !!slug,
+  })
+
+  // Fetch reviews by slug
+  const { data: reviewsData, isLoading: reviewsLoading } = useQuery<CourseReviewsListResponse>({
+    queryKey: ["public-reviews", slug],
+    queryFn: () => publicCourseApi.getReviewsBySlug(slug, { limit: 10 }),
+    enabled: !!slug,
+  })
+
+  // Open first module by default when curriculum loads
+  useEffect(() => {
+    if (curriculum?.modules?.length && Object.keys(openModules).length === 0) {
+      setOpenModules({ [`module-${curriculum.modules[0].module_id}`]: true })
+    }
+  }, [curriculum])
 
   const toggleModule = (moduleId: string) => {
     setOpenModules((prev) => ({
@@ -30,38 +79,95 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
     }))
   }
 
-  const curriculum = [
-    {
-      id: "module-1",
-      title: "Module 1: Figma Fundamentals",
-      lessons: "5 lessons • 45m",
-      items: [
-        { title: "Introduction to the Figma Interface", duration: "10m", type: "video" },
-        { title: "Working with Frames and Shapes", duration: "15m", type: "video" },
-        { title: "Project 1: Design a Simple Logo", duration: "20m", type: "project" },
-      ],
+  // Enrollment mutation
+  const enrollMutation = useMutation({
+    mutationFn: async () => {
+      if (!course?.course_id) throw new Error("Course not found")
+      return studentCoursesApi.enrollInCourse(course.course_id)
     },
-    {
-      id: "module-2",
-      title: "Module 2: Auto Layout & Constraints",
-      lessons: "4 lessons • 1h 15m",
-      items: [
-        { title: "Understanding Auto Layout", duration: "25m", type: "video" },
-        { title: "Constraint Resizing", duration: "20m", type: "video" },
-        { title: "Project 2: Responsive Card Component", duration: "30m", type: "project" },
-      ],
+    onSuccess: () => {
+      toast.success("Successfully enrolled! Redirecting to course...")
+      queryClient.invalidateQueries({ queryKey: ["my-courses"] })
+      router.push(`/courses/${slug}/learn`)
     },
-    {
-      id: "module-3",
-      title: "Module 3: Components and Variants",
-      lessons: "6 lessons • 2h",
-      items: [
-        { title: "Creating Reusable Components", duration: "30m", type: "video" },
-        { title: "Component Properties", duration: "40m", type: "video" },
-        { title: "Project 3: Design System Basics", duration: "50m", type: "project" },
-      ],
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to enroll in course")
+      setIsEnrolling(false)
     },
-  ]
+  })
+
+  const handleEnroll = () => {
+    if (!isAuthenticated) {
+      // Store redirect destination and go to login
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("auth_redirect", `/courses/${slug}`)
+      }
+      router.push("/login")
+      return
+    }
+
+    // Check if course is free or paid
+    const coursePrice = course?.min_price || 0
+    
+    if (coursePrice > 0) {
+      // Course has a cost - show payment modal
+      setShowPaymentModal(true)
+    } else {
+      // Course is free - enroll directly
+      setIsEnrolling(true)
+      enrollMutation.mutate()
+    }
+  }
+
+  const handlePaymentSuccess = () => {
+    // After verified payment, redirect to course learning page
+    setShowPaymentModal(false)
+    queryClient.invalidateQueries({ queryKey: ["my-courses"] })
+    router.push(`/courses/${slug}/learn`)
+  }
+
+  const handleLogout = async () => {
+    await logout()
+  }
+
+  // Difficulty level color mapping
+  const getDifficultyColor = (level: string) => {
+    switch (level?.toUpperCase()) {
+      case "BEGINNER":
+        return "text-green-400"
+      case "INTERMEDIATE":
+        return "text-yellow-400"
+      case "ADVANCED":
+        return "text-red-400"
+      default:
+        return "text-gray-400"
+    }
+  }
+
+  if (courseLoading || authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading course...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (courseError || !course) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Course Not Found</h2>
+          <p className="text-gray-600 mb-4">The course you're looking for doesn't exist or is not available.</p>
+          <Link href="/courses">
+            <Button>Browse Courses</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-20">
@@ -79,16 +185,55 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
               <Link href="/courses" className="text-blue-600 hover:text-blue-700 transition-colors">
                 Courses
               </Link>
-              <Link href="/workspace" className="text-gray-600 hover:text-gray-900 transition-colors">
-                My Learning
-              </Link>
+              {isAuthenticated && (
+                <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 transition-colors">
+                  My Learning
+                </Link>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/login" className="hidden sm:block text-sm font-medium text-gray-600 hover:text-gray-900">
-              Log In
-            </Link>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">Sign Up</Button>
+            {isAuthenticated && user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-semibold text-sm">
+                        {user.full_name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
+                      </span>
+                    </div>
+                    <span className="hidden sm:block text-sm font-medium text-gray-700">
+                      {user.full_name || user.email}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-3 py-2 border-b">
+                    <p className="text-sm font-medium text-gray-900">{user.full_name || "User"}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+                  <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+                    <User className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Log Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Link href="/login" className="hidden sm:block text-sm font-medium text-gray-600 hover:text-gray-900">
+                  Log In
+                </Link>
+                <Link href="/signup">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">Sign Up</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -104,35 +249,37 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
                 </Link>
                 <span>/</span>
                 <Link href="/courses" className="hover:text-blue-300">
-                  Design Courses
+                  Courses
                 </Link>
                 <span>/</span>
-                <span className="text-gray-400">Advanced Figma</span>
+                <span className="text-gray-400">{course.title}</span>
               </div>
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
-                Advanced Figma: From Beginner to Pro in 10 Projects
+                {course.title}
               </h1>
               <p className="text-gray-300 text-lg mb-6 max-w-2xl">
-                Master UI/UX design with our hands-on, AI-powered Figma course. Build a portfolio that gets you hired.
+                {course.description}
               </p>
 
               <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-gray-300">
-                <div className="flex items-center gap-1.5 text-yellow-400">
-                  <Star className="w-4 h-4 fill-current" />
-                  <span>4.8</span>
-                  <span className="text-gray-400 font-normal">(1,250 ratings)</span>
-                </div>
+                {course.average_rating !== undefined && course.average_rating > 0 && (
+                  <div className="flex items-center gap-1.5 text-yellow-400">
+                    <Star className="w-4 h-4 fill-current" />
+                    <span>{course.average_rating.toFixed(1)}</span>
+                    <span className="text-gray-400 font-normal">({course.total_reviews} ratings)</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-4 h-4" />
-                  <span>65 hours</span>
+                  <span>{course.estimated_hours} hours</span>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className={`flex items-center gap-1.5 ${getDifficultyColor(course.difficulty_level)}`}>
                   <BarChart className="w-4 h-4" />
-                  <span>Intermediate</span>
+                  <span>{course.difficulty_level}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4" />
-                  <span>15,432 students</span>
+                  <Layers className="w-4 h-4" />
+                  <span>{course.modules_count} modules</span>
                 </div>
               </div>
             </div>
@@ -170,22 +317,19 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
             {activeTab === "curriculum" && (
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                 {/* What You'll Learn */}
-                <section className="mb-12">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">What You'll Learn</h2>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {[
-                      "Master advanced Figma features like Auto Layout, Variants, and Components.",
-                      "Design and prototype 10 real-world projects for your portfolio.",
-                      "Understand UI/UX design principles and best practices.",
-                      "Collaborate effectively with developers and stakeholders.",
-                    ].map((item, i) => (
-                      <div key={i} className="flex gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                        <span className="text-gray-700">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </section>
+                {course.what_youll_learn && course.what_youll_learn.length > 0 && (
+                  <section className="mb-12">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">What You'll Learn</h2>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {course.what_youll_learn.map((item, i) => (
+                        <div key={i} className="flex gap-3">
+                          <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                          <span className="text-gray-700">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
                 {/* Features Grid */}
                 <section className="grid md:grid-cols-3 gap-6 mb-12">
@@ -198,7 +342,7 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
                     {
                       icon: Layout,
                       title: "Hands-On Projects",
-                      desc: "Build a professional portfolio by completing 10 real-world design projects.",
+                      desc: "Build a professional portfolio by completing real-world projects.",
                     },
                     {
                       icon: Users,
@@ -219,56 +363,71 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
                 {/* Curriculum Accordion */}
                 <section className="mb-12">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Course Curriculum</h2>
-                  <div className="space-y-4">
-                    {curriculum.map((module) => (
-                      <div key={module.id} className="border border-gray-200 rounded-xl bg-white overflow-hidden">
-                        <button
-                          onClick={() => toggleModule(module.id)}
-                          className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span
-                              className={`font-semibold ${openModules[module.id] ? "text-blue-600" : "text-gray-900"}`}
-                            >
-                              {module.title}
-                            </span>
-                            <span className="text-sm text-gray-500 hidden sm:inline-block">{module.lessons}</span>
-                          </div>
-                          <ChevronDown
-                            className={`w-5 h-5 text-gray-400 transition-transform ${openModules[module.id] ? "rotate-180" : ""}`}
-                          />
-                        </button>
-                        {openModules[module.id] && (
-                          <div className="bg-gray-50 border-t border-gray-200 p-2">
-                            <div className="space-y-1">
-                              {module.items.map((item, idx) =>
-                                item.type === "project" ? (
-                                  <Link
-                                    key={idx}
-                                    href={`/courses/${params.id}/learn`}
-                                    className="flex items-center gap-3 p-2 rounded bg-blue-50 text-blue-700 text-sm font-medium cursor-pointer hover:bg-blue-100"
-                                  >
-                                    <FileText className="w-4 h-4" />
-                                    <span>{item.title}</span>
-                                    <span className="ml-auto text-xs">{item.duration}</span>
-                                  </Link>
-                                ) : (
-                                  <div
-                                    key={idx}
-                                    className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 text-sm text-gray-700 cursor-pointer"
-                                  >
-                                    <Play className="w-4 h-4 text-gray-400" />
-                                    <span>{item.title}</span>
-                                    <span className="ml-auto text-gray-400 text-xs">{item.duration}</span>
-                                  </div>
-                                ),
-                              )}
+                  {curriculumLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                    </div>
+                  ) : curriculum?.modules && curriculum.modules.length > 0 ? (
+                    <div className="space-y-4">
+                      {curriculum.modules.map((module) => (
+                        <div key={module.module_id} className="border border-gray-200 rounded-xl bg-white overflow-hidden">
+                          <button
+                            onClick={() => toggleModule(`module-${module.module_id}`)}
+                            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`font-semibold ${openModules[`module-${module.module_id}`] ? "text-blue-600" : "text-gray-900"}`}
+                              >
+                                {module.title}
+                              </span>
+                              <span className="text-sm text-gray-500 hidden sm:inline-block">
+                                {module.lessons_count} lessons • {module.duration}
+                              </span>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                            <ChevronDown
+                              className={`w-5 h-5 text-gray-400 transition-transform ${openModules[`module-${module.module_id}`] ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                          {openModules[`module-${module.module_id}`] && (
+                            <div className="bg-gray-50 border-t border-gray-200 p-2">
+                              <div className="space-y-1">
+                                {module.items.map((item, idx) =>
+                                  item.type === "project" ? (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center gap-3 p-2 rounded bg-blue-50 text-blue-700 text-sm font-medium"
+                                    >
+                                      <FileText className="w-4 h-4" />
+                                      <span>{item.title}</span>
+                                      <span className="ml-auto text-xs">{item.duration}</span>
+                                    </div>
+                                  ) : (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 text-sm text-gray-700"
+                                    >
+                                      {item.has_video ? (
+                                        <Play className="w-4 h-4 text-gray-400" />
+                                      ) : (
+                                        <FileText className="w-4 h-4 text-gray-400" />
+                                      )}
+                                      <span>{item.title}</span>
+                                      <span className="ml-auto text-gray-400 text-xs">{item.duration}</span>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No curriculum available yet.</p>
+                    </div>
+                  )}
                 </section>
 
                 {/* Reviews Summary */}
@@ -276,14 +435,19 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Student Reviews</h2>
                   <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
                     <div className="flex items-center gap-4 mb-2">
-                      <span className="text-4xl font-bold text-gray-900">4.8</span>
+                      <span className="text-4xl font-bold text-gray-900">
+                        {reviewsData?.average_rating?.toFixed(1) || "0.0"}
+                      </span>
                       <div className="flex gap-1 text-yellow-400">
                         {[1, 2, 3, 4, 5].map((n) => (
-                          <Star key={n} className="w-5 h-5 fill-current" />
+                          <Star 
+                            key={n} 
+                            className={`w-5 h-5 ${n <= Math.round(reviewsData?.average_rating || 0) ? "fill-current" : "text-gray-300"}`} 
+                          />
                         ))}
                       </div>
                     </div>
-                    <p className="text-gray-500">Based on 1,250 ratings</p>
+                    <p className="text-gray-500">Based on {reviewsData?.total_count || 0} ratings</p>
                   </div>
                 </section>
               </div>
@@ -293,68 +457,70 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 py-4">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Hands-on Projects</h2>
                 <p className="text-gray-600 mb-8">
-                  This course includes 10 portfolio-ready projects designed to test your skills in real-world scenarios.
+                  This course includes portfolio-ready projects designed to test your skills in real-world scenarios.
                 </p>
 
-                <div className="grid gap-6">
-                  {[1, 2, 3].map((n) => (
-                    <div
-                      key={n}
-                      className="border border-gray-200 rounded-xl p-6 bg-white hover:border-blue-200 transition-colors"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                            Project {n}
-                          </span>
-                          <h3 className="text-lg font-bold text-gray-900 mt-2">Design a Mobile Banking App</h3>
-                        </div>
-                        <FileText className="text-gray-400 w-6 h-6" />
+                {curriculumLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                  </div>
+                ) : (
+                  <div className="grid gap-6">
+                    {curriculum?.modules?.flatMap((module) =>
+                      module.items
+                        .filter((item) => item.type === "project")
+                        .map((project, idx) => (
+                          <div
+                            key={project.id}
+                            className="border border-gray-200 rounded-xl p-6 bg-white hover:border-blue-200 transition-colors"
+                          >
+                            <div className="flex items-start justify-between mb-4">
+                              <div>
+                                <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                                  Project
+                                </span>
+                                <h3 className="text-lg font-bold text-gray-900 mt-2">{project.title}</h3>
+                              </div>
+                              <FileText className="text-gray-400 w-6 h-6" />
+                            </div>
+                            <p className="text-gray-500 text-sm mb-4">
+                              Part of {module.title}
+                            </p>
+                            <div className="flex gap-2">
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                                {project.duration}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                    )}
+                    {(!curriculum?.modules || curriculum.modules.flatMap((m) => m.items.filter((i) => i.type === "project")).length === 0) && (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No projects available yet.</p>
                       </div>
-                      <p className="text-gray-500 text-sm mb-4">
-                        Create a complete user flow for a fintech application, focusing on accessibility and secure
-                        authentication patterns.
-                      </p>
-                      <div className="flex gap-2">
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Figma</span>
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Prototyping</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
             {activeTab === "reviews" && (
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 py-4">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">What Students Say</h2>
-                <div className="space-y-6">
-                  {[
-                    {
-                      name: "Alex Johnson",
-                      comment:
-                        "This course is a game-changer. The project-based approach really helps solidify the concepts. The AI mentor is surprisingly helpful for getting unstuck!",
-                      rating: 5,
-                    },
-                    {
-                      name: "Maria Garcia",
-                      comment:
-                        "I went from knowing nothing about Figma to designing a full app prototype. Highly recommended for anyone looking to break into UI/UX design.",
-                      rating: 5,
-                    },
-                    {
-                      name: "David Kim",
-                      comment: "Great content, but the pace is a bit fast in module 3. Rewatching the videos helped.",
-                      rating: 4,
-                    },
-                  ].map((review, i) => (
-                    <div key={i} className="bg-white p-6 rounded-xl border border-gray-200">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600">
-                            {review.name[0]}
+                {reviewsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                  </div>
+                ) : reviewsData?.reviews && reviewsData.reviews.length > 0 ? (
+                  <div className="space-y-6">
+                    {reviewsData.reviews.map((review) => (
+                      <div key={review.review_id} className="bg-white p-6 rounded-xl border border-gray-200">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600">
+                            {review.user_name[0]}
                           </div>
-                          <span className="font-semibold text-gray-900">{review.name}</span>
+                          <span className="font-semibold text-gray-900">{review.user_name}</span>
                         </div>
                         <div className="flex gap-1 text-yellow-400">
                           {[1, 2, 3, 4, 5].map((n) => (
@@ -365,10 +531,15 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
                           ))}
                         </div>
                       </div>
-                      <p className="text-gray-600 leading-relaxed">{review.comment}</p>
+                      <p className="text-gray-600 leading-relaxed">{review.review_text || "No comment"}</p>
                     </div>
                   ))}
-                </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No reviews yet. Be the first to review this course!</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -378,29 +549,43 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
             <div className="sticky top-24 space-y-6">
               {/* Enrollment Card */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
-                <div className="relative h-48 bg-gray-900 group cursor-pointer">
+                <div className="relative h-48 bg-gradient-to-br from-blue-600 to-indigo-700 group cursor-pointer">
                   {/* Video Placeholder */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                       <Play className="w-6 h-6 text-white fill-current ml-1" />
                     </div>
                   </div>
-                  <img
-                    src="/placeholder.svg?height=400&width=600&text=Video+Preview"
-                    alt="Preview"
-                    className="w-full h-full object-cover opacity-50"
-                  />
                 </div>
                 <div className="p-6">
-                  <div className="flex items-end gap-3 mb-6">
-                    <span className="text-3xl font-bold text-gray-900">$99</span>
-                    <span className="text-lg text-gray-400 line-through mb-1">$149</span>
+                  <div className="flex items-center gap-2 mb-6">
+                    <span className="text-2xl font-bold text-green-600">
+                      {course.min_price && course.min_price > 0
+                        ? new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(course.min_price)
+                        : "Free"}
+                    </span>
+                    <span className="text-sm text-gray-500">• Includes certificate</span>
                   </div>
 
                   <div className="space-y-3 mb-6">
-                    <Link href={`/courses/${params.id}/learn`} className="block w-full">
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6">Enroll Now</Button>
-                    </Link>
+                    <Button 
+                      onClick={handleEnroll}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6"
+                      disabled={isEnrolling || enrollMutation.isPending}
+                    >
+                      {isEnrolling || enrollMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                          Enrolling...
+                        </>
+                      ) : !isAuthenticated ? (
+                        "Enroll Now"
+                      ) : course.min_price && course.min_price > 0 ? (
+                        `Enroll for ${new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(course.min_price)}`
+                      ) : (
+                        "Start Learning - Free"
+                      )}
+                    </Button>
                     <Button
                       variant="outline"
                       className="w-full border-gray-200 hover:bg-gray-50 text-gray-700 bg-transparent"
@@ -411,10 +596,10 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
 
                   <div className="space-y-4 pt-6 border-t border-gray-100">
                     {[
-                      { icon: Clock, label: "Estimated Time", value: "65 hours" },
-                      { icon: FileText, label: "Projects", value: "10 portfolio-ready projects" },
-                      { icon: CheckCircle2, label: "Prerequisites", value: "None" },
-                      { icon: Award, label: "Certificate", value: "Certificate of Completion" },
+                      { icon: Clock, label: "Estimated Time", value: `${course.estimated_hours} hours` },
+                      { icon: Layers, label: "Modules", value: `${course.modules_count} modules` },
+                      { icon: CheckCircle2, label: "Prerequisites", value: course.prerequisites?.length ? course.prerequisites.join(", ") : "None" },
+                      { icon: Award, label: "Certificate", value: course.certificate_on_completion ? "Certificate of Completion" : "No certificate" },
                     ].map((item, i) => (
                       <div key={i} className="flex items-start gap-3 text-sm">
                         <item.icon className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
@@ -428,20 +613,26 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
                 </div>
               </div>
 
-              {/* Instructor */}
+              {/* Course Info */}
               <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 className="font-bold text-gray-900 mb-4">Instructor</h3>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <img
-                      src="/placeholder.svg?height=100&width=100&text=Jane"
-                      alt="Jane"
-                      className="w-full h-full rounded-full object-cover"
-                    />
+                <h3 className="font-bold text-gray-900 mb-4">Course Info</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Difficulty</span>
+                    <span className={`font-medium ${getDifficultyColor(course.difficulty_level)}`}>
+                      {course.difficulty_level}
+                    </span>
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">Jane Cooper</p>
-                    <p className="text-sm text-gray-500">Principal Designer at Google</p>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Rating</span>
+                    <span className="font-medium text-gray-900 flex items-center gap-1">
+                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                      {course.average_rating?.toFixed(1) || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Reviews</span>
+                    <span className="font-medium text-gray-900">{course.total_reviews}</span>
                   </div>
                 </div>
               </div>
@@ -449,6 +640,21 @@ export default function CourseDetailsPage({ params }: { params: { id: string } }
           </div>
         </div>
       </div>
+
+      {/* Payment Modal — real Nomba integration */}
+      {course && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={handlePaymentSuccess}
+          courseId={course.course_id}
+          courseTitle={course.title}
+          courseDescription={course.description}
+          price={course.min_price || 0}
+          currency="NGN"
+          slug={slug}
+        />
+      )}
     </div>
   )
 }

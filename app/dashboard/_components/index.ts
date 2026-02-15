@@ -1,0 +1,6 @@
+export { DashboardView } from "./dashboard-view"
+export { MyCoursesView } from "./my-courses-view"
+export { ProfileView } from "./profile-view"
+export { ProjectsView } from "./projects-view"
+export { CommunityView } from "./community-view"
+export { CourseReviewModal, CourseReviewsList } from "./course-review"

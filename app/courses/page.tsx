@@ -2,122 +2,83 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
-import { Search, ChevronDown, Clock, Layers, Layout, CheckCircle2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
+import { Search, ChevronDown, Clock, Layers, Layout, CheckCircle2, Star, Loader2, LogOut, User } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { publicCourseApi, CourseListResponse } from "@/lib/api"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
-const COURSES = [
-  {
-    id: 1,
-    title: "The Complete Python Bootcamp: From Zero to Hero",
-    description: "Build 10 real-world Python applications and master data science fundamentals.",
-    level: "Beginner",
-    levelColor: "bg-green-100 text-green-700 border-green-200",
-    tag: "Python",
-    tagColor: "bg-blue-100 text-blue-700 border-blue-200",
-    projects: 5,
-    hours: 25,
-    image: "bg-gradient-to-br from-emerald-800 to-teal-900",
-  },
-  {
-    id: 2,
-    title: "Advanced React & State Management",
-    description: "Master Redux, MobX, and Context API to build scalable web applications.",
-    level: "Intermediate",
-    levelColor: "bg-amber-100 text-amber-700 border-amber-200",
-    tag: "React",
-    tagColor: "bg-sky-100 text-sky-700 border-sky-200",
-    projects: 8,
-    hours: 42,
-    image: "bg-gradient-to-br from-indigo-900 to-purple-900",
-  },
-  {
-    id: 3,
-    title: "UI/UX Design Fundamentals with Figma",
-    description: "Learn design principles and create stunning interfaces from scratch.",
-    level: "Beginner",
-    levelColor: "bg-green-100 text-green-700 border-green-200",
-    tag: "UI/UX",
-    tagColor: "bg-purple-100 text-purple-700 border-purple-200",
-    projects: 12,
-    hours: 30,
-    image: "bg-gradient-to-br from-orange-800 to-rose-900",
-  },
-  {
-    id: 4,
-    title: "Data Science & Machine Learning Bootcamp",
-    description: "Use Pandas, NumPy, and Scikit-learn to analyze data and build models.",
-    level: "Advanced",
-    levelColor: "bg-red-100 text-red-700 border-red-200",
-    tag: "Data Science",
-    tagColor: "bg-indigo-100 text-indigo-700 border-indigo-200",
-    projects: 15,
-    hours: 80,
-    image: "bg-gradient-to-br from-slate-800 to-cyan-900",
-  },
-  {
-    id: 5,
-    title: "The Complete Node.js Developer Course",
-    description: "Learn to build, test, and deploy real-world production applications.",
-    level: "Intermediate",
-    levelColor: "bg-amber-100 text-amber-700 border-amber-200",
-    tag: "Web Development",
-    tagColor: "bg-lime-100 text-lime-700 border-lime-200",
-    projects: 7,
-    hours: 35,
-    image: "bg-gradient-to-br from-green-900 to-emerald-800",
-  },
-  {
-    id: 6,
-    title: "iOS & Swift - The Complete iOS App Bootcamp",
-    description: "From beginner to iOS app developer with just one course.",
-    level: "Intermediate",
-    levelColor: "bg-amber-100 text-amber-700 border-amber-200",
-    tag: "Mobile Development",
-    tagColor: "bg-blue-100 text-blue-700 border-blue-200",
-    projects: 10,
-    hours: 60,
-    image: "bg-gradient-to-br from-yellow-900 to-blue-900",
-  },
+// Gradient colors for course cards
+const GRADIENTS = [
+  "bg-gradient-to-br from-emerald-800 to-teal-900",
+  "bg-gradient-to-br from-indigo-900 to-purple-900",
+  "bg-gradient-to-br from-orange-800 to-rose-900",
+  "bg-gradient-to-br from-slate-800 to-cyan-900",
+  "bg-gradient-to-br from-green-900 to-emerald-800",
+  "bg-gradient-to-br from-yellow-900 to-blue-900",
+  "bg-gradient-to-br from-blue-800 to-indigo-900",
+  "bg-gradient-to-br from-pink-800 to-rose-900",
 ]
 
+// Level color mapping
+const getLevelColor = (level: string) => {
+  switch (level?.toUpperCase()) {
+    case "BEGINNER":
+      return "bg-green-100 text-green-700 border-green-200"
+    case "INTERMEDIATE":
+      return "bg-amber-100 text-amber-700 border-amber-200"
+    case "ADVANCED":
+      return "bg-red-100 text-red-700 border-red-200"
+    default:
+      return "bg-gray-100 text-gray-700 border-gray-200"
+  }
+}
+
 export default function CoursesPage() {
+  const router = useRouter()
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([])
   const [selectedLevels, setSelectedLevels] = useState<string[]>([])
 
+  // Fetch courses from backend
+  const { data: courses = [], isLoading: coursesLoading } = useQuery<CourseListResponse[]>({
+    queryKey: ["public-courses"],
+    queryFn: () => publicCourseApi.listCourses(),
+  })
+
   const filteredCourses = useMemo(() => {
-    return COURSES.filter((course) => {
+    return courses.filter((course) => {
       // Search Filter
       const matchesSearch =
         course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.tag.toLowerCase().includes(searchQuery.toLowerCase())
-
-      // Topic Filter
-      const matchesTopic =
-        selectedTopics.length === 0 ||
-        selectedTopics.includes(course.tag) ||
-        (course.tag === "React" && selectedTopics.includes("Web Development")) || // Simple mapping
-        (course.tag === "Node.js" && selectedTopics.includes("Web Development"))
+        course.description.toLowerCase().includes(searchQuery.toLowerCase())
 
       // Level Filter
-      const matchesLevel = selectedLevels.length === 0 || selectedLevels.includes(course.level)
+      const matchesLevel = selectedLevels.length === 0 || selectedLevels.includes(course.difficulty_level.toUpperCase())
 
-      return matchesSearch && matchesTopic && matchesLevel
+      return matchesSearch && matchesLevel
     })
-  }, [searchQuery, selectedTopics, selectedLevels])
-
-  const toggleTopic = (topic: string) => {
-    setSelectedTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]))
-  }
+  }, [courses, searchQuery, selectedLevels])
 
   const toggleLevel = (level: string) => {
     setSelectedLevels((prev) => (prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level]))
   }
 
   const clearFilters = () => {
-    setSelectedTopics([])
     setSelectedLevels([])
     setSearchQuery("")
+  }
+
+  const handleLogout = async () => {
+    await logout()
   }
 
   return (
@@ -136,28 +97,61 @@ export default function CoursesPage() {
               <Link href="/courses" className="text-blue-600 hover:text-blue-700 transition-colors">
                 Courses
               </Link>
-              <Link href="/workspace" className="text-gray-600 hover:text-gray-900 transition-colors">
-                My Learning
-              </Link>
-              <Link href="/workspace" className="text-gray-600 hover:text-gray-900 transition-colors">
-                Projects
-              </Link>
+              {isAuthenticated && (
+                <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 transition-colors">
+                  My Learning
+                </Link>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="hidden sm:block text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Log In
-            </Link>
-            <Link
-              href="/signup"
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors shadow-sm hover:shadow"
-            >
-              Sign Up
-            </Link>
-            <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200"></div>
+            {isAuthenticated && user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-semibold text-sm">
+                        {user.full_name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
+                      </span>
+                    </div>
+                    <span className="hidden sm:block text-sm font-medium text-gray-700">
+                      {user.full_name || user.email}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-3 py-2 border-b">
+                    <p className="text-sm font-medium text-gray-900">{user.full_name || "User"}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+                  <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+                    <User className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Log Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="hidden sm:block text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors shadow-sm hover:shadow"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -197,37 +191,8 @@ export default function CoursesPage() {
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">Topic</h4>
-            {["Web Development", "AI & Machine Learning", "UI/UX Design", "Data Science", "Mobile Development"].map(
-              (topic) => (
-                <label key={topic} className="flex items-center gap-3 cursor-pointer group">
-                  <div
-                    className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                      selectedTopics.includes(topic)
-                        ? "bg-blue-600 border-blue-600"
-                        : "border-gray-300 bg-white group-hover:border-gray-400"
-                    }`}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      toggleTopic(topic)
-                    }}
-                  >
-                    {selectedTopics.includes(topic) && <CheckCircle2 className="w-3 h-3 text-white" />}
-                  </div>
-                  <span
-                    className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors select-none"
-                    onClick={() => toggleTopic(topic)}
-                  >
-                    {topic}
-                  </span>
-                </label>
-              ),
-            )}
-          </div>
-
-          <div className="space-y-3 pt-4 border-t border-gray-200">
             <h4 className="text-sm font-semibold text-gray-700 mb-2">Skill Level</h4>
-            {["Beginner", "Intermediate", "Advanced"].map((level) => (
+            {["BEGINNER", "INTERMEDIATE", "ADVANCED"].map((level) => (
               <label key={level} className="flex items-center gap-3 cursor-pointer group">
                 <div
                   className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
@@ -243,10 +208,10 @@ export default function CoursesPage() {
                   {selectedLevels.includes(level) && <div className="w-2 h-2 rounded-full bg-blue-600" />}
                 </div>
                 <span
-                  className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors select-none"
+                  className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors select-none capitalize"
                   onClick={() => toggleLevel(level)}
                 >
-                  {level}
+                  {level.toLowerCase()}
                 </span>
               </label>
             ))}
@@ -258,7 +223,7 @@ export default function CoursesPage() {
           <div className="flex items-center justify-between mb-6">
             <p className="text-sm text-gray-500">
               Showing <span className="font-semibold text-gray-900">{filteredCourses.length}</span> of{" "}
-              <span className="font-semibold text-gray-900">{COURSES.length}</span> results
+              <span className="font-semibold text-gray-900">{courses.length}</span> results
             </p>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Sort by:</span>
@@ -268,7 +233,11 @@ export default function CoursesPage() {
             </div>
           </div>
 
-          {filteredCourses.length === 0 ? (
+          {coursesLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+          ) : filteredCourses.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">No courses found</h3>
               <p className="text-gray-500">Try adjusting your filters or search query.</p>
@@ -281,23 +250,23 @@ export default function CoursesPage() {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredCourses.map((course) => (
-                <Link href={`/courses/${course.id}`} key={course.id} className="block group h-full">
+              {filteredCourses.map((course, index) => (
+                <Link href={`/courses/${course.slug}`} key={course.course_id} className="block group h-full">
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-200 transition-all hover:shadow-lg hover:shadow-blue-900/5 h-full flex flex-col">
                     {/* Card Image */}
-                    <div className={`h-40 w-full ${course.image} relative p-4 shrink-0`}>
+                    <div className={`h-40 w-full ${GRADIENTS[index % GRADIENTS.length]} relative p-4 shrink-0`}>
                       <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-all" />
                       <div className="flex gap-2 relative z-10">
                         <span
-                          className={`text-[10px] font-semibold px-2 py-1 rounded-full border backdrop-blur-sm bg-white/90 ${course.levelColor}`}
+                          className={`text-[10px] font-semibold px-2 py-1 rounded-full border backdrop-blur-sm bg-white/90 ${getLevelColor(course.difficulty_level)}`}
                         >
-                          {course.level}
+                          {course.difficulty_level.charAt(0) + course.difficulty_level.slice(1).toLowerCase()}
                         </span>
-                        <span
-                          className={`text-[10px] font-semibold px-2 py-1 rounded-full border backdrop-blur-sm bg-white/90 ${course.tagColor}`}
-                        >
-                          {course.tag}
-                        </span>
+                        {course.modules_count > 0 && (
+                          <span className="text-[10px] font-semibold px-2 py-1 rounded-full border backdrop-blur-sm bg-white/90 text-purple-600 border-purple-200">
+                            {`${course.modules_count} Modules`}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -306,16 +275,22 @@ export default function CoursesPage() {
                       <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
                         {course.title}
                       </h3>
-                      <p className="text-sm text-gray-500 mb-6 line-clamp-2">{course.description}</p>
+                      <p className="text-sm text-gray-500 mb-4 line-clamp-2">{course.description}</p>
+                      
+                      <div className="mb-4">
+                        <span className="text-lg font-bold text-green-600">
+                          {course.min_price && course.min_price > 0 ? `$${course.min_price.toFixed(2)}` : "Free"}
+                        </span>
+                      </div>
 
                       <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
                         <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
                           <Layers className="w-3.5 h-3.5" />
-                          {course.projects} Projects
+                          {course.paths_count || 0} Paths
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
                           <Clock className="w-3.5 h-3.5" />
-                          {course.hours} Hours
+                          {course.estimated_hours || 0} Hours
                         </div>
                       </div>
                     </div>
