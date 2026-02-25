@@ -10,6 +10,7 @@ api/__pycache__
 api/alembic
 api/migrations
 package-lock.json
+Build
 
 api/extension/__pycache__
 api/domains/__pycache__
@@ -30,3 +31,4 @@ api/core/__pycache__
 api/auth/__pycache__
 api/domains/mailings/services/__pycache__
 api/domains/mailings/__pycache__
+api/domains/progress/__pycache__

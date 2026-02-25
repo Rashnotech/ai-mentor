@@ -54,6 +54,7 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   
@@ -62,6 +63,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const setUser = useUserStore((state) => state.setUser)
   const clearUser = useUserStore((state) => state.clearUser)
   const isHydrated = useUserStore((state) => state.isHydrated)
+
+  // Mark as mounted after first client render — prevents hook access during prerender
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Fetch fresh user data from API (works with both Bearer tokens and cookies)
   const refreshUser = async () => {
@@ -84,6 +90,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Check authentication on mount and route changes
   useEffect(() => {
+    // Skip during server prerender and before client mount
+    if (!mounted) return
     // Wait for Zustand to hydrate from sessionStorage
     if (!isHydrated) return
     
@@ -176,7 +184,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     checkAuth()
-  }, [pathname, router, isHydrated, user, clearUser])
+  }, [pathname, router, isHydrated, user, clearUser, mounted])
 
   const logout = async () => {
     try {
