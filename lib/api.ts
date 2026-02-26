@@ -2,7 +2,7 @@ import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } fro
 import { getAccessToken, getRefreshToken, updateAccessToken, clearAuthData, isAccessTokenExpired } from "./auth-storage"
 
 // API Base URL - adjust based on your environment
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/v1` || "http://localhost:8000/api/v1"
 
 // Create axios instance with defaults
 export const apiClient = axios.create({
