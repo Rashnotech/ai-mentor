@@ -61,7 +61,20 @@ class DBSession:
         # Use provided db_url or get from settings
         database_url = db_url or settings.DATABASE_URL
         
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace(
+                "postgres://",
+                "postgresql+asyncpg://",
+                1
+            )
+        elif database_url.startswith("postgresql://") and use_async:
+            database_url = database_url.replace(
+                "postgresql://",
+                "postgresql+asyncpg://",
+                1
+            )
         # Construct database URL
+
         if use_async:
             self.__async_engine = create_async_engine(
                 database_url,
@@ -222,7 +235,7 @@ class DBSession:
             obj: The object to delete
             session: Optional session instance
         """
-        if obj and session is None:
+        if session is None:
             session = self.get_session()
         if obj:
             session.delete(obj)
