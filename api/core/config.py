@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "AI Mentor"
     PROJECT_VERSION: str = "1.0.0"
     PROJECT_DESCRIPTION: str = "An AI-powered mentoring platform to guide and support users in their personal and professional growth."
-    CORS_ALLOW_ORIGINS: List[str] = ["*"]
+    CORS_ALLOW_ORIGINS: List[str] = ["https://rashnotech.tech", "https://www.rashnotech.tech"]
     DATABASE_URL: str = getenv("DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5432/ai-mentor")
     DATABASE_NAME: str = getenv("DB_NAME", "ai-mentor")
     ENVIRONMENT: str = getenv("ENV", "development")
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
     BREVO_API_KEY: str = str(getenv('BREVO_API_KEY'))
-    FRONTEND_URL: str = getenv("FRONTEND_URL", "http://localhost:3000")
+    FRONTEND_URL: str = getenv("FRONTEND_URL", "https://www.rashnotech.tech")
 
     # Nomba Payment Service
     NOMBA_BASE_URL: str = str(getenv("NOMBA_BASE_URL", "https://sandbox.nomba.com"))
@@ -41,12 +41,12 @@ class Settings(BaseSettings):
     # OAuth - Google
     GOOGLE_CLIENT_ID: str = getenv("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET: str = getenv("GOOGLE_CLIENT_SECRET", "")
-    GOOGLE_REDIRECT_URI: str = getenv("GOOGLE_REDIRECT_URI", "http://localhost:3000/auth/google/callback")
+    GOOGLE_REDIRECT_URI: str = getenv("GOOGLE_REDIRECT_URI", "https://www.rashnotech.tech/auth/google/callback")
 
     # OAuth - GitHub
     GITHUB_CLIENT_ID: str = getenv("GITHUB_CLIENT_ID", "")
     GITHUB_CLIENT_SECRET: str = getenv("GITHUB_CLIENT_SECRET", "")
-    GITHUB_REDIRECT_URI: str = getenv("GITHUB_REDIRECT_URI", "http://localhost:3000/auth/github/callback")
+    GITHUB_REDIRECT_URI: str = getenv("GITHUB_REDIRECT_URI", "https://www.rashnotech.tech/auth/github/callback")
 
 
     class Config:
