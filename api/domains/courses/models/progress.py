@@ -156,7 +156,7 @@ class UserCourseEnrollment(Base):
         Enum(EnrollmentStatus),
         default=EnrollmentStatus.ACTIVE,
         nullable=False,
-        server_default="active",
+        server_default="ACTIVE",
     )
     completed_at = Column(DateTime(timezone=True), nullable=True)
     
