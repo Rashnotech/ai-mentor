@@ -169,16 +169,36 @@ apiClient.interceptors.response.use(
         // Check if it's actually an auth error vs network error
         if (axios.isAxiosError(refreshError)) {
           const status = refreshError.response?.status
-          // Only clear auth and redirect for definitive auth failures
+          // Only clear auth and redirect for definitive auth failures.
+          // Skip if the user has a cookie-based OAuth session (no refresh token
+          // stored, but a Zustand user exists) — clearing storage would wipe their
+          // session and force an unnecessary login redirect.
           if (status === 401 || status === 403) {
-            clearAuthData()
-            redirectToLogin()
+            const hasOAuthSession = (() => {
+              try {
+                const stored = sessionStorage.getItem("user-storage")
+                return !!(stored && JSON.parse(stored)?.state?.user)
+              } catch { return false }
+            })()
+            if (!hasOAuthSession) {
+              clearAuthData()
+              redirectToLogin()
+            }
           }
           // For other errors (network, 500, etc), just reject without clearing
         } else {
-          // Non-axios error during refresh, likely auth is invalid
-          clearAuthData()
-          redirectToLogin()
+          // Non-axios error during refresh (e.g. "No refresh token available").
+          // Only hard-redirect if this isn't an OAuth cookie session.
+          const hasOAuthSession = (() => {
+            try {
+              const stored = sessionStorage.getItem("user-storage")
+              return !!(stored && JSON.parse(stored)?.state?.user)
+            } catch { return false }
+          })()
+          if (!hasOAuthSession) {
+            clearAuthData()
+            redirectToLogin()
+          }
         }
         
         return Promise.reject(refreshError)
@@ -202,8 +222,16 @@ apiClient.interceptors.response.use(
             }
             return apiClient(originalRequest)
           } catch {
-            clearAuthData()
-            redirectToLogin()
+            const hasOAuthSession = (() => {
+              try {
+                const stored = sessionStorage.getItem("user-storage")
+                return !!(stored && JSON.parse(stored)?.state?.user)
+              } catch { return false }
+            })()
+            if (!hasOAuthSession) {
+              clearAuthData()
+              redirectToLogin()
+            }
           }
         }
       }

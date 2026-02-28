@@ -3,8 +3,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { 
-  getAccessToken, 
-  getRefreshToken, 
   clearAuthData,
   isAuthenticated as checkIsAuthenticated,
 } from "@/lib/auth-storage"
@@ -99,6 +97,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true)
       
       try {
+        // Always read directly from the Zustand store (avoids stale React closure
+        // race conditions during Next.js route transitions where the reactive `user`
+        // from the hook may not yet reflect a setUser() call made moments before
+        // router.push()).
+        const currentUser = useUserStore.getState().user
         const hasValidAuth = checkIsAuthenticated()
         
         // Check if current route is public (defined outside conditionals)
@@ -114,12 +117,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           pathname === route || pathname.startsWith(`${route}/`)
         )
         
-        if ((hasValidAuth || user) && user) {
+        if (currentUser) {
           // Check if user needs to complete onboarding (only for students)
           const needsOnboarding = !isPublicRoute && 
             !isOnboardingRoute && 
-            user.role === "student" && 
-            user.onboarding_completed === false
+            currentUser.role === "student" && 
+            currentUser.onboarding_completed === false
           
           if (needsOnboarding) {
             router.replace("/onboarding/mode-selection")
@@ -128,8 +131,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           
           // Check role-based access
           if (!isPublicRoute && !isOnboardingRoute) {
-            // Check if user has access to this route
-            const userRole = user.role
+            const userRole = currentUser.role
             
             // Admin can access everything
             if (userRole !== "admin") {
@@ -146,45 +148,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
               }
             }
           }
-        } else if ((hasValidAuth || !user) && !user) {
-          // No user in store — try to fetch from API (covers cookie-based OAuth sessions)
-          try {
-            await refreshUser()
-          } catch {
-            // If refresh fails and the route is protected, redirect
-          }
-          
-          // After refresh, check if we now have a user 
-          const currentUser = useUserStore.getState().user
-          if (!currentUser && !isPublicRoute && !isOAuthCallback) {
-            if (typeof window !== "undefined") {
-              sessionStorage.setItem("auth_redirect", pathname)
-            }
-            router.replace("/login")
-            return
-          }
         } else {
-          clearUser()
-          
+          // No user in store — try to fetch from API.
+          // Covers both:
+          //   • Cookie-based OAuth sessions (no Bearer token in storage)
+          //   • Token-based sessions where sessionStorage was cleared but
+          //     a valid localStorage refresh token still exists
           if (!isPublicRoute && !isOAuthCallback) {
-            // Store the intended destination for redirect after login
-            if (typeof window !== "undefined") {
-              sessionStorage.setItem("auth_redirect", pathname)
+            await refreshUser()
+            
+            // Re-read from store after refresh attempt
+            const refreshedUser = useUserStore.getState().user
+            if (!refreshedUser) {
+              if (typeof window !== "undefined") {
+                sessionStorage.setItem("auth_redirect", pathname)
+              }
+              router.replace("/login")
+              return
             }
-            router.replace("/login")
-            return
           }
         }
       } catch (error) {
         console.error("Auth check error:", error)
-        clearUser()
       } finally {
         setIsLoading(false)
       }
     }
 
     checkAuth()
-  }, [pathname, router, isHydrated, user, clearUser, mounted])
+  }, [pathname, router, isHydrated, user, mounted])
 
   const logout = async () => {
     try {
