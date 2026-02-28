@@ -116,11 +116,16 @@ async def oauth_callback(
             state=body.state,
         )
 
-        # Build JSON payload — tokens are NOT included in the body
+        # Build JSON payload — tokens are included so the frontend can store
+        # them as Bearer tokens. HttpOnly cookies are also set as a fallback
+        # for same-origin/same-site cookie environments.
         payload = {
             "status": "success",
             "is_new_user": result["is_new_user"],
             "user": result["user"],
+            "access_token": result["access_token"],
+            "refresh_token": result["refresh_token"],
+            "token_type": result["token_type"],
         }
 
         response = JSONResponse(content=payload, status_code=200)

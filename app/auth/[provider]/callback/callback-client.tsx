@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, useParams } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2, AlertCircle } from "lucide-react"
 import { authApi, onboardingApi, getApiErrorMessage } from "@/lib/api"
+import { storeAuthData, type AuthData } from "@/lib/auth-storage"
 import { useUserStore, type UserProfile } from "@/lib/stores/user-store"
 
 const SUPPORTED_PROVIDERS = ["google", "github"] as const
@@ -97,6 +98,24 @@ function OAuthProviderCallbackContent() {
             }
           }
         }
+
+        // Store tokens as Bearer tokens (same as email/password login) so all
+        // subsequent API calls use the Authorization header. This works across
+        // cross-domain deployments where SameSite=Lax cookies are not sent.
+        const authData: AuthData = {
+          tokens: {
+            access_token: response.access_token,
+            refresh_token: response.refresh_token,
+            token_type: response.token_type,
+          },
+          user: {
+            id: response.user.id,
+            email: response.user.email,
+            full_name: response.user.full_name,
+            role: response.user.role,
+          },
+        }
+        storeAuthData(authData)
 
         setUser({
           id: response.user.id,

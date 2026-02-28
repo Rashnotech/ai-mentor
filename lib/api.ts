@@ -536,7 +536,12 @@ export interface OAuthLoginResponse {
   status: string
   is_new_user: boolean
   user: UserResponse & { auth_provider?: string }
-  // Tokens are NOT in the response body — they're set as HttpOnly cookies
+  // Tokens are available both in the body and as HttpOnly cookies.
+  // The frontend stores them via storeAuthData() so Bearer-token auth
+  // works across all environments (including cross-domain API deployments).
+  access_token: string
+  refresh_token: string
+  token_type: string
 }
 
 export interface ResetPasswordConfirmPayload {
