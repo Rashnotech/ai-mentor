@@ -532,7 +532,7 @@ async def update_course(
     - Updated course details
     """
     try:
-        if current_user.role not in [UserRole.ADMIN, UserRole.MENTOR]:
+        if current_user.get("role") not in [UserRole.ADMIN, UserRole.MENTOR]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only admins and mentors can update courses",
@@ -583,7 +583,7 @@ async def update_course(
         await db_session.commit()
         await db_session.refresh(course)
         
-        logger.info(f"Course {course_id} updated by {current_user.email}")
+        logger.info(f"Course {course_id} updated by {current_user.get('email')}")
         
         return CourseResponse(
             course_id=course.course_id,
@@ -653,7 +653,7 @@ async def delete_course(
         await db_session.delete(course)
         await db_session.commit()
         
-        logger.info(f"Course {course_id} deleted by {current_user.email}")
+        logger.info(f"Course {course_id} deleted by {current_user.get('email')}")
         
     except HTTPException:
         raise
