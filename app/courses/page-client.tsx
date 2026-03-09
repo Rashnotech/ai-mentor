@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { Search, ChevronDown, Clock, Layers, Layout, CheckCircle2, Star, Loader2, LogOut, User } from "lucide-react"
+import { Search, ChevronDown, Clock, Layers, Layout, CheckCircle2, Star, Loader2, LogOut, User, Menu, X } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { publicCourseApi, CourseListResponse } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -47,6 +47,7 @@ export default function CoursesPage() {
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedLevels, setSelectedLevels] = useState<string[]>([])
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Fetch courses from backend
   const { data: courses = [], isLoading: coursesLoading } = useQuery<CourseListResponse[]>({
@@ -82,55 +83,62 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans pb-12">
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans pb-12 pt-16">
       {/* Navbar */}
-      <nav className="border-b border-gray-200 bg-white/95 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <nav className="fixed top-0 w-full z-50 bg-[#1a1f2e]/95 backdrop-blur-md border-b border-white/5">
+        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2 text-gray-900 font-bold text-lg">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Layout className="w-5 h-5 text-white" />
+            <Link href="/" className="flex items-center gap-2">
+              <div className="bg-blue-600 p-1 rounded-lg">
+                <img src="/mylogo.png" className="w-6 h-6 text-white" alt="Rashnotech" />
               </div>
-              LearnTech
+              <span className="text-xl font-bold tracking-tight text-white">Rashnotech</span>
             </Link>
-            <div className="hidden md:flex items-center gap-6 text-sm font-medium">
-              <Link href="/courses" className="text-blue-600 hover:text-blue-700 transition-colors">
+            <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-300">
+              <Link href="/courses" className="text-white transition-colors">
                 Courses
               </Link>
-              {isAuthenticated && (
-                <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 transition-colors">
-                  My Learning
-                </Link>
-              )}
+              <a href="#" className="hover:text-white transition-colors">
+                AI Features
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Internship
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Services
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Contact Us
+              </a>
             </div>
           </div>
           <div className="flex items-center gap-4">
             {isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-semibold text-sm">
+                  <button className="flex items-center gap-2 hover:bg-white/10 rounded-lg px-3 py-2 transition-colors">
+                    <div className="w-8 h-8 bg-blue-600/30 rounded-full flex items-center justify-center">
+                      <span className="text-blue-400 font-semibold text-sm">
                         {user.full_name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
                       </span>
                     </div>
-                    <span className="hidden sm:block text-sm font-medium text-gray-700">
+                    <span className="hidden sm:block text-sm font-medium text-gray-300">
                       {user.full_name || user.email}
                     </span>
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-3 py-2 border-b">
-                    <p className="text-sm font-medium text-gray-900">{user.full_name || "User"}</p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
+                <DropdownMenuContent align="end" className="w-56 bg-[#1a1f2e] border-white/10 text-white">
+                  <div className="px-3 py-2 border-b border-white/10">
+                    <p className="text-sm font-medium">{user.full_name || "User"}</p>
+                    <p className="text-xs text-gray-400">{user.email}</p>
                   </div>
-                  <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+                  <DropdownMenuItem onClick={() => router.push("/dashboard")} className="hover:bg-white/10 focus:bg-white/10">
                     <User className="w-4 h-4 mr-2" />
                     Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-400 hover:bg-white/10 focus:bg-white/10">
                     <LogOut className="w-4 h-4 mr-2" />
                     Log Out
                   </DropdownMenuItem>
@@ -140,20 +148,60 @@ export default function CoursesPage() {
               <>
                 <Link
                   href="/login"
-                  className="hidden sm:block text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                  className="hidden md:inline-block text-sm font-medium text-gray-300 hover:text-white transition-colors"
                 >
-                  Log In
+                  Log in
                 </Link>
                 <Link
-                  href="/signup"
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors shadow-sm hover:shadow"
+                  href="/dashboard"
+                  className="hidden md:inline-block px-4 py-2 bg-white hover:bg-gray-100 text-gray-900 text-sm font-semibold rounded-lg transition-all"
                 >
-                  Sign Up
+                  Get Started
                 </Link>
               </>
             )}
+            <button
+              className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-white/5 bg-[#1a1f2e]/95 backdrop-blur-md">
+            <div className="flex flex-col px-6 py-4 gap-1">
+              <Link href="/courses" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-white transition-colors">
+                Courses
+              </Link>
+              <a href="#" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+                AI Features
+              </a>
+              <a href="#" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+                Internship
+              </a>
+              <a href="#" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+                Services
+              </a>
+              <a href="#" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+                Contact Us
+              </a>
+              {!isAuthenticated && (
+                <div className="flex flex-col gap-3 pt-4 mt-2 border-t border-white/10">
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium text-gray-300 hover:text-white transition-colors text-center py-2">
+                    Log in
+                  </Link>
+                  <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 bg-white hover:bg-gray-100 text-gray-900 text-sm font-semibold rounded-lg transition-all text-center">
+                    Get Started
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}

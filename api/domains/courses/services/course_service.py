@@ -120,6 +120,7 @@ class CourseService:
         course_id: int,
         title: str,
         description: str,
+        price: Optional[float] = 0.00,
         min_skill_level: Optional[SkillLevel] = None,
         max_skill_level: Optional[SkillLevel] = None,
         tags: Optional[List[str]] = None,
@@ -161,6 +162,7 @@ class CourseService:
                 course_id=course_id,
                 title=title,
                 description=description,
+                price=price or 0.00,
                 min_skill_level=min_skill_level,
                 max_skill_level=max_skill_level,
                 tags=tags or [],
@@ -779,6 +781,7 @@ class CourseService:
         path_id: int,
         title: Optional[str] = None,
         description: Optional[str] = None,
+        price: Optional[float] = None,
         min_skill_level: Optional[SkillLevel] = None,
         max_skill_level: Optional[SkillLevel] = None,
         tags: Optional[List[str]] = None,
@@ -819,6 +822,8 @@ class CourseService:
                 path.title = title
             if description is not None:
                 path.description = description
+            if price is not None:
+                path.price = price
             if min_skill_level is not None:
                 path.min_skill_level = min_skill_level
             if max_skill_level is not None:
