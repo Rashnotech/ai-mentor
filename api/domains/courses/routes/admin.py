@@ -861,6 +861,11 @@ async def list_modules(
                 description=module.description,
                 order=module.order,
                 estimated_hours=module.estimated_hours,
+                unlock_after_days=module.unlock_after_days,
+                is_available_by_default=module.is_available_by_default,
+                first_deadline_days=module.first_deadline_days,
+                second_deadline_days=module.second_deadline_days,
+                third_deadline_days=module.third_deadline_days,
                 created_at=module.created_at.isoformat(),
                 updated_at=module.updated_at.isoformat(),
             )
@@ -919,6 +924,11 @@ async def create_module(
             description=request.description,
             order=request.order,
             estimated_hours=request.estimated_hours,
+            unlock_after_days=request.unlock_after_days,
+            is_available_by_default=request.is_available_by_default,
+            first_deadline_days=request.first_deadline_days,
+            second_deadline_days=request.second_deadline_days,
+            third_deadline_days=request.third_deadline_days,
         )
 
         return ModuleResponse(
@@ -928,6 +938,11 @@ async def create_module(
             description=module.description,
             order=module.order,
             estimated_hours=module.estimated_hours,
+            unlock_after_days=module.unlock_after_days,
+            is_available_by_default=module.is_available_by_default,
+            first_deadline_days=module.first_deadline_days,
+            second_deadline_days=module.second_deadline_days,
+            third_deadline_days=module.third_deadline_days,
             created_at=module.created_at.isoformat(),
             updated_at=module.updated_at.isoformat(),
         )
@@ -998,6 +1013,16 @@ async def update_module(
             module.order = request.order
         if request.estimated_hours is not None:
             module.estimated_hours = request.estimated_hours
+        if request.unlock_after_days is not None:
+            module.unlock_after_days = request.unlock_after_days
+        if request.is_available_by_default is not None:
+            module.is_available_by_default = request.is_available_by_default
+        if request.first_deadline_days is not None:
+            module.first_deadline_days = request.first_deadline_days
+        if request.second_deadline_days is not None:
+            module.second_deadline_days = request.second_deadline_days
+        if request.third_deadline_days is not None:
+            module.third_deadline_days = request.third_deadline_days
 
         await db_session.commit()
         await db_session.refresh(module)
@@ -1011,6 +1036,11 @@ async def update_module(
             description=module.description,
             order=module.order,
             estimated_hours=module.estimated_hours,
+            unlock_after_days=module.unlock_after_days,
+            is_available_by_default=module.is_available_by_default,
+            first_deadline_days=module.first_deadline_days,
+            second_deadline_days=module.second_deadline_days,
+            third_deadline_days=module.third_deadline_days,
             created_at=module.created_at.isoformat(),
             updated_at=module.updated_at.isoformat(),
         )

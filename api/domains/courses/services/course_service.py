@@ -194,6 +194,11 @@ class CourseService:
         description: str,
         order: int,
         estimated_hours: Optional[int] = None,
+        unlock_after_days: int = 0,
+        is_available_by_default: bool = True,
+        first_deadline_days: Optional[int] = None,
+        second_deadline_days: Optional[int] = None,
+        third_deadline_days: Optional[int] = None,
     ) -> Module:
         """
         Create a module in a learning path.
@@ -227,6 +232,11 @@ class CourseService:
                 description=description,
                 order=order,
                 estimated_hours=estimated_hours,
+                unlock_after_days=unlock_after_days,
+                is_available_by_default=is_available_by_default,
+                first_deadline_days=first_deadline_days,
+                second_deadline_days=second_deadline_days,
+                third_deadline_days=third_deadline_days,
             )
 
             self.db_session.add(module)
