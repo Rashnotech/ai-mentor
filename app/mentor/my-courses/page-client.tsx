@@ -1888,9 +1888,10 @@ export default function MyCoursesPage() {
                 <Select value={pathForm.min_skill_level} onValueChange={(v) => setPathForm({ ...pathForm, min_skill_level: v })}>
                   <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BEGINNER">Beginner</SelectItem>
-                    <SelectItem value="INTERMEDIATE">Intermediate</SelectItem>
-                    <SelectItem value="ADVANCED">Advanced</SelectItem>
+                    <SelectItem value="Beginner">Beginner</SelectItem>
+                    <SelectItem value="Lower-Intermediate">Lower-Intermediate</SelectItem>
+                    <SelectItem value="Intermediate">Intermediate</SelectItem>
+                    <SelectItem value="Advanced">Advanced</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1899,9 +1900,10 @@ export default function MyCoursesPage() {
                 <Select value={pathForm.max_skill_level} onValueChange={(v) => setPathForm({ ...pathForm, max_skill_level: v })}>
                   <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BEGINNER">Beginner</SelectItem>
-                    <SelectItem value="INTERMEDIATE">Intermediate</SelectItem>
-                    <SelectItem value="ADVANCED">Advanced</SelectItem>
+                    <SelectItem value="Beginner">Beginner</SelectItem>
+                    <SelectItem value="Lower-Intermediate">Lower-Intermediate</SelectItem>
+                    <SelectItem value="Intermediate">Intermediate</SelectItem>
+                    <SelectItem value="Advanced">Advanced</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1973,9 +1975,10 @@ export default function MyCoursesPage() {
                 <Select value={pathForm.min_skill_level} onValueChange={(v) => setPathForm({ ...pathForm, min_skill_level: v })}>
                   <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BEGINNER">Beginner</SelectItem>
-                    <SelectItem value="INTERMEDIATE">Intermediate</SelectItem>
-                    <SelectItem value="ADVANCED">Advanced</SelectItem>
+                    <SelectItem value="Beginner">Beginner</SelectItem>
+                    <SelectItem value="Lower-Intermediate">Lower-Intermediate</SelectItem>
+                    <SelectItem value="Intermediate">Intermediate</SelectItem>
+                    <SelectItem value="Advanced">Advanced</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1985,9 +1988,10 @@ export default function MyCoursesPage() {
               <Select value={pathForm.max_skill_level} onValueChange={(v) => setPathForm({ ...pathForm, max_skill_level: v })}>
                 <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="BEGINNER">Beginner</SelectItem>
-                  <SelectItem value="INTERMEDIATE">Intermediate</SelectItem>
-                  <SelectItem value="ADVANCED">Advanced</SelectItem>
+                  <SelectItem value="Beginner">Beginner</SelectItem>
+                  <SelectItem value="Lower-Intermediate">Lower-Intermediate</SelectItem>
+                  <SelectItem value="Intermediate">Intermediate</SelectItem>
+                  <SelectItem value="Advanced">Advanced</SelectItem>
                 </SelectContent>
               </Select>
             </div>
