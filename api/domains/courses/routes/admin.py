@@ -634,7 +634,7 @@ async def delete_course(
     """
     try:
         # Only admins can delete courses
-        if current_user.role != UserRole.ADMIN:
+        if current_user.get('role') != UserRole.ADMIN:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only admins can delete courses",
