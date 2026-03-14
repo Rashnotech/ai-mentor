@@ -7,7 +7,6 @@ api/.venv
 api/.env
 api/__pycache__
 .next
-api/alembic
 api/migrations
 package-lock.json
 Build
