@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str = getenv("GITHUB_CLIENT_SECRET", "")
     GITHUB_REDIRECT_URI: str = getenv("GITHUB_REDIRECT_URI", "https://www.rashnotech.tech/auth/github/callback")
 
+    # Groq AI
+    GROQ_API_KEY: str = getenv("GROQ_API_KEY", "")
+
 
     class Config:
         env_file = ".env"

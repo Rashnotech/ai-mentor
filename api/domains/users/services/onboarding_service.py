@@ -275,7 +275,7 @@ class OnboardingService:
             bootcamp, enrolled_count = row
             
             # Validate bootcamp status - must be published (enrolling)
-            if bootcamp.status != BootcampStatus.PUBLISHED:
+            if bootcamp.status != BootcampStatus.published:
                 raise AppError(
                     status_code=400,
                     detail=f"Bootcamp is not accepting enrollments (status: {bootcamp.status.value})",

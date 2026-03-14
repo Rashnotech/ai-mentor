@@ -53,7 +53,7 @@ class BootcampStartService:
             # 3. Have not already transitioned to in_progress
             stmt = select(Bootcamp).where(
                 and_(
-                    Bootcamp.status == BootcampStatus.PUBLISHED,
+                    Bootcamp.status == BootcampStatus.published,
                     Bootcamp.start_date <= today_end,
                     Bootcamp.is_active == True,
                 )
@@ -66,7 +66,7 @@ class BootcampStartService:
             for bootcamp in bootcamps_to_start:
                 try:
                     # Update bootcamp status to IN_PROGRESS
-                    bootcamp.status = BootcampStatus.IN_PROGRESS
+                    bootcamp.status = BootcampStatus.in_progress
                     bootcamp.updated_at = now
                     self.session.add(bootcamp)
                     bootcamps_started += 1

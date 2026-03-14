@@ -13,6 +13,8 @@ from domains.sessions.routes import router as sessions_router
 from domains.community.routes import router as community_router
 from domains.payments.routes import router as payments_router
 from domains.payments.admin_routes import router as payments_admin_router
+from domains.ai.routes.rubber_duck import router as rubber_duck_router
+from domains.progress.models.progress import UserProgress, PathAdjustment  # noqa: F401
 from domains.courses.jobs.scheduler import setup_scheduled_jobs, start_scheduler, stop_scheduler
 from core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
@@ -75,6 +77,7 @@ app.include_router(sessions_router, prefix=settings.API_V1_STR)
 app.include_router(community_router, prefix=settings.API_V1_STR)
 app.include_router(payments_router, prefix=settings.API_V1_STR)
 app.include_router(payments_admin_router, prefix=settings.API_V1_STR)
+app.include_router(rubber_duck_router, prefix=settings.API_V1_STR)
 
 
 if __name__ == "__main__":

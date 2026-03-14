@@ -647,7 +647,7 @@ class BootcampService:
             bootcamp, enrolled_count = bootcamp_data
             
             # Validate bootcamp allows enrollment
-            if bootcamp.status != BootcampStatus.PUBLISHED:
+            if bootcamp.status != BootcampStatus.published:
                 raise AppError(
                     status_code=400,
                     detail=f"Cannot enroll in bootcamp with status '{bootcamp.status.value}'. "

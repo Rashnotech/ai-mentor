@@ -22,6 +22,7 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { useUserStore } from "@/lib/stores/user-store"
 import { useAuth } from "@/lib/auth-context"
+import RubberDuckChat from "./_components/rubber-duck-chat"
 
 // --- Mock Data ---
 const NOTIFICATIONS = [
@@ -270,6 +271,9 @@ export default function DashboardLayoutClient({
           </div>
         </main>
       </div>
+
+      {/* Rubber Duck AI Chat */}
+      <RubberDuckChat />
     </ProtectedRoute>
   )
 }
