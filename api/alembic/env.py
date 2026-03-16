@@ -25,7 +25,12 @@ config = context.config
 
 # Get database URL - we'll use it directly in the engine creation
 # Don't set it via config due to special character issues with configparser
-DATABASE_URL_SYNC = settings.DATABASE_URL.replace("+asyncpg", "")
+# Heroku provides postgres:// but SQLAlchemy 1.4+ requires postgresql://
+DATABASE_URL_SYNC = (
+    settings.DATABASE_URL
+    .replace("+asyncpg", "")
+    .replace("postgres://", "postgresql://", 1)
+)
 
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:
