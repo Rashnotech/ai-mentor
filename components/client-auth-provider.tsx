@@ -22,16 +22,18 @@ export function Providers({ children }: { children: ReactNode }) {
   }, [])
 
   if (!mounted) {
-    // During SSR / prerender: render children without any providers.
-    return <>{children}</>
+    // Avoid rendering client trees that call useAuth before AuthProvider is mounted.
+    return (
+      <QueryProvider>
+        <Toaster position="top-center" richColors closeButton />
+      </QueryProvider>
+    )
   }
 
   return (
     <QueryProvider>
-      <AuthProvider>
-        {children}
-        <Toaster position="top-center" richColors closeButton />
-      </AuthProvider>
+      <AuthProvider>{children}</AuthProvider>
+      <Toaster position="top-center" richColors closeButton />
     </QueryProvider>
   )
 }

@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "AI Mentor"
     PROJECT_VERSION: str = "1.0.0"
     PROJECT_DESCRIPTION: str = "An AI-powered mentoring platform to guide and support users in their personal and professional growth."
-    CORS_ALLOW_ORIGINS: List[str] = ["https://rashnotech.tech", "https://www.rashnotech.tech"]
+    CORS_ALLOW_ORIGINS: List[str] = ["http://localhost:3000", "https://rashnotech.tech", "https://www.rashnotech.tech"]
     DATABASE_URL: str = getenv("DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5432/ai-mentor")
     DATABASE_NAME: str = getenv("DB_NAME", "ai-mentor")
     ENVIRONMENT: str = getenv("ENV", "development")

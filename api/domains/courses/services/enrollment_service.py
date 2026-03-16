@@ -127,6 +127,7 @@ class EnrollmentService:
                         "path_id": existing_enrollment.get("path_id"),
                         "title": existing_enrollment.get("path_title"),
                         "already_assigned": True,
+                        "assignment_reason": "already_enrolled",
                     },
                 }
             
@@ -191,6 +192,9 @@ class EnrollmentService:
                     "description": assigned_path.description,
                     "is_default": assigned_path.is_default,
                     "is_custom": assigned_path.is_custom,
+                    "assignment_reason": getattr(assigned_path, "assignment_reason", None),
+                    "assignment_source_path_id": getattr(assigned_path, "assignment_source_path_id", None),
+                    "assignment_score": getattr(assigned_path, "assignment_score", None),
                     "min_skill_level": assigned_path.min_skill_level.value
                     if assigned_path.min_skill_level
                     else None,

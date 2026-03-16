@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { MessageCircle, X, Send, Loader2, Bot, ChevronDown } from "lucide-react"
+import { X, Send, Loader2, ChevronDown } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 import { Button } from "@/components/ui/button"
 import { getAccessToken } from "@/lib/auth-storage"
 
@@ -136,6 +137,35 @@ export default function RubberDuckChat() {
     setOpen(false)
   }
 
+  const renderMessageContent = (msg: Message) => {
+    if (!msg.content) {
+      return (
+        <span className="inline-flex items-center gap-1 text-gray-400">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          Thinking...
+        </span>
+      )
+    }
+
+    if (msg.role === "user") {
+      return msg.content
+    }
+
+    return (
+      <div className="prose prose-sm max-w-none text-gray-800 prose-headings:mt-2 prose-headings:mb-2 prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-pre:my-2 prose-pre:bg-gray-950 prose-pre:text-gray-100 prose-pre:rounded-lg prose-pre:p-3 prose-code:before:content-none prose-code:after:content-none prose-code:bg-gray-100 prose-code:text-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline">
+        <ReactMarkdown
+          components={{
+            a: ({ node: _node, ...props }) => (
+              <a {...props} target="_blank" rel="noopener noreferrer" />
+            ),
+          }}
+        >
+          {msg.content}
+        </ReactMarkdown>
+      </div>
+    )
+  }
+
   return (
     <>
       {/* Floating toggle button */}
@@ -186,12 +216,7 @@ export default function RubberDuckChat() {
                       : "bg-white text-gray-800 border border-gray-200 rounded-bl-sm shadow-sm"
                   }`}
                 >
-                  {msg.content || (
-                    <span className="inline-flex items-center gap-1 text-gray-400">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      Thinking…
-                    </span>
-                  )}
+                  {renderMessageContent(msg)}
                 </div>
               </div>
             ))}

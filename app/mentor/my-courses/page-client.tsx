@@ -1947,7 +1947,7 @@ export default function MyCoursesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-path-description">Description</Label>
+              <Label htmlFor="edit-path-description">Description *</Label>
               <Textarea
                 id="edit-path-description"
                 value={pathForm.description}
