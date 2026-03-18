@@ -31,3 +31,4 @@ api/auth/__pycache__
 api/domains/mailings/services/__pycache__
 api/domains/mailings/__pycache__
 api/domains/progress/__pycache__
+api/domains/courses/schemas/__pycache__
