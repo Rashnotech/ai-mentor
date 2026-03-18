@@ -327,7 +327,7 @@ export default function CoursesPage() {
                       
                       <div className="mb-4">
                         <span className="text-lg font-bold text-green-600">
-                          {course.min_price && course.min_price > 0 ? `N${course.min_price.toFixed(2)}` : "Free"}
+                          {course.min_price && course.min_price > 0 ? `${course.min_price.toLocaleString("en-US", { style: "currency", currency: "NGN" })}` : "Free"}
                         </span>
                       </div>
 
