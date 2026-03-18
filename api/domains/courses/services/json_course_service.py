@@ -3,7 +3,7 @@
 Service for creating and updating courses via a JSON payload.
 
 Implements upsert (create-or-update) semantics for the full hierarchy:
-    Course → Track (LearningPath) → Modules → Lessons / Projects / Quizzes
+    Course → LearningPath → Modules → Lessons / Projects / Quizzes
 """
 from typing import Tuple
 from datetime import datetime, timezone
@@ -15,7 +15,7 @@ from domains.courses.models.course import Course, LearningPath, Module, Lesson, 
 from domains.courses.models.assessment import AssessmentQuestion
 from domains.courses.schemas.json_course_schema import (
     CourseJsonInput,
-    TrackInput,
+    LearningPathInput,
     ModuleInput,
     LessonInput,
     ProjectInput,
@@ -53,10 +53,12 @@ class JsonCourseService:
 
 
     @staticmethod
-    def _to_skill_level(value: str | None) -> SkillLevel | None:
-        """Convert a string to :class:`SkillLevel` enum, or return *None*."""
+    def _to_skill_level(value) -> SkillLevel | None:
+        """Convert a string or :class:`SkillLevel` to :class:`SkillLevel` enum, or return *None*."""
         if value is None:
             return None
+        if isinstance(value, SkillLevel):
+            return value
         for member in SkillLevel:
             if member.value.lower() == value.lower() or member.name.lower() == value.lower():
                 return member
@@ -64,10 +66,12 @@ class JsonCourseService:
 
 
     @staticmethod
-    def _to_content_type(value: str | None) -> ContentType | None:
-        """Convert a string to :class:`ContentType` enum, or return *None*."""
+    def _to_content_type(value) -> ContentType | None:
+        """Convert a string or :class:`ContentType` to :class:`ContentType` enum, or return *None*."""
         if value is None:
             return None
+        if isinstance(value, ContentType):
+            return value
         for member in ContentType:
             if member.value.lower() == value.lower() or member.name.lower() == value.lower():
                 return member
@@ -89,15 +93,15 @@ class JsonCourseService:
 
         try:
             course, course_action = await self._upsert_course(data)
-            track, track_action = await self._upsert_track(course, data.track)
+            learning_path, learning_path_action = await self._upsert_learning_path(course, data.learning_path)
 
             module_counts = ItemCounts()
             lesson_counts = ItemCounts()
             project_counts = ItemCounts()
             quiz_counts = ItemCounts()
 
-            for module_data in (data.track.modules or []):
-                module, m_action = await self._upsert_module(track, module_data)
+            for module_data in (data.learning_path.modules or []):
+                module, m_action = await self._upsert_module(learning_path, module_data)
                 if m_action == "created":
                     module_counts.created += 1
                 else:
@@ -137,9 +141,9 @@ class JsonCourseService:
                 action=course_action,
                 course_id=course.course_id,
                 course_name=course.title,
-                track_action=track_action,
-                track_id=track.path_id,
-                track_name=track.title,
+                learning_path_action=learning_path_action,
+                learning_path_id=learning_path.path_id,
+                learning_path_name=learning_path.title,
                 modules=module_counts,
                 lessons=lesson_counts,
                 projects=project_counts,
@@ -158,10 +162,6 @@ class JsonCourseService:
                 error_code="JSON_IMPORT_ERROR",
             )
 
-    # ------------------------------------------------------------------
-    # Course upsert
-    # ------------------------------------------------------------------
-
     async def _upsert_course(self, data: CourseJsonInput) -> Tuple[Course, str]:
         """
         Find an existing course by *title* and update it, or create a new one.
@@ -174,7 +174,6 @@ class JsonCourseService:
         course = result.scalar_one_or_none()
 
         if course is None:
-            # Ensure the slug is not already taken by a different course
             slug_stmt = select(Course).where(Course.slug == data.slug)
             slug_result = await self.db_session.execute(slug_stmt)
             if slug_result.scalar_one_or_none():
@@ -193,14 +192,13 @@ class JsonCourseService:
                 cover_image_url=data.cover_image_url,
                 prerequisites=data.prerequisites or [],
                 what_youll_learn=data.what_youll_learn or [],
-                certificate_on_completion=data.certificate_on_completion,
+                certificate_on_completion=data.certificate_on_completion if data.certificate_on_completion is not None else False,
                 created_by=self.current_user.get("user_id"),
             )
             self.db_session.add(course)
-            await self.db_session.flush()  # populate course_id without full commit
+            await self.db_session.flush()
             return course, "created"
 
-        # Update existing course
         course.description = data.description
         course.estimated_hours = data.estimated_hours
         course.difficulty_level = data.difficulty_level
@@ -210,10 +208,10 @@ class JsonCourseService:
             course.prerequisites = data.prerequisites
         if data.what_youll_learn is not None:
             course.what_youll_learn = data.what_youll_learn
-        course.certificate_on_completion = data.certificate_on_completion
+        if data.certificate_on_completion is not None:
+            course.certificate_on_completion = data.certificate_on_completion
         course.updated_at = datetime.now(timezone.utc)
 
-        # If the slug changed and the new slug is free, apply it
         if data.slug != course.slug:
             slug_stmt = select(Course).where(Course.slug == data.slug)
             slug_result = await self.db_session.execute(slug_stmt)
@@ -229,73 +227,65 @@ class JsonCourseService:
         await self.db_session.flush()
         return course, "updated"
 
-    # ------------------------------------------------------------------
-    # Track (LearningPath) upsert
-    # ------------------------------------------------------------------
-
-    async def _upsert_track(
-        self, course: Course, data: TrackInput
+    async def _upsert_learning_path(
+        self, course: Course, data: LearningPathInput
     ) -> Tuple[LearningPath, str]:
         """
-        Find an existing track by *title* within the given *course* and update
-        it, or create a new one.
+        Find an existing learning path by *title* within the given *course* and
+        update it, or create a new one.
         """
         stmt = select(LearningPath).where(
             LearningPath.course_id == course.course_id,
-            LearningPath.title == data.track_name,
+            LearningPath.title == data.learning_path_name,
         )
         result = await self.db_session.execute(stmt)
-        track = result.scalar_one_or_none()
+        learning_path = result.scalar_one_or_none()
 
         min_level = self._to_skill_level(data.min_skill_level)
         max_level = self._to_skill_level(data.max_skill_level)
 
-        if track is None:
-            track = LearningPath(
+        if learning_path is None:
+            learning_path = LearningPath(
                 course_id=course.course_id,
-                title=data.track_name,
+                title=data.learning_path_name,
                 description=data.description,
                 price=data.price or 0.00,
-                is_default=data.is_default,
+                is_default=data.is_default if data.is_default is not None else False,
                 min_skill_level=min_level,
                 max_skill_level=max_level,
                 tags=data.tags or [],
                 created_by=self.current_user.get("user_id"),
             )
-            self.db_session.add(track)
+            self.db_session.add(learning_path)
             await self.db_session.flush()
-            return track, "created"
+            return learning_path, "created"
 
-        # Update existing track
-        track.description = data.description
+        learning_path.description = data.description
         if data.price is not None:
-            track.price = data.price
-        track.is_default = data.is_default
+            learning_path.price = data.price
+        if data.is_default is not None:
+            learning_path.is_default = data.is_default
         if min_level is not None:
-            track.min_skill_level = min_level
+            learning_path.min_skill_level = min_level
         if max_level is not None:
-            track.max_skill_level = max_level
+            learning_path.max_skill_level = max_level
         if data.tags is not None:
-            track.tags = data.tags
-        track.updated_at = datetime.now(timezone.utc)
+            learning_path.tags = data.tags
+        learning_path.updated_at = datetime.now(timezone.utc)
 
-        self.db_session.add(track)
+        self.db_session.add(learning_path)
         await self.db_session.flush()
-        return track, "updated"
-
-    # ------------------------------------------------------------------
-    # Module upsert
-    # ------------------------------------------------------------------
+        return learning_path, "updated"
 
     async def _upsert_module(
-        self, track: LearningPath, data: ModuleInput
+        self, learning_path: LearningPath, data: ModuleInput
     ) -> Tuple[Module, str]:
         """
-        Find an existing module by *title* within the given *track* and update
-        it, or create a new one.
+        Find an existing module by *title* within the given *learning_path* and
+        update it, or create a new one.
         """
         stmt = select(Module).where(
-            Module.path_id == track.path_id,
+            Module.path_id == learning_path.path_id,
             Module.title == data.module_name,
         )
         result = await self.db_session.execute(stmt)
@@ -303,13 +293,13 @@ class JsonCourseService:
 
         if module is None:
             module = Module(
-                path_id=track.path_id,
+                path_id=learning_path.path_id,
                 title=data.module_name,
                 description=data.description,
                 order=data.order,
                 estimated_hours=data.estimated_hours,
-                unlock_after_days=data.unlock_after_days,
-                is_available_by_default=data.is_available_by_default,
+                unlock_after_days=data.unlock_after_days if data.unlock_after_days is not None else 0,
+                is_available_by_default=data.is_available_by_default if data.is_available_by_default is not None else True,
                 first_deadline_days=data.first_deadline_days,
                 second_deadline_days=data.second_deadline_days,
                 third_deadline_days=data.third_deadline_days,
@@ -318,13 +308,14 @@ class JsonCourseService:
             await self.db_session.flush()
             return module, "created"
 
-        # Update existing module
         module.description = data.description
         module.order = data.order
         if data.estimated_hours is not None:
             module.estimated_hours = data.estimated_hours
-        module.unlock_after_days = data.unlock_after_days
-        module.is_available_by_default = data.is_available_by_default
+        if data.unlock_after_days is not None:
+            module.unlock_after_days = data.unlock_after_days
+        if data.is_available_by_default is not None:
+            module.is_available_by_default = data.is_available_by_default
         if data.first_deadline_days is not None:
             module.first_deadline_days = data.first_deadline_days
         if data.second_deadline_days is not None:
@@ -336,10 +327,6 @@ class JsonCourseService:
         self.db_session.add(module)
         await self.db_session.flush()
         return module, "updated"
-
-    # ------------------------------------------------------------------
-    # Lesson upsert
-    # ------------------------------------------------------------------
 
     async def _upsert_lesson(
         self, module: Module, data: LessonInput
@@ -376,7 +363,6 @@ class JsonCourseService:
             await self.db_session.flush()
             return lesson, "created"
 
-        # Update existing lesson
         lesson.description = data.description
         if data.content is not None:
             lesson.content = data.content
@@ -400,10 +386,6 @@ class JsonCourseService:
         self.db_session.add(lesson)
         await self.db_session.flush()
         return lesson, "updated"
-
-    # ------------------------------------------------------------------
-    # Project upsert
-    # ------------------------------------------------------------------
 
     async def _upsert_project(
         self, module: Module, data: ProjectInput
@@ -437,7 +419,6 @@ class JsonCourseService:
             await self.db_session.flush()
             return project, "created"
 
-        # Update existing project
         project.description = data.description
         project.order = data.order
         if data.estimated_hours is not None:
@@ -460,10 +441,6 @@ class JsonCourseService:
         await self.db_session.flush()
         return project, "updated"
 
-    # ------------------------------------------------------------------
-    # Quiz (AssessmentQuestion) upsert
-    # ------------------------------------------------------------------
-
     async def _upsert_quiz(
         self, module: Module, data: QuizInput
     ) -> Tuple[AssessmentQuestion, str]:
@@ -483,27 +460,28 @@ class JsonCourseService:
                 module_id=module.module_id,
                 question_text=data.question_text,
                 question_type=data.question_type,
-                difficulty_level=data.difficulty_level,
+                difficulty_level=data.difficulty_level if data.difficulty_level is not None else "INTERMEDIATE",
                 order=data.order,
                 options=data.options,
                 correct_answer=data.correct_answer,
                 explanation=data.explanation,
-                points=data.points,
+                points=data.points if data.points is not None else 10,
             )
             self.db_session.add(question)
             await self.db_session.flush()
             return question, "created"
 
-        # Update existing question
         question.question_type = data.question_type
-        question.difficulty_level = data.difficulty_level
+        if data.difficulty_level is not None:
+            question.difficulty_level = data.difficulty_level
         question.order = data.order
         if data.options is not None:
             question.options = data.options
         question.correct_answer = data.correct_answer
         if data.explanation is not None:
             question.explanation = data.explanation
-        question.points = data.points
+        if data.points is not None:
+            question.points = data.points
         question.updated_at = datetime.now(timezone.utc)
 
         self.db_session.add(question)
