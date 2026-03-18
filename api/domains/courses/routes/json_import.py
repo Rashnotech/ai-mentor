@@ -54,18 +54,6 @@ async def import_course_from_json(
     ### File size
     Files are read entirely into memory; keep them under a few MB.
 
-    ### Behaviour
-    | Condition | Action |
-    |-----------|--------|
-    | Course `course_name` not found | Create course |
-    | Course `course_name` found | Update course fields |
-    | Track `track_name` not found in course | Create track |
-    | Track `track_name` found in course | Update track |
-    | Module `module_name` not found in track | Create module |
-    | Module `module_name` found in track | Update module |
-    | Lesson/Project/Quiz title/text not found in module | Create item |
-    | Lesson/Project/Quiz title/text found in module | Update item |
-
     ### Errors
     - **400** – Invalid JSON format, missing required fields, or slug conflict.
     - **403** – Caller is not an admin or mentor.

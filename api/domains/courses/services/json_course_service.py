@@ -41,9 +41,6 @@ class JsonCourseService:
         self.db_session = db_session
         self.current_user = current_user
 
-    # ------------------------------------------------------------------
-    # Auth helpers
-    # ------------------------------------------------------------------
 
     def _check_admin_mentor(self) -> None:
         """Raise 403 if the caller is neither admin nor mentor."""
@@ -54,9 +51,6 @@ class JsonCourseService:
                 error_code="FORBIDDEN",
             )
 
-    # ------------------------------------------------------------------
-    # Skill-level coercion helper
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _to_skill_level(value: str | None) -> SkillLevel | None:
@@ -68,9 +62,6 @@ class JsonCourseService:
                 return member
         return None
 
-    # ------------------------------------------------------------------
-    # Content-type coercion helper
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _to_content_type(value: str | None) -> ContentType | None:
@@ -82,9 +73,6 @@ class JsonCourseService:
                 return member
         return None
 
-    # ------------------------------------------------------------------
-    # Main entry point
-    # ------------------------------------------------------------------
 
     async def import_course(self, data: CourseJsonInput) -> JsonImportResponse:
         """
