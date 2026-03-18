@@ -34,7 +34,7 @@ router = APIRouter(prefix="/courses", tags=["courses"])
         "The JSON must follow the documented schema. "
         "If a course with the same **course_name** already exists it will be "
         "updated; otherwise a new course is created. "
-        "The same upsert logic applies to the nested track, modules, lessons, "
+        "The same upsert logic applies to the nested learning path, modules, lessons, "
         "projects, and quizzes."
     ),
 )
