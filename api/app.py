@@ -21,7 +21,7 @@ from core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 from db.base import Base
 from db.session import db_session
-
+from middleware.swagger_middleware import SwaggerAuthMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -66,6 +66,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(SwaggerAuthMiddleware)
 
 app.include_router(user_router, prefix=settings.API_V1_STR)
 app.include_router(courses_admin.router, prefix=settings.API_V1_STR)
