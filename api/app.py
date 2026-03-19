@@ -8,6 +8,7 @@ from domains.courses.routes import student as courses_student
 from domains.courses.routes import mentor as courses_mentor
 from domains.courses.routes import rewards as courses_rewards
 from domains.courses.routes import public as courses_public
+from domains.courses.routes import json_import as courses_json_import
 from domains.bootcamps.routes import router as bootcamps_router
 from domains.sessions.routes import router as sessions_router
 from domains.community.routes import router as community_router
@@ -20,7 +21,7 @@ from core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 from db.base import Base
 from db.session import db_session
-
+from middleware.swagger_middleware import SwaggerAuthMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -65,6 +66,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(SwaggerAuthMiddleware)
 
 app.include_router(user_router, prefix=settings.API_V1_STR)
 app.include_router(courses_admin.router, prefix=settings.API_V1_STR)
@@ -72,6 +74,7 @@ app.include_router(courses_student.router, prefix=settings.API_V1_STR)
 app.include_router(courses_mentor.router, prefix=settings.API_V1_STR)
 app.include_router(courses_rewards.router, prefix=settings.API_V1_STR)
 app.include_router(courses_public.router, prefix=settings.API_V1_STR)
+app.include_router(courses_json_import.router, prefix=settings.API_V1_STR)
 app.include_router(bootcamps_router, prefix=settings.API_V1_STR)
 app.include_router(sessions_router, prefix=settings.API_V1_STR)
 app.include_router(community_router, prefix=settings.API_V1_STR)
