@@ -337,7 +337,7 @@ async def signup(
             email=request.email,
             password=request.password,
             full_name=request.full_name,
-            role=UserRole.ADMIN
+            role=UserRole.STUDENT
         )
         
         if not user:
