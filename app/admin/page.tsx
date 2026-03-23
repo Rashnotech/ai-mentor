@@ -1,0 +1,8 @@
+import PageClient from "./page-client"
+export * from "./page-client"
+
+export const dynamic = "force-dynamic"
+
+export default function Page() {
+  return <PageClient />
+}

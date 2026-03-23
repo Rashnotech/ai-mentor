@@ -1,0 +1,10 @@
+__pycache__/
+venv/
+.next
+.env.local
+api/.venv
+graphQL/.venv
+node_modules
+package-lock.json
+dist
+api/.env
