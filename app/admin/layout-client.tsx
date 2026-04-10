@@ -23,6 +23,7 @@ import {
   MessagesSquare,
   Receipt,
   Loader2,
+  Briefcase,
 } from "lucide-react"
 
 const NAV_ITEMS = [
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { id: "courses", label: "Course Management", icon: BookOpen, href: "/admin/courses" },
   { id: "bootcamps", label: "Bootcamp Management", icon: GraduationCap, href: "/admin/bootcamps" },
   { id: "mentors", label: "Mentor Management", icon: UserCog, href: "/admin/mentors" },
+  { id: "internships", label: "Internship Applications", icon: Briefcase, href: "/admin/internships" },
   { id: "community", label: "Community", icon: MessagesSquare, href: "/admin/community" },
   { id: "transactions", label: "Transactions", icon: Receipt, href: "/admin/transactions" },
   { id: "analytics", label: "Analytics", icon: BarChart3, href: "/admin/analytics" },

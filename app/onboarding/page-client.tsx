@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { CheckCircle2, ChevronRight, BookOpen, Rocket, Briefcase, Trophy, Code2, Brain, Check, Users, Sparkles, Database, Globe, Smartphone, Loader2 } from "lucide-react"
-import { onboardingApi, publicCourseApi, getApiErrorMessage, type UserGoal, type CourseListResponse } from "@/lib/api"
+import { onboardingApi, publicCourseApi, getApiErrorMessage, type UserGoal, type CourseBriefResponse } from "@/lib/api"
 import { useUserStore } from "@/lib/stores/user-store"
 
 // Steps:
@@ -53,7 +53,7 @@ interface SelfPacedCourse {
   icon: "code" | "database" | "globe" | "mobile"
   duration: string
   modules: number
-  level: "Beginner" | "Intermediate" | "Advanced"
+  level: "Beginner" | "Intermediate" | "Advanced" | "All Levels"
   skills: string[]
 }
 
@@ -81,16 +81,16 @@ function getIconForCourse(title: string): "code" | "database" | "globe" | "mobil
 }
 
 // Transform API response to UI format
-function mapCourseToSelfPaced(course: CourseListResponse): SelfPacedCourse {
+function mapCourseToSelfPaced(course: CourseBriefResponse): SelfPacedCourse {
   return {
     id: course.course_id.toString(),
     title: course.title,
     description: course.description,
     icon: getIconForCourse(course.title),
     duration: "Self-paced",
-    modules: course.modules_count || 0,
-    level: mapDifficultyToLevel(course.difficulty_level),
-    skills: course.what_youll_learn?.slice(0, 4) || [],
+    modules: 0, // Not available in brief response
+    level: "All Levels", // Not available in brief response
+    skills: [], // Not available in brief response
   }
 }
 
@@ -143,10 +143,10 @@ export default function OnboardingPage() {
   // Simulation for the adaptive assessment
   const [assessmentProgress, setAssessmentProgress] = useState(0)
 
-  // Fetch available courses for self-paced mode
+  // Fetch available courses for self-paced mode (only title and description)
   const { data: coursesData, isLoading: isLoadingCourses } = useQuery({
-    queryKey: ["public", "courses"],
-    queryFn: () => publicCourseApi.listCourses(),
+    queryKey: ["public", "courses", "brief"],
+    queryFn: () => publicCourseApi.listCoursesBrief(),
     staleTime: 60000,
     enabled: learningMode === "self-paced", // Only fetch if in self-paced mode
   })
@@ -403,33 +403,13 @@ export default function OnboardingPage() {
                               <CheckCircle2 className="w-5 h-5 text-purple-600" />
                             )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${levelColors[course.level]}`}>
-                              {course.level}
-                            </span>
-                            <span className="text-sm text-gray-500">{course.modules} modules</span>
-                          </div>
                         </div>
                       </div>
 
                       {/* Description */}
-                      <p className={`text-sm mb-3 ${isSelected ? "text-purple-700" : "text-gray-600"}`}>
+                      <p className={`text-sm ${isSelected ? "text-purple-700" : "text-gray-600"}`}>
                         {course.description}
                       </p>
-
-                      {/* Skills */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {course.skills.map((skill) => (
-                          <span 
-                            key={skill}
-                            className={`px-2 py-0.5 text-xs rounded-full ${
-                              isSelected ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
                     </button>
                   )
                 })}

@@ -662,6 +662,13 @@ export interface CourseListResponse extends CourseResponse {
   min_price?: number
 }
 
+// Minimal course response for onboarding (brief)
+export interface CourseBriefResponse {
+  course_id: number
+  title: string
+  description: string
+}
+
 // Student course with progress
 export interface StudentCourseResponse {
   course_id: number
@@ -1317,6 +1324,25 @@ export interface CourseCurriculumResponse {
 
 export const publicCourseApi = {
   /**
+   * List courses with minimal details (title and description only)
+   * Optimized for onboarding where full course details aren't needed
+   */
+  listCoursesBrief: async (params?: {
+    search?: string
+    limit?: number
+    offset?: number
+  }): Promise<CourseBriefResponse[]> => {
+    const searchParams = new URLSearchParams()
+    if (params?.search) searchParams.append("search", params.search)
+    if (params?.limit) searchParams.append("limit", params.limit.toString())
+    if (params?.offset) searchParams.append("offset", params.offset.toString())
+    
+    const query = searchParams.toString()
+    const response = await apiClient.get<CourseBriefResponse[]>(`/public/courses/brief${query ? `?${query}` : ""}`)
+    return response.data
+  },
+
+  /**
    * List all active/published courses
    */
   listCourses: async (params?: {
@@ -1397,6 +1423,234 @@ export const publicCourseApi = {
     const queryString = searchParams.toString()
     const url = `/public/courses/by-slug/${slug}/reviews${queryString ? `?${queryString}` : ""}`
     const response = await apiClient.get<CourseReviewsListResponse>(url)
+    return response.data
+  },
+}
+
+// ============================================================================
+// INTERNSHIP API (No authentication required)
+// ============================================================================
+
+// Internship Application Types
+export interface InternshipCreateProfileRequest {
+  email: string
+  first_name: string
+  last_name: string
+  telephone: string
+  hear_about_us?: string
+  country: string
+  state: string
+  institution_type: "university" | "polytechnic" | "college"
+}
+
+export interface InternshipUpdateProfileRequest {
+  first_name?: string
+  last_name?: string
+  telephone?: string
+  hear_about_us?: string
+  country?: string
+  state?: string
+  institution_type?: "university" | "polytechnic" | "college"
+}
+
+export interface InternshipUploadDocumentsRequest {
+  it_letter_url?: string
+  admission_letter_url?: string
+  id_card_url?: string
+  id_type?: "school-id" | "voters-card" | "nin-slip"
+}
+
+export interface InternshipSelectTrackRequest {
+  selected_track: "frontend" | "backend" | "fullstack" | "ai-engineering" | "product-design" | "data-analytics"
+  course_id?: number
+}
+
+export interface InternshipApplicationResponse {
+  application_id: number
+  email: string
+  first_name: string
+  last_name: string
+  telephone: string
+  hear_about_us?: string
+  country: string
+  state: string
+  institution_type: string
+  it_letter_url?: string
+  admission_letter_url?: string
+  id_card_url?: string
+  id_type?: string
+  verification_status: string
+  selected_track?: string
+  course_id?: number
+  status: string
+  acknowledgment_sent: boolean
+  created_at: string
+  updated_at: string
+  submitted_at?: string
+}
+
+export interface InternshipTrack {
+  track_id: string
+  track_name: string
+  description: string
+  level: string
+  courses: Array<{
+    course_id: number
+    title: string
+    description: string
+  }>
+}
+
+export const internshipApi = {
+  /**
+   * Create new internship application profile (Step 1)
+   */
+  createProfile: async (data: InternshipCreateProfileRequest): Promise<InternshipApplicationResponse> => {
+    const response = await apiClient.post<InternshipApplicationResponse>("/internships/applications", data)
+    return response.data
+  },
+
+  /**
+   * Update internship application profile
+   */
+  updateProfile: async (
+    applicationId: number,
+    data: InternshipUpdateProfileRequest
+  ): Promise<InternshipApplicationResponse> => {
+    const response = await apiClient.patch<InternshipApplicationResponse>(
+      `/internships/applications/${applicationId}`,
+      data
+    )
+    return response.data
+  },
+
+  /**
+   * Upload verification documents (Step 2)
+   */
+  uploadDocuments: async (
+    applicationId: number,
+    data: InternshipUploadDocumentsRequest
+  ): Promise<InternshipApplicationResponse> => {
+    const response = await apiClient.post<InternshipApplicationResponse>(
+      `/internships/applications/${applicationId}/documents`,
+      data
+    )
+    return response.data
+  },
+
+  /**
+   * Select learning track and submit application (Step 3)
+   * Triggers acknowledgment email
+   */
+  selectTrack: async (
+    applicationId: number,
+    data: InternshipSelectTrackRequest
+  ): Promise<InternshipApplicationResponse> => {
+    const response = await apiClient.post<InternshipApplicationResponse>(
+      `/internships/applications/${applicationId}/track`,
+      data
+    )
+    return response.data
+  },
+
+  /**
+   * Get application by ID
+   */
+  getApplication: async (applicationId: number): Promise<InternshipApplicationResponse> => {
+    const response = await apiClient.get<InternshipApplicationResponse>(
+      `/internships/applications/${applicationId}`
+    )
+    return response.data
+  },
+
+  /**
+   * Get available internship tracks with courses from backend
+   */
+  getTracks: async (): Promise<InternshipTrack[]> => {
+    const response = await apiClient.get<InternshipTrack[]>("/internships/tracks")
+    return response.data
+  },
+}
+
+// ============================================================================
+// INTERNSHIP ADMIN API (Admin authentication required)
+// ============================================================================
+
+export interface InternshipApplicationAdminResponse extends InternshipApplicationResponse {
+  verification_notes?: string
+  admin_notes?: string
+  reviewed_by?: string
+  reviewed_at?: string
+}
+
+export interface InternshipApplicationsListResponse {
+  applications: InternshipApplicationAdminResponse[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface ApproveApplicationRequest {
+  admin_notes?: string
+}
+
+export interface RejectApplicationRequest {
+  rejection_reason: string
+  admin_notes?: string
+}
+
+export const internshipAdminApi = {
+  /**
+   * List all internship applications (Admin)
+   */
+  listApplications: async (params?: {
+    search?: string
+    status_filter?: string
+    verification_status?: string
+    limit?: number
+    offset?: number
+  }): Promise<InternshipApplicationsListResponse> => {
+    const searchParams = new URLSearchParams()
+    if (params?.search) searchParams.append("search", params.search)
+    if (params?.status_filter) searchParams.append("status_filter", params.status_filter)
+    if (params?.verification_status) searchParams.append("verification_status", params.verification_status)
+    if (params?.limit) searchParams.append("limit", params.limit.toString())
+    if (params?.offset) searchParams.append("offset", params.offset.toString())
+    
+    const query = searchParams.toString()
+    const response = await apiClient.get<InternshipApplicationsListResponse>(
+      `/admin/internships/applications${query ? `?${query}` : ""}`
+    )
+    return response.data
+  },
+
+  /**
+   * Approve internship application (Admin)
+   * Sends approval email to candidate
+   */
+  approveApplication: async (
+    applicationId: number,
+    data: ApproveApplicationRequest
+  ): Promise<InternshipApplicationAdminResponse> => {
+    const response = await apiClient.post<InternshipApplicationAdminResponse>(
+      `/admin/internships/applications/${applicationId}/approve`,
+      data
+    )
+    return response.data
+  },
+
+  /**
+   * Reject internship application (Admin)
+   * Sends rejection email with reason to candidate
+   */
+  rejectApplication: async (
+    applicationId: number,
+    data: RejectApplicationRequest
+  ): Promise<InternshipApplicationAdminResponse> => {
+    const response = await apiClient.post<InternshipApplicationAdminResponse>(
+      `/admin/internships/applications/${applicationId}/reject`,
+      data
+    )
     return response.data
   },
 }

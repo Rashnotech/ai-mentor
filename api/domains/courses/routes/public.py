@@ -19,6 +19,7 @@ from domains.courses.models.course import (
 )
 from domains.courses.schemas.course_schema import (
     CourseListResponse,
+    CourseBriefResponse,
     CourseReviewsListResponse,
     CourseReviewResponse,
 )
@@ -27,6 +28,63 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/public/courses", tags=["public-courses"])
+
+
+@router.get(
+    "/brief",
+    response_model=List[CourseBriefResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List courses with minimal details",
+    description="Get all active courses with only title and description - optimized for onboarding",
+)
+async def list_public_courses_brief(
+    search: Optional[str] = Query(None, description="Search in title or description"),
+    limit: int = Query(50, ge=1, le=100, description="Max results"),
+    offset: int = Query(0, ge=0, description="Skip results"),
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """
+    List all active/published courses with minimal details (title and description only).
+    Optimized for onboarding and course selection where full details aren't needed.
+    
+    **Query Parameters:**
+    - search: Search term for title/description
+    - limit: Maximum results (1-100)
+    - offset: Pagination offset
+    
+    **Returns:**
+    - List of active courses with course_id, title, and description
+    """
+    try:
+        stmt = select(Course).where(Course.is_active == True)
+        
+        if search:
+            search_term = f"%{search}%"
+            stmt = stmt.where(
+                (Course.title.ilike(search_term)) | 
+                (Course.description.ilike(search_term))
+            )
+        
+        stmt = stmt.order_by(Course.created_at.desc()).offset(offset).limit(limit)
+        
+        result = await db_session.execute(stmt)
+        courses = result.scalars().all()
+        
+        return [
+            CourseBriefResponse(
+                course_id=course.course_id,
+                title=course.title,
+                description=course.description,
+            )
+            for course in courses
+        ]
+        
+    except Exception as e:
+        logger.error(f"Error listing brief courses: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching courses",
+        )
 
 
 @router.get(

@@ -68,6 +68,17 @@ class CourseUpdateRequest(BaseModel):
         from_attributes = True
 
 
+class CourseBriefResponse(BaseModel):
+    """Minimal response schema for course list (title and description only)."""
+
+    course_id: int = Field(description="Course ID")
+    title: str = Field(description="Course title")
+    description: str = Field(description="Course description")
+
+    class Config:
+        from_attributes = True
+
+
 class CourseListResponse(BaseModel):
     """Response schema for course list with counts."""
 

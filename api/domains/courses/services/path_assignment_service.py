@@ -80,31 +80,31 @@ class PathAssignmentService:
                     error_code="NO_VALID_PATH",
                 )
 
-            # Create custom path only when profile indicates meaningful personalization benefit
+            # Custom path creation disabled - always use default or existing set path
             best_path_score = self._score_path_for_profile(best_path, profile)
-            if self._should_create_custom_path(profile, best_path):
-                custom_path = await self._create_personalized_path(
-                    user_id=user_id,
-                    course_id=course_id,
-                    profile=profile,
-                    template_path=best_path,
-                )
-
-                if custom_path and await self._path_has_required_lessons(custom_path.path_id):
-                    logger.info(f"Created personalized path {custom_path.path_id} for student {user_id}")
-                    await self._update_user_enrollment(user_id, course_id, custom_path.path_id, profile)
-                    return self._attach_assignment_metadata(
-                        custom_path,
-                        reason="created_profile_custom",
-                        source_path_id=best_path.path_id,
-                        score=best_path_score,
-                    )
-
-                logger.warning(
-                    "Custom path creation skipped or incomplete for user %s, falling back to best/default path %s",
-                    user_id,
-                    best_path.path_id,
-                )
+            # if self._should_create_custom_path(profile, best_path):
+            #     custom_path = await self._create_personalized_path(
+            #         user_id=user_id,
+            #         course_id=course_id,
+            #         profile=profile,
+            #         template_path=best_path,
+            #     )
+            #
+            #     if custom_path and await self._path_has_required_lessons(custom_path.path_id):
+            #         logger.info(f"Created personalized path {custom_path.path_id} for student {user_id}")
+            #         await self._update_user_enrollment(user_id, course_id, custom_path.path_id, profile)
+            #         return self._attach_assignment_metadata(
+            #             custom_path,
+            #             reason="created_profile_custom",
+            #             source_path_id=best_path.path_id,
+            #             score=best_path_score,
+            #         )
+            #
+            #     logger.warning(
+            #         "Custom path creation skipped or incomplete for user %s, falling back to best/default path %s",
+            #         user_id,
+            #         best_path.path_id,
+            #     )
 
             # Reuse best available path (existing curated or default)
             await self._update_user_enrollment(user_id, course_id, best_path.path_id, profile)

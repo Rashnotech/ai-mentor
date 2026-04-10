@@ -27,6 +27,7 @@ const PUBLIC_ROUTES = [
   "/courses",
   "/coures/[slug]",
   "/forgot-password",
+  "/internship",
   "/terms",
   "/privacy",
   "/auth/callback",
