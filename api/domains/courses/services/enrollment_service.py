@@ -6,7 +6,7 @@ Handles course enrollment and personalized path assignment after onboarding.
 from typing import Optional
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from domains.courses.models.course import Course, LearningPath
 from domains.courses.services.path_assignment_service import PathAssignmentService
 from domains.users.models.user import User, UserRole
@@ -313,6 +313,19 @@ class EnrollmentService:
         except Exception as e:
             logger.error(f"Error fetching course: {str(e)}")
             return None
+
+    async def get_course_min_price(self, course_id: int) -> float:
+        """Get minimum learning path price for a course."""
+        try:
+            stmt = select(func.min(LearningPath.price)).where(LearningPath.course_id == course_id)
+            result = await self.db_session.execute(stmt)
+            min_price = result.scalar()
+            if min_price is None:
+                return 0.0
+            return float(min_price)
+        except Exception as e:
+            logger.error(f"Error fetching course minimum price: {str(e)}")
+            return 0.0
 
     async def _create_enrollment_record(
         self,

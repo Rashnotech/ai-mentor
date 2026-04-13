@@ -1352,6 +1352,9 @@ export function CoursesManagementView() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [courseToDelete, setCourseToDelete] = useState<CourseListResponse | null>(null)
+  const [showAssignMentorModal, setShowAssignMentorModal] = useState(false)
+  const [courseToAssignMentor, setCourseToAssignMentor] = useState<CourseListResponse | null>(null)
+  const [selectedMentorId, setSelectedMentorId] = useState("")
   
   // Modal states
   const [showCreateCourseModal, setShowCreateCourseModal] = useState(false)
@@ -1434,6 +1437,21 @@ export function CoursesManagementView() {
     staleTime: 30000, // 30 seconds
   })
 
+  const {
+    data: mentorsData,
+    isLoading: isLoadingMentors,
+  } = useQuery({
+    queryKey: ["admin", "mentors", "course-assignment"],
+    queryFn: () => userAdminApi.listMentors({ is_active: true, limit: 100, offset: 0 }),
+    staleTime: 60000,
+  })
+
+  const mentors = mentorsData?.users || []
+  const mentorNameById = useMemo(
+    () => Object.fromEntries(mentors.map((mentor) => [mentor.id, mentor.full_name])),
+    [mentors]
+  )
+
   // Create course mutation
   const createCourseMutation = useMutation({
     mutationFn: (data: CourseCreatePayload) => courseAdminApi.createCourse(data),
@@ -1483,6 +1501,25 @@ export function CoursesManagementView() {
     },
     onError: (error) => {
       toast.error("Failed to delete course", {
+        description: getApiErrorMessage(error),
+      })
+    },
+  })
+
+  const assignMentorMutation = useMutation({
+    mutationFn: ({ courseId, mentorId }: { courseId: number; mentorId: string }) =>
+      courseAdminApi.assignCourseMentor(courseId, mentorId),
+    onSuccess: (updatedCourse) => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "courses"] })
+      toast.success("Mentor assigned successfully", {
+        description: `"${updatedCourse.title}" is now assigned to a mentor.`,
+      })
+      setShowAssignMentorModal(false)
+      setCourseToAssignMentor(null)
+      setSelectedMentorId("")
+    },
+    onError: (error) => {
+      toast.error("Failed to assign mentor", {
         description: getApiErrorMessage(error),
       })
     },
@@ -2127,6 +2164,25 @@ export function CoursesManagementView() {
     if (courseToDelete) {
       deleteCourseMutation.mutate(courseToDelete.course_id)
     }
+  }
+
+  const handleAssignMentor = (course: CourseListResponse) => {
+    setCourseToAssignMentor(course)
+    setSelectedMentorId(course.created_by || "")
+    setShowAssignMentorModal(true)
+  }
+
+  const handleConfirmAssignMentor = () => {
+    if (!courseToAssignMentor) return
+    if (!selectedMentorId) {
+      toast.error("Please select a mentor")
+      return
+    }
+
+    assignMentorMutation.mutate({
+      courseId: courseToAssignMentor.course_id,
+      mentorId: selectedMentorId,
+    })
   }
 
   const handleAddModule = async () => {
@@ -3597,6 +3653,7 @@ export function CoursesManagementView() {
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Modules</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Hours</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Level</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Assigned Mentor</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
                         <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
                       </tr>
@@ -3640,6 +3697,11 @@ export function CoursesManagementView() {
                               {course.difficulty_level.toLowerCase()}
                             </Badge>
                           </td>
+                          <td className="py-3 px-4 text-sm text-gray-600">
+                            {course.created_by
+                              ? mentorNameById[course.created_by] || "Assigned"
+                              : "Unassigned"}
+                          </td>
                           <td className="py-3 px-4">
                             <Badge
                               className={
@@ -3661,6 +3723,15 @@ export function CoursesManagementView() {
                               >
                                 <FolderTree className="w-4 h-4 mr-1" />
                                 Manage
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 bg-transparent"
+                                onClick={() => handleAssignMentor(course)}
+                              >
+                                <UserCog className="w-4 h-4 mr-1" />
+                                Assign
                               </Button>
                               <Button 
                                 size="sm" 
@@ -3729,6 +3800,74 @@ export function CoursesManagementView() {
                     <>
                       <Trash2 className="w-4 h-4 mr-2" />
                       Delete Course
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        )}
+
+        {showAssignMentorModal && courseToAssignMentor && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <Card className="w-full max-w-lg">
+              <CardHeader>
+                <CardTitle>Assign Mentor</CardTitle>
+                <CardDescription>
+                  Select a mentor for "{courseToAssignMentor.title}".
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {isLoadingMentors ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading mentors...
+                  </div>
+                ) : (
+                  <select
+                    value={selectedMentorId}
+                    onChange={(e) => setSelectedMentorId(e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                  >
+                    <option value="">Select mentor</option>
+                    {mentors.map((mentor) => (
+                      <option key={mentor.id} value={mentor.id}>
+                        {mentor.full_name} ({mentor.email})
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {!isLoadingMentors && mentors.length === 0 && (
+                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
+                    No active mentors found. Promote users to mentors first.
+                  </p>
+                )}
+              </CardContent>
+              <CardFooter className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAssignMentorModal(false)
+                    setCourseToAssignMentor(null)
+                    setSelectedMentorId("")
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={handleConfirmAssignMentor}
+                  disabled={assignMentorMutation.isPending || isLoadingMentors || mentors.length === 0}
+                >
+                  {assignMentorMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Assigning...
+                    </>
+                  ) : (
+                    <>
+                      <UserCog className="w-4 h-4 mr-2" />
+                      Assign Mentor
                     </>
                   )}
                 </Button>

@@ -223,6 +223,8 @@ async def approve_application(
     **Admin Only:** Requires admin role
     """
     try:
+        current_admin_id = current_user.get("user_id")
+
         # Get application
         stmt = select(InternshipApplication).where(
             InternshipApplication.application_id == application_id
@@ -239,7 +241,7 @@ async def approve_application(
         # Update application
         application.status = ApplicationStatus.APPROVED
         application.verification_status = VerificationStatus.VERIFIED
-        application.reviewed_by = current_user.user_id
+        application.reviewed_by = current_admin_id
         application.reviewed_at = datetime.utcnow()
         if request.admin_notes:
             application.admin_notes = request.admin_notes
@@ -249,7 +251,11 @@ async def approve_application(
         
         # Send approval email
         email_service = EmailService()
-        email_sent = await _send_approval_email(email_service, application)
+        email_sent = await _send_approval_email(
+            email_service,
+            application,
+            feedback=request.admin_notes,
+        )
         
         if email_sent:
             application.acceptance_sent = True
@@ -257,7 +263,7 @@ async def approve_application(
             await db_session.refresh(application)
         
         logger.info(
-            f"Application {application_id} approved by admin {current_user.user_id}, "
+            f"Application {application_id} approved by admin {current_admin_id}, "
             f"email sent: {email_sent}"
         )
         
@@ -311,6 +317,8 @@ async def reject_application(
     **Admin Only:** Requires admin role
     """
     try:
+        current_admin_id = current_user.get("user_id")
+
         # Get application
         stmt = select(InternshipApplication).where(
             InternshipApplication.application_id == application_id
@@ -328,7 +336,7 @@ async def reject_application(
         application.status = ApplicationStatus.REJECTED
         application.verification_status = VerificationStatus.REJECTED
         application.verification_notes = request.rejection_reason
-        application.reviewed_by = current_user.user_id
+        application.reviewed_by = current_admin_id
         application.reviewed_at = datetime.utcnow()
         if request.admin_notes:
             application.admin_notes = request.admin_notes
@@ -338,10 +346,16 @@ async def reject_application(
         
         # Send rejection email
         email_service = EmailService()
-        await _send_rejection_email(email_service, application, request.rejection_reason)
+        email_sent = await _send_rejection_email(
+            email_service,
+            application,
+            rejection_reason=request.rejection_reason,
+            feedback=request.admin_notes,
+        )
         
         logger.info(
-            f"Application {application_id} rejected by admin {current_user.user_id}"
+            f"Application {application_id} rejected by admin {current_admin_id}, "
+            f"email sent: {email_sent}"
         )
         
         return _to_admin_response(application)
@@ -364,7 +378,8 @@ async def reject_application(
 
 async def _send_approval_email(
     email_service: EmailService,
-    application: InternshipApplication
+    application: InternshipApplication,
+    feedback: Optional[str] = None,
 ) -> bool:
     """Send approval email to candidate."""
     try:
@@ -398,6 +413,13 @@ async def _send_approval_email(
                     <li>Join our intern orientation session (details coming soon)</li>
                     <li>Get access to your learning materials and mentorship program</li>
                 </ol>
+
+                {f'''
+                <div style="background-color: #ecfeff; border-left: 4px solid #0891b2; padding: 20px; margin-top: 20px; border-radius: 8px;">
+                    <h3 style="margin-top: 0; color: #0e7490;">Feedback from Review Team</h3>
+                    <p style="margin: 0; font-size: 15px; color: #155e75; line-height: 1.6;">{feedback}</p>
+                </div>
+                ''' if feedback else ''}
                 
                 <div style="background-color: #eff6ff; padding: 20px; border-radius: 8px; margin-top: 25px;">
                     <p style="margin: 0; font-size: 14px; color: #1e40af;">
@@ -421,6 +443,9 @@ async def _send_approval_email(
             </div>
         </div>
         """
+        feedback_text = ""
+        if feedback:
+            feedback_text = f"Feedback from Review Team:\n{feedback}\n"
         
         text_content = f"""
         Congratulations!
@@ -439,6 +464,8 @@ async def _send_approval_email(
         2. Complete the required onboarding forms within 3 days
         3. Join our intern orientation session (details coming soon)
         4. Get access to your learning materials and mentorship program
+
+        {feedback_text}
         
         IMPORTANT: Please respond to this email within 48 hours to confirm your acceptance.
         
@@ -466,7 +493,8 @@ async def _send_approval_email(
 async def _send_rejection_email(
     email_service: EmailService,
     application: InternshipApplication,
-    rejection_reason: str
+    rejection_reason: str,
+    feedback: Optional[str] = None,
 ) -> bool:
     """Send rejection email to candidate with reason."""
     try:
@@ -494,6 +522,13 @@ async def _send_rejection_email(
                     <h3 style="margin-top: 0; color: #991b1b;">Feedback:</h3>
                     <p style="margin: 0; font-size: 15px; color: #7f1d1d; line-height: 1.6;">{rejection_reason}</p>
                 </div>
+
+                {f'''
+                <div style="background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 20px; margin: 20px 0; border-radius: 8px;">
+                    <h3 style="margin-top: 0; color: #1d4ed8;">Additional Feedback</h3>
+                    <p style="margin: 0; font-size: 15px; color: #1e3a8a; line-height: 1.6;">{feedback}</p>
+                </div>
+                ''' if feedback else ''}
                 
                 <div style="background-color: #eff6ff; padding: 20px; border-radius: 8px; margin-top: 25px;">
                     <h3 style="margin-top: 0; color: #1e40af; font-size: 18px;">Don't Give Up!</h3>
@@ -519,6 +554,10 @@ async def _send_rejection_email(
             </div>
         </div>
         """
+        feedback_text = ""
+
+        if feedback:
+            feedback_text = f"Additional Feedback:\n{feedback}\n"
         
         text_content = f"""
         Application Status Update
@@ -532,6 +571,8 @@ async def _send_rejection_email(
         
         Feedback:
         {rejection_reason}
+
+        {feedback_text}
         
         Don't Give Up!
         We encourage you to:

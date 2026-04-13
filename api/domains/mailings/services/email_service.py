@@ -127,7 +127,7 @@ class EmailService:
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🔐 Password Reset Request</h1>
+                    <h1>Password Reset Request</h1>
                 </div>
                 <div class="content">
                     <p>Hi {user_name or 'there'},</p>
@@ -147,7 +147,7 @@ class EmailService:
                     </div>
                 </div>
                 <div class="footer">
-                    <p>© 2025 AI Mentor. All rights reserved.</p>
+                    <p>© 2026 AI Mentor. All rights reserved.</p>
                 </div>
             </div>
         </body>
@@ -199,7 +199,7 @@ AI Mentor Team
         Returns:
             True if email was sent successfully, False otherwise
         """
-        subject = "Verify Your Email — AI Mentor"
+        subject = "Welcome to Rashnotech Solutions - Verify Your Email"
 
         html_content = f"""
         <!DOCTYPE html>
@@ -210,16 +210,16 @@ AI Mentor Team
             <style>
                 body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }}
+                .header {{ background: linear-gradient(135deg, #0f766e 0%, #0e7490 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }}
                 .header h1 {{ margin: 0; font-size: 24px; font-weight: 700; }}
                 .content {{ background: #ffffff; padding: 40px 30px; border-radius: 0 0 12px 12px; }}
-                .btn {{ display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 24px 0; }}
+                .btn {{ display: inline-block; background: #0f766e; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 24px 0; }}
                 .divider {{ display: flex; align-items: center; margin: 28px 0; color: #9ca3af; font-size: 13px; }}
                 .divider::before, .divider::after {{ content: ''; flex: 1; border-bottom: 1px solid #e5e7eb; }}
                 .divider::before {{ margin-right: 12px; }}
                 .divider::after {{ margin-left: 12px; }}
-                .code-box {{ background: #f0f4ff; border: 2px dashed #2563eb; border-radius: 12px; padding: 24px; text-align: center; margin: 20px 0; }}
-                .code {{ font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #1e40af; font-family: 'Courier New', monospace; }}
+                .code-box {{ background: #f0fdfa; border: 2px dashed #0f766e; border-radius: 12px; padding: 24px; text-align: center; margin: 20px 0; }}
+                .code {{ font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #115e59; font-family: 'Courier New', monospace; }}
                 .info {{ color: #6b7280; font-size: 14px; margin-top: 24px; }}
                 .footer {{ text-align: center; color: #9ca3af; font-size: 12px; margin-top: 24px; padding: 16px; }}
             </style>
@@ -227,14 +227,15 @@ AI Mentor Team
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>Welcome to AI Mentor! 🎉</h1>
+                    <h1>Welcome to Rashnotech Solutions!</h1>
                 </div>
                 <div class="content">
                     <p>Hi {user_name or 'there'},</p>
-                    <p>Thanks for signing up! Please verify your email address to get started.</p>
+                    <p>Thanks for registering. We are excited to have you onboard at Rashnotech Solutions.</p>
+                    <p>Please verify your email address to complete your registration and continue.</p>
 
                     <div style="text-align: center;">
-                        <a href="{verification_link}" class="btn">Verify My Email</a>
+                        <a href="{verification_link}" class="btn">Verify Email Address</a>
                     </div>
 
                     <div class="divider">or enter this code manually</div>
@@ -245,11 +246,11 @@ AI Mentor Team
 
                     <div class="info">
                         <p>⏱️ This link and code expire in <strong>24 hours</strong>.</p>
-                        <p>If you didn't create an account on AI Mentor, you can safely ignore this email.</p>
+                        <p>If you did not create an account with Rashnotech Solutions, you can safely ignore this email.</p>
                     </div>
                 </div>
                 <div class="footer">
-                    <p>&copy; 2026 AI Mentor. All rights reserved.</p>
+                    <p>&copy; 2026 Rashnotech Solutions. All rights reserved.</p>
                 </div>
             </div>
         </body>
@@ -258,7 +259,7 @@ AI Mentor Team
 
         text_content = f"""Hi {user_name or 'there'},
 
-Thanks for signing up for AI Mentor! Please verify your email address.
+Welcome to Rashnotech Solutions. Please verify your email address to complete your registration.
 
 Click this link to verify: {verification_link}
 
@@ -269,7 +270,7 @@ This link and code expire in 24 hours.
 If you didn't create this account, please ignore this email.
 
 ---
-AI Mentor Team
+Rashnotech Solutions Team
 """
 
         return await self._send_email(

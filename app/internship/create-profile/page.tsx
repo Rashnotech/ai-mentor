@@ -1,7 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { FormEvent, useMemo, useState } from "react"
+import { getApiErrorMessage, internshipApi } from "@/lib/api"
 
 const countries = ["Nigeria", "United States", "Canada", "United Kingdom", "Ghana", "Kenya"]
 
@@ -22,7 +24,59 @@ const steps = [
 ]
 
 export default function InternshipCreateProfilePage() {
+  const router = useRouter()
   const [selectedCountry, setSelectedCountry] = useState("Nigeria")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState("")
+
+  const [formData, setFormData] = useState({
+    email: "",
+    first_name: "",
+    last_name: "",
+    telephone: "",
+    hear_about_us: "",
+    country: "Nigeria",
+    state: "",
+    institution_type: "" as "" | "university" | "polytechnic" | "college",
+  })
+
+  const availableStates = useMemo(() => statesByCountry[selectedCountry] ?? [], [selectedCountry])
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError("")
+
+    if (!formData.state) {
+      setError("Please select your state or territory.")
+      return
+    }
+    if (!formData.institution_type) {
+      setError("Please select your institution type.")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const response = await internshipApi.createProfile({
+        email: formData.email.trim(),
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        telephone: formData.telephone.trim(),
+        hear_about_us: formData.hear_about_us || undefined,
+        country: formData.country,
+        state: formData.state,
+        institution_type: formData.institution_type,
+      })
+
+      localStorage.setItem("internship_application_id", String(response.application_id))
+      router.push("/internship/verification")
+    } catch (submitError) {
+      setError(getApiErrorMessage(submitError))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 px-5 py-8 md:px-10 md:py-10">
@@ -60,7 +114,7 @@ export default function InternshipCreateProfilePage() {
           <section className="rounded-2xl border border-gray-200 bg-white p-6 md:p-8">
             <h1 className="text-3xl font-bold text-gray-900">Create Profile</h1>
 
-            <form className="mt-8 space-y-6">
+            <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label htmlFor="email" className="mb-2 block text-sm font-semibold text-gray-900">
                   Email
@@ -70,6 +124,9 @@ export default function InternshipCreateProfilePage() {
                   name="email"
                   type="email"
                   placeholder="name@example.com"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
                   className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </div>
@@ -84,6 +141,9 @@ export default function InternshipCreateProfilePage() {
                     name="firstName"
                     type="text"
                     placeholder="First name"
+                    required
+                    value={formData.first_name}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, first_name: e.target.value }))}
                     className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                 </div>
@@ -96,6 +156,9 @@ export default function InternshipCreateProfilePage() {
                     name="lastName"
                     type="text"
                     placeholder="Last name"
+                    required
+                    value={formData.last_name}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, last_name: e.target.value }))}
                     className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                 </div>
@@ -110,6 +173,9 @@ export default function InternshipCreateProfilePage() {
                   name="telephone"
                   type="tel"
                   placeholder="e.g. +234 801 234 5678"
+                  required
+                  value={formData.telephone}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, telephone: e.target.value }))}
                   className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </div>
@@ -121,7 +187,8 @@ export default function InternshipCreateProfilePage() {
                 <select
                   id="hearAboutUs"
                   name="hearAboutUs"
-                  defaultValue=""
+                  value={formData.hear_about_us}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, hear_about_us: e.target.value }))}
                   className="h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   <option value="">Select</option>
@@ -143,7 +210,11 @@ export default function InternshipCreateProfilePage() {
                     id="country"
                     name="country"
                     value={selectedCountry}
-                    onChange={(e) => setSelectedCountry(e.target.value)}
+                    onChange={(e) => {
+                      const nextCountry = e.target.value
+                      setSelectedCountry(nextCountry)
+                      setFormData((prev) => ({ ...prev, country: nextCountry, state: "" }))
+                    }}
                     className="h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   >
                     {countries.map((country) => (
@@ -161,14 +232,16 @@ export default function InternshipCreateProfilePage() {
                   <select
                     id="state"
                     name="state"
-                    defaultValue=""
+                    required
+                    value={formData.state}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, state: e.target.value }))}
                     key={selectedCountry}
                     className="h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   >
                     <option value="" disabled>
                       Select a state
                     </option>
-                    {statesByCountry[selectedCountry].map((state) => (
+                    {availableStates.map((state) => (
                       <option key={state} value={state}>
                         {state}
                       </option>
@@ -184,7 +257,14 @@ export default function InternshipCreateProfilePage() {
                 <select
                   id="institution"
                   name="institution"
-                  defaultValue=""
+                  required
+                  value={formData.institution_type}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      institution_type: e.target.value as "" | "university" | "polytechnic" | "college",
+                    }))
+                  }
                   className="h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   <option value="" disabled>
@@ -196,13 +276,20 @@ export default function InternshipCreateProfilePage() {
                 </select>
               </div>
 
+              {error && (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {error}
+                </p>
+              )}
+
               <div className="pt-2">
-                <Link
-                  href="/internship/verification"
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
                   className="inline-flex h-12 items-center justify-center rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700"
                 >
-                  Continue
-                </Link>
+                  {isSubmitting ? "Creating profile..." : "Continue"}
+                </button>
               </div>
             </form>
           </section>

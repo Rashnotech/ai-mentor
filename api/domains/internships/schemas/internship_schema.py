@@ -171,3 +171,27 @@ class InternshipTrackResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class InternshipCourseResponse(BaseModel):
+    """Course summary for internship track selection."""
+
+    course_id: int
+    title: str
+    description: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class InternshipTrackCoursesResponse(BaseModel):
+    """Paginated courses for a track."""
+
+    track_id: str
+    total: int
+    limit: int
+    offset: int
+    courses: list[InternshipCourseResponse] = Field(default_factory=list)
+
+    class Config:
+        from_attributes = True

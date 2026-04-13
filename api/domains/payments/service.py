@@ -18,7 +18,8 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, Optional
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
@@ -43,6 +44,7 @@ class PaymentService:
     def __init__(self, db_session: AsyncSession):
         self.db = db_session
         self._nomba: Optional[NombaService] = None
+        self._enrollment_status_checked = False
 
     @property
     def nomba(self) -> NombaService:
@@ -64,6 +66,8 @@ class PaymentService:
         Create a pending enrollment (if not exists) and a new Nomba checkout order.
         Returns the checkout link for the frontend to redirect the user.
         """
+        await self._ensure_enrollment_status_column()
+
         # 1. Validate course & determine price
         course = await self._get_course(course_id)
         if not course:
@@ -87,11 +91,12 @@ class PaymentService:
                 error_code="COURSE_IS_FREE",
             )
 
-        # 2. Find or create pending enrollment (avoids duplicates)
+        # 2. Find or create pending enrollment (avoids duplicates) and lock it.
         enrollment = await self._get_or_create_pending_enrollment(
             user_id=user_id,
             course_id=course_id,
             path_id=path.path_id if path else None,
+            lock_row=True,
         )
 
         # 2b. If enrollment is already active, reject
@@ -101,6 +106,37 @@ class PaymentService:
                 detail="You are already enrolled in this course",
                 error_code="ALREADY_ENROLLED",
             )
+
+        # 2c. If a successful payment already exists, activate/enforce idempotency.
+        existing_success = await self._get_latest_payment(
+            enrollment_id=enrollment.enrollment_id,
+            status=PaymentStatus.SUCCESSFUL,
+        )
+        if existing_success:
+            await self._activate_enrollment(existing_success, enrollment)
+            await self.db.commit()
+            raise AppError(
+                status_code=409,
+                detail="A successful payment already exists. Enrollment activated.",
+                error_code="ALREADY_PAID",
+            )
+
+        # 2d. Return an existing pending payment to prevent duplicate in-flight transactions.
+        existing_pending = await self._get_latest_payment(
+            enrollment_id=enrollment.enrollment_id,
+            status=PaymentStatus.PENDING,
+        )
+        if existing_pending and existing_pending.nomba_checkout_link:
+            return {
+                "enrollment_id": enrollment.enrollment_id,
+                "payment_id": existing_pending.id,
+                "reference": existing_pending.reference,
+                "amount": float(existing_pending.amount),
+                "currency": existing_pending.currency,
+                "checkout_link": existing_pending.nomba_checkout_link,
+                "status": "pending",
+                "message": "Existing pending payment found. Continue checkout.",
+            }
 
         # 3. Create payment record with unique reference
         reference = _generate_reference()
@@ -153,7 +189,7 @@ class PaymentService:
                 error_code="GATEWAY_ERROR",
             )
 
-        # 6. Store checkout link
+        # 6. Store checkout link (commit transaction on success)
         payment.nomba_checkout_link = checkout_response.checkoutLink
         await self.db.commit()
 
@@ -183,6 +219,8 @@ class PaymentService:
         Server-side verification of a payment using the Nomba API.
         Only activates enrollment after confirmed successful payment.
         """
+        await self._ensure_enrollment_status_column()
+
         payment = await self._get_payment_by_reference(reference)
         if not payment:
             raise AppError(
@@ -255,6 +293,8 @@ class PaymentService:
         Create a new payment attempt for an existing pending enrollment.
         Does NOT create duplicate enrollments.
         """
+        await self._ensure_enrollment_status_column()
+
         enrollment = await self._get_enrollment_by_id(enrollment_id)
         if not enrollment:
             raise AppError(
@@ -288,6 +328,23 @@ class PaymentService:
                 detail="A successful payment already exists. Enrollment activated.",
                 error_code="ALREADY_PAID",
             )
+
+        # If a pending payment already exists, reuse it to avoid parallel retries.
+        existing_pending = await self._get_latest_payment(
+            enrollment_id=enrollment_id,
+            status=PaymentStatus.PENDING,
+        )
+        if existing_pending and existing_pending.nomba_checkout_link:
+            return {
+                "enrollment_id": enrollment_id,
+                "payment_id": existing_pending.id,
+                "reference": existing_pending.reference,
+                "amount": float(existing_pending.amount),
+                "currency": existing_pending.currency,
+                "checkout_link": existing_pending.nomba_checkout_link,
+                "status": "pending",
+                "message": "Existing pending payment found. Continue checkout.",
+            }
 
         # Get course for checkout description
         course = await self._get_course(enrollment.course_id)
@@ -370,6 +427,8 @@ class PaymentService:
         Process Nomba webhook — verify signature, parse event, update payment.
         Handles duplicate webhook calls idempotently.
         """
+        await self._ensure_enrollment_status_column()
+
         webhook_data = await self.nomba.handle_webhook(payload, signature)
         event = webhook_data.get("event", "")
         data = webhook_data.get("data", {})
@@ -423,6 +482,8 @@ class PaymentService:
 
     async def get_payment_status(self, reference: str, user_id: str) -> Dict[str, Any]:
         """Get current payment status for the user."""
+        await self._ensure_enrollment_status_column()
+
         payment = await self._get_payment_by_reference(reference)
         if not payment:
             raise AppError(status_code=404, detail="Payment not found", error_code="PAYMENT_NOT_FOUND")
@@ -451,6 +512,8 @@ class PaymentService:
         self, enrollment_id: int, user_id: str
     ) -> Dict[str, Any]:
         """Get all payment attempts for an enrollment (audit trail)."""
+        await self._ensure_enrollment_status_column()
+
         enrollment = await self._get_enrollment_by_id(enrollment_id)
         if not enrollment:
             raise AppError(status_code=404, detail="Enrollment not found", error_code="ENROLLMENT_NOT_FOUND")
@@ -496,6 +559,8 @@ class PaymentService:
         self, user_id: str, course_id: int
     ) -> Optional[Dict[str, Any]]:
         """Check if user has a pending-payment enrollment for a course."""
+        await self._ensure_enrollment_status_column()
+
         stmt = select(UserCourseEnrollment).where(
             and_(
                 UserCourseEnrollment.user_id == user_id,
@@ -531,6 +596,101 @@ class PaymentService:
 
     # ─── Private Helpers ───────────────────────────────────────────
 
+    async def _ensure_enrollment_status_column(self) -> None:
+        """Hotfix for environments where enrollment_status was not migrated."""
+        if self._enrollment_status_checked:
+            return
+
+        # First do a quick existence check.
+        check_stmt = text(
+            """
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_name = 'user_course_enrollments'
+              AND column_name = 'enrollment_status'
+            LIMIT 1
+            """
+        )
+        exists_result = await self.db.execute(check_stmt)
+        if exists_result.scalar_one_or_none():
+            self._enrollment_status_checked = True
+            return
+
+        logger.warning(
+            "Missing column user_course_enrollments.enrollment_status detected. Applying automatic schema repair."
+        )
+
+        # Ensure enum type exists before adding the column.
+        await self.db.execute(
+            text(
+                """
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1
+                        FROM pg_type
+                        WHERE typname = 'enrollmentstatus'
+                    ) THEN
+                        CREATE TYPE enrollmentstatus AS ENUM ('PENDING_PAYMENT', 'ACTIVE', 'CANCELLED');
+                    END IF;
+                END
+                $$;
+                """
+            )
+        )
+
+        # Determine which enum labels this environment uses.
+        labels_stmt = text(
+            """
+            SELECT enumlabel
+            FROM pg_enum e
+            JOIN pg_type t ON t.oid = e.enumtypid
+            WHERE t.typname = 'enrollmentstatus'
+            """
+        )
+        labels_result = await self.db.execute(labels_stmt)
+        labels = {row[0] for row in labels_result.fetchall()}
+        use_upper_labels = "ACTIVE" in labels
+        active_literal = "ACTIVE" if use_upper_labels else "active"
+        pending_literal = (
+            "PENDING_PAYMENT" if use_upper_labels else "pending_payment"
+        )
+
+        # Add and backfill the status column using existing is_active data.
+        await self.db.execute(
+            text(
+                """
+                ALTER TABLE user_course_enrollments
+                ADD COLUMN IF NOT EXISTS enrollment_status enrollmentstatus
+                """
+            )
+        )
+        await self.db.execute(
+            text(
+                f"""
+                UPDATE user_course_enrollments
+                SET enrollment_status = CASE
+                    WHEN COALESCE(is_active, FALSE) THEN '{active_literal}'::enrollmentstatus
+                    ELSE '{pending_literal}'::enrollmentstatus
+                END
+                WHERE enrollment_status IS NULL
+                """
+            )
+        )
+        await self.db.execute(
+            text(
+                f"""
+                ALTER TABLE user_course_enrollments
+                ALTER COLUMN enrollment_status SET DEFAULT '{active_literal}'::enrollmentstatus,
+                ALTER COLUMN enrollment_status SET NOT NULL
+                """
+            )
+        )
+
+        await self.db.commit()
+        self._enrollment_status_checked = True
+        logger.info("Applied schema repair for user_course_enrollments.enrollment_status")
+
     async def _get_course(self, course_id: int) -> Optional[Course]:
         stmt = select(Course).where(Course.course_id == course_id)
         result = await self.db.execute(stmt)
@@ -563,7 +723,11 @@ class PaymentService:
         return path, price
 
     async def _get_or_create_pending_enrollment(
-        self, user_id: str, course_id: int, path_id: Optional[int] = None
+        self,
+        user_id: str,
+        course_id: int,
+        path_id: Optional[int] = None,
+        lock_row: bool = False,
     ) -> UserCourseEnrollment:
         """
         Find existing enrollment or create a new one with pending_payment status.
@@ -575,6 +739,8 @@ class PaymentService:
                 UserCourseEnrollment.course_id == course_id,
             )
         )
+        if lock_row:
+            stmt = stmt.with_for_update()
         result = await self.db.execute(stmt)
         enrollment = result.scalar_one_or_none()
 
@@ -589,7 +755,24 @@ class PaymentService:
             is_active=False,
         )
         self.db.add(enrollment)
-        await self.db.flush()
+        try:
+            await self.db.flush()
+        except IntegrityError:
+            # Another concurrent request created it first. Re-read the row.
+            await self.db.rollback()
+            retry_stmt = select(UserCourseEnrollment).where(
+                and_(
+                    UserCourseEnrollment.user_id == user_id,
+                    UserCourseEnrollment.course_id == course_id,
+                )
+            )
+            if lock_row:
+                retry_stmt = retry_stmt.with_for_update()
+            retry_result = await self.db.execute(retry_stmt)
+            enrollment = retry_result.scalar_one_or_none()
+            if enrollment:
+                return enrollment
+            raise
 
         logger.info(
             "Created pending enrollment: id=%s user=%s course=%s",
@@ -623,6 +806,16 @@ class PaymentService:
         )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none() is not None
+
+    async def _get_latest_payment(
+        self, enrollment_id: int, status: Optional[PaymentStatus] = None
+    ) -> Optional[Payment]:
+        stmt = select(Payment).where(Payment.enrollment_id == enrollment_id)
+        if status is not None:
+            stmt = stmt.where(Payment.status == status)
+        stmt = stmt.order_by(Payment.created_at.desc())
+        result = await self.db.execute(stmt)
+        return result.scalars().first()
 
     async def _activate_enrollment(
         self, payment: Payment, enrollment: UserCourseEnrollment

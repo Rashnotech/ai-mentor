@@ -669,6 +669,14 @@ async def enroll_in_course(
             )
 
         service = EnrollmentService(db_session)
+
+        min_price = await service.get_course_min_price(course_id)
+        if min_price > 0:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="This is a paid course. Complete payment before enrollment.",
+            )
+
         enrollment = await service.enroll_student_in_course(
             student_id=current_user.get("user_id"),
             course_id=course_id,

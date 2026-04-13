@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import {
   X,
@@ -53,7 +53,7 @@ export function PaymentModal({
   const [state, setState] = useState<ModalState>("loading")
   const [paymentData, setPaymentData] = useState<PaymentInitiatedResponse | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
-  const [checkoutWindow, setCheckoutWindow] = useState<Window | null>(null)
+  const hasInitialized = useRef(false)
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-NG", {
@@ -64,7 +64,7 @@ export function PaymentModal({
   }
 
   // Check for existing pending enrollment
-  const { data: pendingData } = useQuery<PendingEnrollmentResponse>({
+  const { data: pendingData, isLoading: isPendingCheckLoading } = useQuery<PendingEnrollmentResponse>({
     queryKey: ["pending-enrollment", courseId],
     queryFn: () => paymentApi.getPendingEnrollment(courseId),
     enabled: isOpen,
@@ -144,8 +144,15 @@ export function PaymentModal({
       setState("loading")
       setPaymentData(null)
       setErrorMessage("")
+      hasInitialized.current = false
       return
     }
+
+    if (isPendingCheckLoading || hasInitialized.current) {
+      return
+    }
+
+    hasInitialized.current = true
 
     // If there's already a pending enrollment, offer retry
     if (pendingData?.pending && pendingData.enrollment_id) {
@@ -168,37 +175,13 @@ export function PaymentModal({
     } else {
       initiateMutation.mutate()
     }
-  }, [isOpen, pendingData?.pending])
-
-  // Listen for checkout window close
-  useEffect(() => {
-    if (!checkoutWindow || state !== "checkout") return
-
-    const interval = setInterval(() => {
-      if (checkoutWindow.closed) {
-        clearInterval(interval)
-        setCheckoutWindow(null)
-        // Verify payment after user closes checkout window
-        if (paymentData?.reference) {
-          setState("verifying")
-          verifyMutation.mutate(paymentData.reference)
-        }
-      }
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [checkoutWindow, state, paymentData?.reference])
+  }, [isOpen, isPendingCheckLoading, pendingData?.pending, pendingData?.enrollment_id, pendingData?.latest_checkout_link])
 
   const handleOpenCheckout = () => {
     if (!paymentData?.checkout_link) return
 
-    const win = window.open(paymentData.checkout_link, "_blank", "noopener")
-    if (win) {
-      setCheckoutWindow(win)
-    } else {
-      // Popup blocked — redirect instead
-      window.location.href = paymentData.checkout_link
-    }
+    // Redirect to checkout in the same window
+    window.location.href = paymentData.checkout_link
   }
 
   const handleVerifyManually = () => {

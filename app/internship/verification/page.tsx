@@ -1,4 +1,10 @@
+"use client"
+
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { FormEvent, useState } from "react"
+import { getApiErrorMessage, internshipApi } from "@/lib/api"
+import { uploadMultipleToCloudinary } from "@/lib/cloudinary"
 
 const steps = [
   { id: 1, label: "Create profile", status: "done" },
@@ -29,6 +35,54 @@ const uploadSections = [
 ]
 
 export default function InternshipVerificationPage() {
+  const router = useRouter()
+  const [idType, setIdType] = useState<"" | "school-id" | "voters-card" | "nin-slip">("")
+  const [itLetter, setItLetter] = useState<File | null>(null)
+  const [admissionLetter, setAdmissionLetter] = useState<File | null>(null)
+  const [idCard, setIdCard] = useState<File | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState("")
+  const [uploadProgress, setUploadProgress] = useState<"" | "uploading" | "saving">("")
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError("")
+
+    const storedId = localStorage.getItem("internship_application_id")
+    const applicationId = storedId ? Number(storedId) : NaN
+
+    if (!applicationId || Number.isNaN(applicationId)) {
+      setError("Application was not found. Please complete your profile first.")
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      // Step 1: Upload all files to Cloudinary
+      setUploadProgress("uploading")
+      const [itLetterUrl, admissionLetterUrl, idCardUrl] = await uploadMultipleToCloudinary(
+        [itLetter, admissionLetter, idCard],
+        "internship-documents"
+      )
+
+      // Step 2: Send Cloudinary URLs to backend
+      setUploadProgress("saving")
+      await internshipApi.uploadDocuments(applicationId, {
+        it_letter_url: itLetterUrl || undefined,
+        admission_letter_url: admissionLetterUrl || undefined,
+        id_card_url: idCardUrl || undefined,
+        id_type: idType || undefined,
+      })
+
+      router.push("/internship/choose-track")
+    } catch (submitError) {
+      setError(getApiErrorMessage(submitError))
+    } finally {
+      setIsSubmitting(false)
+      setUploadProgress("")
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 px-5 py-8 md:px-10 md:py-10">
       <div className="mx-auto max-w-6xl">
@@ -79,7 +133,7 @@ export default function InternshipVerificationPage() {
               Upload the required documents for review. Once approved, you can move to learning track selection.
             </p>
 
-            <form className="mt-8 space-y-5">
+            <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
               {uploadSections.map((item) => (
                 <div key={item.key} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                   <label htmlFor={item.key} className="block text-sm font-semibold text-gray-900">
@@ -95,7 +149,8 @@ export default function InternshipVerificationPage() {
                       <select
                         id="idType"
                         name="idType"
-                        defaultValue=""
+                        value={idType}
+                        onChange={(e) => setIdType(e.target.value as "" | "school-id" | "voters-card" | "nin-slip")}
                         className="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                       >
                         <option value="" disabled>
@@ -112,19 +167,38 @@ export default function InternshipVerificationPage() {
                     id={item.key}
                     name={item.key}
                     type="file"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null
+                      if (item.key === "it-letter") setItLetter(file)
+                      if (item.key === "admission-letter") setAdmissionLetter(file)
+                      if (item.key === "id-card") setIdCard(file)
+                    }}
                     className="mt-3 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
                   />
                   <p className="mt-2 text-xs text-gray-500">{item.hint}</p>
                 </div>
               ))}
 
+              {error && (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {error}
+                </p>
+              )}
+
               <div className="pt-2">
-                <Link
-                  href="/internship/choose-track"
-                  className="inline-flex h-12 items-center justify-center rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700"
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex h-12 items-center justify-center rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-75"
                 >
-                  Submit for verification
-                </Link>
+                  {uploadProgress === "uploading"
+                    ? "Uploading documents..."
+                    : uploadProgress === "saving"
+                      ? "Saving documents..."
+                      : isSubmitting
+                        ? "Submitting..."
+                        : "Submit for verification"}
+                </button>
               </div>
             </form>
           </section>

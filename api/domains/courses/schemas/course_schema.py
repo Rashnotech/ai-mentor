@@ -68,6 +68,15 @@ class CourseUpdateRequest(BaseModel):
         from_attributes = True
 
 
+class AssignCourseMentorRequest(BaseModel):
+    """Request to assign a mentor to a course."""
+
+    mentor_id: str = Field(..., min_length=1, description="Mentor user ID")
+
+    class Config:
+        from_attributes = True
+
+
 class CourseBriefResponse(BaseModel):
     """Minimal response schema for course list (title and description only)."""
 

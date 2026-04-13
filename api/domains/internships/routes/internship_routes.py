@@ -3,7 +3,7 @@
 Internship application API routes.
 Public endpoints for creating and managing internship applications.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 import logging
@@ -16,6 +16,7 @@ from domains.internships.schemas.internship_schema import (
     SelectTrackRequest,
     InternshipApplicationResponse,
     InternshipTrackResponse,
+    InternshipTrackCoursesResponse,
 )
 from domains.internships.services.internship_service import InternshipService
 from core.errors import AppError
@@ -306,4 +307,39 @@ async def get_tracks(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve tracks",
+        )
+
+
+@router.get(
+    "/tracks/{track_id}/courses",
+    response_model=InternshipTrackCoursesResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get paginated courses for internship track",
+    description="Get paginated courses from the database for the selected internship track",
+)
+async def get_track_courses(
+    track_id: str,
+    limit: int = Query(12, ge=1, le=100, description="Page size"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
+    search: str | None = Query(None, description="Optional text search on course title/description"),
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """Get paginated courses for a selected track."""
+    try:
+        service = InternshipService(db_session)
+        data = await service.get_track_courses(
+            track_id=track_id,
+            limit=limit,
+            offset=offset,
+            search=search,
+        )
+        return data
+
+    except AppError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.error(f"Error getting track courses for {track_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve track courses",
         )

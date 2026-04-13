@@ -7,7 +7,7 @@ import logging
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func, or_
 from sqlalchemy.exc import IntegrityError
 
 from domains.internships.models.internship import (
@@ -23,6 +23,8 @@ from domains.internships.schemas.internship_schema import (
     SelectTrackRequest,
     InternshipApplicationResponse,
     InternshipTrackResponse,
+    InternshipTrackCoursesResponse,
+    InternshipCourseResponse,
 )
 from domains.courses.models.course import Course
 from domains.mailings.services.email_service import EmailService
@@ -33,6 +35,54 @@ logger = logging.getLogger(__name__)
 
 class InternshipService:
     """Service for managing internship applications."""
+
+    TRACKS_METADATA = [
+        {
+            "track_id": "frontend",
+            "track_name": "Frontend Development",
+            "description": "Build responsive web interfaces with modern UI patterns.",
+            "level": "Beginner to Intermediate",
+        },
+        {
+            "track_id": "backend",
+            "track_name": "Backend Development",
+            "description": "Design APIs, authentication, and reliable server workflows.",
+            "level": "Intermediate",
+        },
+        {
+            "track_id": "fullstack",
+            "track_name": "Fullstack Engineering",
+            "description": "Combine frontend and backend skills to ship end-to-end products.",
+            "level": "Intermediate",
+        },
+        {
+            "track_id": "ai-engineering",
+            "track_name": "AI Engineering",
+            "description": "Work on AI-powered features, prompting, and model integration.",
+            "level": "Intermediate to Advanced",
+        },
+        {
+            "track_id": "product-design",
+            "track_name": "Product Design",
+            "description": "Design usable flows, wireframes, and polished product interfaces.",
+            "level": "Beginner to Intermediate",
+        },
+        {
+            "track_id": "data-analytics",
+            "track_name": "Data Analytics",
+            "description": "Analyze data, build dashboards, and generate practical insights.",
+            "level": "Beginner to Intermediate",
+        },
+    ]
+
+    TRACK_KEYWORDS = {
+        "frontend": ["frontend", "front-end", "html", "css", "react", "ui", "web"],
+        "backend": ["backend", "back-end", "api", "server", "database", "python", "node"],
+        "fullstack": ["fullstack", "full-stack", "frontend", "backend", "end-to-end"],
+        "ai-engineering": ["ai", "ml", "machine learning", "llm", "data science"],
+        "product-design": ["design", "ux", "ui", "figma", "product"],
+        "data-analytics": ["data", "analytics", "analysis", "dashboard", "sql", "excel"],
+    }
 
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
@@ -308,75 +358,101 @@ class InternshipService:
         Returns:
             List of tracks with courses
         """
-        # Get all active courses
-        stmt = select(Course).where(Course.is_active == True)
-        result = await self.db_session.execute(stmt)
-        courses = result.scalars().all()
-
-        # Define tracks with their metadata
-        tracks_metadata = [
-            {
-                "track_id": "frontend",
-                "track_name": "Frontend Development",
-                "description": "Build responsive web interfaces with modern UI patterns.",
-                "level": "Beginner to Intermediate",
-            },
-            {
-                "track_id": "backend",
-                "track_name": "Backend Development",
-                "description": "Design APIs, authentication, and reliable server workflows.",
-                "level": "Intermediate",
-            },
-            {
-                "track_id": "fullstack",
-                "track_name": "Fullstack Engineering",
-                "description": "Combine frontend and backend skills to ship end-to-end products.",
-                "level": "Intermediate",
-            },
-            {
-                "track_id": "ai-engineering",
-                "track_name": "AI Engineering",
-                "description": "Work on AI-powered features, prompting, and model integration.",
-                "level": "Intermediate to Advanced",
-            },
-            {
-                "track_id": "product-design",
-                "track_name": "Product Design",
-                "description": "Design usable flows, wireframes, and polished product interfaces.",
-                "level": "Beginner to Intermediate",
-            },
-            {
-                "track_id": "data-analytics",
-                "track_name": "Data Analytics",
-                "description": "Analyze data, build dashboards, and generate practical insights.",
-                "level": "Beginner to Intermediate",
-            },
-        ]
-
-        # Convert courses to simple dict format
-        course_list = [
-            {
-                "course_id": course.course_id,
-                "title": course.title,
-                "description": course.description,
-            }
-            for course in courses
-        ]
-
         # Build track responses
         tracks = []
-        for track_meta in tracks_metadata:
+        for track_meta in self.TRACKS_METADATA:
             tracks.append(
                 InternshipTrackResponse(
                     track_id=track_meta["track_id"],
                     track_name=track_meta["track_name"],
                     description=track_meta["description"],
                     level=track_meta["level"],
-                    courses=course_list,  # All tracks get same course list for now
+                    courses=[],
                 )
             )
 
         return tracks
+
+    async def get_track_courses(
+        self, track_id: str, limit: int = 12, offset: int = 0, search: Optional[str] = None
+    ) -> InternshipTrackCoursesResponse:
+        """Get paginated courses for a track selection view."""
+        track_ids = {track["track_id"] for track in self.TRACKS_METADATA}
+        if track_id not in track_ids:
+            raise AppError(
+                status_code=404,
+                detail=f"Track {track_id} not found",
+                error_code="TRACK_NOT_FOUND",
+            )
+
+        base_filters = [Course.is_active == True]
+        if search:
+            search_term = f"%{search.strip()}%"
+            base_filters.append(
+                or_(
+                    Course.title.ilike(search_term),
+                    Course.description.ilike(search_term),
+                    Course.slug.ilike(search_term),
+                )
+            )
+
+        keywords = self.TRACK_KEYWORDS.get(track_id, [])
+        track_filter = None
+        if keywords:
+            track_filter = or_(
+                *[
+                    or_(
+                        Course.title.ilike(f"%{keyword}%"),
+                        Course.description.ilike(f"%{keyword}%"),
+                        Course.slug.ilike(f"%{keyword}%"),
+                    )
+                    for keyword in keywords
+                ]
+            )
+
+        filters_with_track = list(base_filters)
+        if track_filter is not None:
+            filters_with_track.append(track_filter)
+
+        total_stmt = select(func.count(Course.course_id)).where(*filters_with_track)
+        total = (await self.db_session.execute(total_stmt)).scalar_one()
+
+        stmt = (
+            select(Course)
+            .where(*filters_with_track)
+            .order_by(Course.course_id.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        courses = (await self.db_session.execute(stmt)).scalars().all()
+
+        # Fallback to all active courses for this view if strict keyword matching returns no data.
+        if total == 0 and not search:
+            fallback_total_stmt = select(func.count(Course.course_id)).where(*base_filters)
+            total = (await self.db_session.execute(fallback_total_stmt)).scalar_one()
+            fallback_stmt = (
+                select(Course)
+                .where(*base_filters)
+                .order_by(Course.course_id.desc())
+                .offset(offset)
+                .limit(limit)
+            )
+            courses = (await self.db_session.execute(fallback_stmt)).scalars().all()
+
+        return InternshipTrackCoursesResponse(
+            track_id=track_id,
+            total=int(total),
+            limit=limit,
+            offset=offset,
+            courses=[
+                InternshipCourseResponse(
+                    course_id=course.course_id,
+                    title=course.title,
+                    description=course.description,
+                )
+                for course in courses
+            ],
+        )
 
     # ====================================================================
     # Private helper methods

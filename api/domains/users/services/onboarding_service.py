@@ -5,9 +5,13 @@ Onboarding service for managing user profile setup after signup.
 from typing import Optional
 from datetime import datetime, timezone as tz
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from domains.users.models.onboarding import UserProfile
 from domains.bootcamps.models import Bootcamp, BootcampEnrollment, BootcampStatus, EnrollmentPaymentStatus
+from domains.courses.models.course import LearningPath
+from domains.courses.models.progress import UserCourseEnrollment
+from domains.payments.models import EnrollmentStatus
+from domains.courses.services.enrollment_service import EnrollmentService
 from core.constant import SkillLevel, LearningStyle, LearningMode, UserGoal
 from core.errors import AppError
 import logging
@@ -204,6 +208,40 @@ class OnboardingService:
             if profile.learning_mode == LearningMode.BOOTCAMP and profile.selected_course_id:
                 await self._enroll_user_in_bootcamp(user_id, profile.selected_course_id)
 
+            # Handle self-paced course enrollment/payment checks
+            if profile.learning_mode == LearningMode.SELF_PACED and profile.selected_course_id:
+                course_id = self._parse_course_id(profile.selected_course_id)
+                if course_id is None:
+                    raise AppError(
+                        status_code=400,
+                        detail="Invalid selected course. Please reselect a course.",
+                        error_code="INVALID_SELECTED_COURSE",
+                    )
+
+                min_price = await self._get_course_min_price(course_id)
+                if min_price > 0:
+                    # Paid course: must already have active enrollment from verified payment.
+                    active_stmt = select(UserCourseEnrollment).where(
+                        UserCourseEnrollment.user_id == user_id,
+                        UserCourseEnrollment.course_id == course_id,
+                        UserCourseEnrollment.enrollment_status == EnrollmentStatus.ACTIVE,
+                    )
+                    active_result = await self.db_session.execute(active_stmt)
+                    active_enrollment = active_result.scalar_one_or_none()
+                    if not active_enrollment:
+                        raise AppError(
+                            status_code=400,
+                            detail="Please complete payment for your selected course before finishing onboarding.",
+                            error_code="PAYMENT_REQUIRED",
+                        )
+                else:
+                    # Free course: auto-enroll if needed.
+                    enrollment_service = EnrollmentService(self.db_session)
+                    await enrollment_service.enroll_student_in_course(
+                        student_id=user_id,
+                        course_id=course_id,
+                    )
+
             profile.onboarding_completed = True
             profile.onboarding_completed_at = datetime.now(tz.utc)
             profile.updated_at = datetime.now(tz.utc)
@@ -324,3 +362,17 @@ class OnboardingService:
                 detail="Error enrolling in bootcamp",
                 error_code="BOOTCAMP_ENROLLMENT_ERROR",
             )
+
+    def _parse_course_id(self, selected_course_id: str) -> Optional[int]:
+        try:
+            return int(selected_course_id)
+        except (TypeError, ValueError):
+            return None
+
+    async def _get_course_min_price(self, course_id: int) -> float:
+        stmt = select(func.min(LearningPath.price)).where(LearningPath.course_id == course_id)
+        result = await self.db_session.execute(stmt)
+        min_price = result.scalar()
+        if min_price is None:
+            return 0.0
+        return float(min_price)

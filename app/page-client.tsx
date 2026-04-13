@@ -29,11 +29,9 @@ const footerLinks = {
   programmes: [
     "All Programmes",
     "Data Science",
-    "Data Engineering",
     "Data Analytics",
     "AI Career Essentials",
     "Virtual Assistant",
-    "Professional Foundations",
     "Graphic Design",
     "Cybersecurity",
   ],
@@ -44,7 +42,6 @@ const footerLinks = {
   ],
   about: [
     "Hubs",
-    "Learner Voices",
     "Blog",
     "Careers",
   ],
@@ -195,8 +192,8 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-24 overflow-hidden relative min-h-[80vh] flex items-center"
-        style={{backgroundImage: `url('/bg_hero.png')`}}
+      <section className="pt-32 pb-24 overflow-hidden bg-center bg-blend-overlay bg-[#151923] bg-cover relative min-h-[80vh] flex items-center"
+        style={{backgroundImage: `url('/hub-4.jpg')`}}
       >
         {/* Grid background */}
         <div className="absolute inset-0 opacity-20">
@@ -227,7 +224,7 @@ export default function LandingPage() {
                 href="/courses"
                 className="px-8 py-4 bg-transparent hover:bg-white/5 text-white border border-white/30 font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
               >
-                LearnTech for Business
+                Learn Tech for Business
               </Link>
             </div>
             
@@ -592,7 +589,7 @@ export default function LandingPage() {
           {/* Bottom Footer */}
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-4 text-sm text-gray-500">
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
+              <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy</Link>
               <span>|</span>
               <a href="#" className="hover:text-white transition-colors">Cookies Policy</a>
               <span>|</span>
@@ -602,7 +599,7 @@ export default function LandingPage() {
               <div className="bg-blue-600 p-1 rounded-lg">
                 <img src="/mylogo.png" className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold tracking-tight text-white">RashnoTech</span>
+              <span className="text-xl font-bold tracking-tight text-white">Rashnotech</span>
             </div>
           </div>
         </div>

@@ -1501,6 +1501,20 @@ export interface InternshipTrack {
   }>
 }
 
+export interface InternshipTrackCourse {
+  course_id: number
+  title: string
+  description?: string
+}
+
+export interface InternshipTrackCoursesResponse {
+  track_id: string
+  total: number
+  limit: number
+  offset: number
+  courses: InternshipTrackCourse[]
+}
+
 export const internshipApi = {
   /**
    * Create new internship application profile (Step 1)
@@ -1568,6 +1582,25 @@ export const internshipApi = {
    */
   getTracks: async (): Promise<InternshipTrack[]> => {
     const response = await apiClient.get<InternshipTrack[]>("/internships/tracks")
+    return response.data
+  },
+
+  /**
+   * Get paginated courses for a selected track
+   */
+  getTrackCourses: async (
+    trackId: string,
+    params?: { limit?: number; offset?: number; search?: string }
+  ): Promise<InternshipTrackCoursesResponse> => {
+    const searchParams = new URLSearchParams()
+    if (params?.limit) searchParams.append("limit", params.limit.toString())
+    if (typeof params?.offset === "number") searchParams.append("offset", params.offset.toString())
+    if (params?.search) searchParams.append("search", params.search)
+
+    const query = searchParams.toString()
+    const response = await apiClient.get<InternshipTrackCoursesResponse>(
+      `/internships/tracks/${trackId}/courses${query ? `?${query}` : ""}`
+    )
     return response.data
   },
 }
@@ -1722,6 +1755,13 @@ export const courseAdminApi = {
 
   updateCourse: async (courseId: number, data: CourseUpdatePayload): Promise<CourseResponse> => {
     const response = await apiClient.put<CourseResponse>(`/courses/${courseId}`, data)
+    return response.data
+  },
+
+  assignCourseMentor: async (courseId: number, mentorId: string): Promise<CourseResponse> => {
+    const response = await apiClient.post<CourseResponse>(`/courses/${courseId}/assign-mentor`, {
+      mentor_id: mentorId,
+    })
     return response.data
   },
 

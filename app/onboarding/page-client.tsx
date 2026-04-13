@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { CheckCircle2, ChevronRight, BookOpen, Rocket, Briefcase, Trophy, Code2, Brain, Check, Users, Sparkles, Database, Globe, Smartphone, Loader2 } from "lucide-react"
 import { onboardingApi, publicCourseApi, getApiErrorMessage, type UserGoal, type CourseBriefResponse } from "@/lib/api"
 import { useUserStore } from "@/lib/stores/user-store"
+import { PaymentModal } from "@/components/payment-modal"
 
 // Steps:
 // Bootcamp: Goal Selection → Result (quiz skipped - course already selected)
@@ -55,6 +56,8 @@ interface SelfPacedCourse {
   modules: number
   level: "Beginner" | "Intermediate" | "Advanced" | "All Levels"
   skills: string[]
+  slug: string
+  price: number
 }
 
 // Map API difficulty levels to UI levels
@@ -81,7 +84,7 @@ function getIconForCourse(title: string): "code" | "database" | "globe" | "mobil
 }
 
 // Transform API response to UI format
-function mapCourseToSelfPaced(course: CourseBriefResponse): SelfPacedCourse {
+function mapCourseToSelfPaced(course: CourseBriefResponse & { slug?: string; min_price?: number }): SelfPacedCourse {
   return {
     id: course.course_id.toString(),
     title: course.title,
@@ -91,6 +94,8 @@ function mapCourseToSelfPaced(course: CourseBriefResponse): SelfPacedCourse {
     modules: 0, // Not available in brief response
     level: "All Levels", // Not available in brief response
     skills: [], // Not available in brief response
+    slug: course.slug || "",
+    price: course.min_price || 0,
   }
 }
 
@@ -139,14 +144,15 @@ export default function OnboardingPage() {
   const [learningMode, setLearningMode] = useState<string | null>(null)
   const [cohortId, setCohortId] = useState<string | null>(null)
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
 
   // Simulation for the adaptive assessment
   const [assessmentProgress, setAssessmentProgress] = useState(0)
 
-  // Fetch available courses for self-paced mode (only title and description)
+  // Fetch available courses for self-paced mode
   const { data: coursesData, isLoading: isLoadingCourses } = useQuery({
-    queryKey: ["public", "courses", "brief"],
-    queryFn: () => publicCourseApi.listCoursesBrief(),
+    queryKey: ["public", "courses", "onboarding"],
+    queryFn: () => publicCourseApi.listCourses({ limit: 100 }),
     staleTime: 60000,
     enabled: learningMode === "self-paced", // Only fetch if in self-paced mode
   })
@@ -172,6 +178,15 @@ export default function OnboardingPage() {
     },
     onError: (error) => {
       toast.error("Failed to save goal", {
+        description: getApiErrorMessage(error),
+      })
+    },
+  })
+
+  const updateSelectionMutation = useMutation({
+    mutationFn: async (courseId: string) => onboardingApi.update({ selected_course_id: courseId }),
+    onError: (error) => {
+      toast.error("Failed to save selected course", {
         description: getApiErrorMessage(error),
       })
     },
@@ -236,6 +251,23 @@ export default function OnboardingPage() {
       updateGoalMutation.mutate(selectedGoal)
     }
     
+    // Self-paced mode: after course selection, persist selection and trigger payment if needed.
+    if (learningMode === "self-paced" && step === 2) {
+      if (!selectedCourseId) return
+
+      try {
+        await updateSelectionMutation.mutateAsync(selectedCourseId)
+      } catch {
+        return
+      }
+
+      const selected = selfPacedCourses.find((c) => c.id === selectedCourseId)
+      if (selected && selected.price > 0) {
+        setShowPaymentModal(true)
+        return
+      }
+    }
+
     // Bootcamp mode: Skip step 2 (course selection) and step 3 (processing)
     // Go directly from goals (step 1) to result (step 4)
     if (learningMode === "bootcamp" && step === 1) {
@@ -256,6 +288,11 @@ export default function OnboardingPage() {
   }
 
   const selectedCourse = selfPacedCourses.find(c => c.id === selectedCourseId)
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentModal(false)
+    setStep(3)
+  }
 
   // Get total steps based on mode
   const getTotalSteps = () => (learningMode === "bootcamp" ? 4 : 5)
@@ -419,7 +456,7 @@ export default function OnboardingPage() {
               {/* Info Banner */}
               <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-8">
                 <div className="flex items-start gap-3">
-                  <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <Sparkles className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
                   <div>
                     <h4 className="font-semibold text-purple-900 mb-1">
                       AI-Personalized Learning
@@ -435,14 +472,14 @@ export default function OnboardingPage() {
               <div className="flex justify-end w-full">
                 <button
                   onClick={handleNext}
-                  disabled={!selectedCourseId}
+                  disabled={!selectedCourseId || updateSelectionMutation.isPending}
                   className={`flex items-center gap-2 px-8 py-3 rounded-lg font-semibold transition-all ${
                     selectedCourseId
                       ? "bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-600/20"
                       : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}
                 >
-                  Continue
+                  {updateSelectionMutation.isPending ? "Saving..." : "Continue"}
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -578,6 +615,20 @@ export default function OnboardingPage() {
           )}
         </div>
       </div>
+
+      {selectedCourse && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={handlePaymentSuccess}
+          courseId={Number(selectedCourse.id)}
+          courseTitle={selectedCourse.title}
+          courseDescription={selectedCourse.description}
+          price={selectedCourse.price}
+          currency="NGN"
+          slug={selectedCourse.slug}
+        />
+      )}
     </div>
   )
 }
