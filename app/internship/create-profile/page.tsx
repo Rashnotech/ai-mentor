@@ -2,8 +2,31 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { FormEvent, useMemo, useState } from "react"
+import { FormEvent, useEffect, useMemo, useState } from "react"
 import { getApiErrorMessage, internshipApi } from "@/lib/api"
+
+const getStatesFromApi = async () => {
+  const response = await fetch("https://nga-states-lga.onrender.com/fetch")
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch states")
+  }
+
+  const json: unknown = await response.json()
+
+  if (Array.isArray(json)) {
+    return json.filter((item): item is string => typeof item === "string")
+  }
+
+  if (json && typeof json === "object" && "states" in json) {
+    const states = (json as { states?: unknown }).states
+    if (Array.isArray(states)) {
+      return states.filter((item): item is string => typeof item === "string")
+    }
+  }
+
+  return []
+}
 
 const countries = ["Nigeria", "United States", "Canada", "United Kingdom", "Ghana", "Kenya"]
 
@@ -28,6 +51,8 @@ export default function InternshipCreateProfilePage() {
   const [selectedCountry, setSelectedCountry] = useState("Nigeria")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [apiStates, setApiStates] = useState<string[]>([])
+  const [isLoadingStates, setIsLoadingStates] = useState(false)
 
   const [formData, setFormData] = useState({
     email: "",
@@ -40,7 +65,40 @@ export default function InternshipCreateProfilePage() {
     institution_type: "" as "" | "university" | "polytechnic" | "college",
   })
 
-  const availableStates = useMemo(() => statesByCountry[selectedCountry] ?? [], [selectedCountry])
+  useEffect(() => {
+    let isMounted = true
+
+    const loadStates = async () => {
+      setIsLoadingStates(true)
+      try {
+        const states = await getStatesFromApi()
+        if (isMounted && Array.isArray(states)) {
+          setApiStates(states)
+        }
+      } catch {
+        if (isMounted) {
+          setApiStates([])
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingStates(false)
+        }
+      }
+    }
+
+    loadStates()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const availableStates = useMemo(() => {
+    if (selectedCountry === "Nigeria" && apiStates.length > 0) {
+      return apiStates
+    }
+    return statesByCountry[selectedCountry] ?? []
+  }, [apiStates, selectedCountry])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -236,10 +294,11 @@ export default function InternshipCreateProfilePage() {
                     value={formData.state}
                     onChange={(e) => setFormData((prev) => ({ ...prev, state: e.target.value }))}
                     key={selectedCountry}
+                    disabled={selectedCountry === "Nigeria" && isLoadingStates}
                     className="h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   >
                     <option value="" disabled>
-                      Select a state
+                      {selectedCountry === "Nigeria" && isLoadingStates ? "Loading states..." : "Select a state"}
                     </option>
                     {availableStates.map((state) => (
                       <option key={state} value={state}>
