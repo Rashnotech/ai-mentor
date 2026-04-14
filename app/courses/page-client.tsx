@@ -101,9 +101,9 @@ export default function CoursesPage() {
               <a href="#" className="hover:text-white transition-colors">
                 AI Features
               </a>
-              <a href="#" className="hover:text-white transition-colors">
+              <Link href="/internship" className="hover:text-white transition-colors">
                 Internship
-              </a>
+              </Link>
               <a href="#" className="hover:text-white transition-colors">
                 Services
               </a>
@@ -180,7 +180,7 @@ export default function CoursesPage() {
               <a href="#" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 AI Features
               </a>
-              <a href="#" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+              <a href="/internship" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 Internship
               </a>
               <a href="#" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">

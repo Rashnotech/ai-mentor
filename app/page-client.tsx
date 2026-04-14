@@ -163,7 +163,7 @@ export default function LandingPage() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/5 bg-[#1a1f2e]/95 backdrop-blur-md">
             <div className="flex flex-col px-6 py-4 gap-1">
-              <a href="#courses" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+              <a href="/courses" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 Courses
               </a>
               <a href="#ai-features" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
