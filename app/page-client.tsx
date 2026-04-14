@@ -119,7 +119,7 @@ export default function LandingPage() {
               <span className="text-xl font-bold tracking-tight text-white">Rashnotech</span>
             </Link>
             <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-300">
-              <a href="#courses" className="hover:text-white transition-colors">
+              <a href="/courses" className="hover:text-white transition-colors">
                 Courses
               </a>
               <a href="#ai-features" className="hover:text-white transition-colors">
