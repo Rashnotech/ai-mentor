@@ -15,6 +15,7 @@ from domains.courses.schemas.course_schema import (
     CourseCreateRequest,
     CourseResponse,
     CourseUpdateRequest,
+    AssignCourseMentorRequest,
     CourseListResponse,
     LearningPathCreateRequest,
     LearningPathUpdateRequest,
@@ -423,6 +424,105 @@ async def get_mentor_students(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error getting mentor students",
+        )
+
+
+@router.post(
+    "/{course_id}/assign-mentor",
+    response_model=CourseResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Assign mentor to a course",
+    description="Assign a mentor user to a course (admin only)",
+)
+async def assign_course_mentor(
+    course_id: int,
+    request: AssignCourseMentorRequest,
+    current_user: User = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """
+    Assign a mentor to a course.
+
+    **Path Parameters:**
+    - course_id: Course ID
+
+    **Request Body:**
+    - mentor_id: User ID of mentor to assign
+
+    **Returns:**
+    - Updated course details
+    """
+    try:
+        if current_user.get("role") != UserRole.ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only admins can assign mentors to courses",
+            )
+
+        course_stmt = select(Course).where(Course.course_id == course_id)
+        course_result = await db_session.execute(course_stmt)
+        course = course_result.scalar_one_or_none()
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Course not found",
+            )
+
+        mentor_stmt = select(User).where(User.id == request.mentor_id)
+        mentor_result = await db_session.execute(mentor_stmt)
+        mentor = mentor_result.scalar_one_or_none()
+        if not mentor:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Mentor user not found",
+            )
+
+        if mentor.role not in [UserRole.MENTOR, UserRole.MENTOR.value]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Selected user is not a mentor",
+            )
+
+        if not mentor.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Selected mentor is inactive",
+            )
+
+        course.created_by = mentor.id
+
+        await db_session.commit()
+        await db_session.refresh(course)
+
+        logger.info(
+            f"Course {course.course_id} assigned to mentor {mentor.id} by admin {current_user.get('email')}"
+        )
+
+        return CourseResponse(
+            course_id=course.course_id,
+            title=course.title,
+            slug=course.slug,
+            description=course.description,
+            estimated_hours=course.estimated_hours,
+            difficulty_level=course.difficulty_level,
+            is_active=course.is_active,
+            prerequisites=course.prerequisites or [],
+            what_youll_learn=course.what_youll_learn or [],
+            certificate_on_completion=course.certificate_on_completion or False,
+            average_rating=course.average_rating or 0,
+            total_reviews=course.total_reviews or 0,
+            created_by=course.created_by,
+            created_at=course.created_at.isoformat(),
+            updated_at=course.updated_at.isoformat(),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error assigning mentor to course {course_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error assigning mentor to course",
         )
 
 
