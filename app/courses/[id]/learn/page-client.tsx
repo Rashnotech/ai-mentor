@@ -34,6 +34,7 @@ import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
 import { useUserStore } from "@/lib/stores/user-store"
 import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 // ============================================
 // USER AVATAR DROPDOWN COMPONENT
@@ -510,8 +511,15 @@ function LessonContentView({ lesson, onComplete, onNext, hasNext, isCompleting }
           </h3>
           <div className="prose prose-gray max-w-none">
             <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
               components={{
                 h1: ({ children }) => <h1 className="text-2xl font-bold text-gray-900 mt-4 mb-2">{children}</h1>,
+                table: ({ children }) => <table className="table-auto w-full border-collapse border border-gray-300">{children}</table>,
+                thead: ({ children }) => <thead className="bg-gray-100">{children}</thead>,
+                th: ({ children }) => <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-900">{children}</th>,
+                tr: ({ children }) => <tr className="border border-gray-300">{children}</tr>,
+                td: ({ children }) => <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">{children}</td>,
+                tbody: ({ children }) => <tbody>{children}</tbody>,
                 h2: ({ children }) => <h2 className="text-xl font-bold text-gray-900 mt-4 mb-2">{children}</h2>,
                 h3: ({ children }) => <h3 className="text-lg font-semibold text-gray-900 mt-4 mb-2">{children}</h3>,
                 p: ({ children }) => <p className="text-gray-700 leading-relaxed my-2">{children}</p>,
@@ -669,8 +677,17 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext }: ProjectConte
         {project.description && (
           <div className="prose prose-gray max-w-none">
             <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
               components={{
                 p: ({ children }) => <p className="text-gray-600 leading-relaxed my-2">{children}</p>,
+                table: ({ children }) => <table className="table-auto w-full border-collapse border border-gray-300">{children}</table>,
+                thead: ({ children }) => <thead className="bg-gray-100">{children}</thead>,
+                th: ({ children }) => <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-900">{children}</th>,
+                tr: ({ children }) => <tr className="border border-gray-300">{children}</tr>,
+                td: ({ children }) => <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">{children}</td>,
+                tbody: ({ children }) => <tbody>{children}</tbody>,
+                h2: ({ children }) => <h2 className="text-xl font-bold text-gray-900 mt-4 mb-2">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-lg font-semibold text-gray-900 mt-4 mb-2">{children}</h3>,
                 ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 text-gray-600">{children}</ul>,
                 ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 text-gray-600">{children}</ol>,
                 li: ({ children }) => <li className="text-gray-600">{children}</li>,
