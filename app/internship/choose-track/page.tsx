@@ -2,12 +2,14 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Code2, Globe, Database, Brain, PenSquare, BarChart3, CheckCircle2 } from "lucide-react"
 import {
   getApiErrorMessage,
   internshipApi,
   InternshipTrack,
+  InternshipTrackCourse,
+  InternshipTrackCoursesResponse,
 } from "@/lib/api"
 
 const steps = [
@@ -32,7 +34,12 @@ export default function InternshipChooseTrackPage() {
   const router = useRouter()
   const [tracks, setTracks] = useState<InternshipTrack[]>([])
   const [selectedTrack, setSelectedTrack] = useState<string>("")
+  const [coursesPage, setCoursesPage] = useState<InternshipTrackCoursesResponse | null>(null)
+  const [selectedCourseId, setSelectedCourseId] = useState<number | undefined>()
+  const [offset, setOffset] = useState(0)
+  const [search, setSearch] = useState("")
   const [tracksLoading, setTracksLoading] = useState(true)
+  const [coursesLoading, setCoursesLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
 
@@ -54,6 +61,29 @@ export default function InternshipChooseTrackPage() {
     }
     void loadTracks()
   }, [])
+
+  useEffect(() => {
+    if (!selectedTrack) return
+
+    const loadCourses = async () => {
+      setCoursesLoading(true)
+      setError("")
+      try {
+        const data = await internshipApi.getTrackCourses(selectedTrack, {
+          limit: PAGE_SIZE,
+          offset,
+          search: search.trim() || undefined,
+        })
+        setCoursesPage(data)
+      } catch (loadError) {
+        setError(getApiErrorMessage(loadError))
+      } finally {
+        setCoursesLoading(false)
+      }
+    }
+
+    void loadCourses()
+  }, [selectedTrack, offset, search])
 
   const handleContinue = async () => {
     setError("")
@@ -80,6 +110,7 @@ export default function InternshipChooseTrackPage() {
           | "ai-engineering"
           | "product-design"
           | "data-analytics",
+        course_id: selectedCourseId,
       })
       router.push("/internship/get-acceptance")
     } catch (submitError) {
@@ -89,8 +120,20 @@ export default function InternshipChooseTrackPage() {
     }
   }
 
+  const totalPages = useMemo(() => {
+    if (!coursesPage) return 1
+    return Math.max(1, Math.ceil(coursesPage.total / coursesPage.limit))
+  }, [coursesPage])
+
+  const currentPage = useMemo(() => {
+    if (!coursesPage) return 1
+    return Math.floor(coursesPage.offset / coursesPage.limit) + 1
+  }, [coursesPage])
+
   const onTrackClick = (trackId: string) => {
     setSelectedTrack(trackId)
+    setOffset(0)
+    setSelectedCourseId(undefined)
   }
 
   return (
@@ -144,51 +187,76 @@ export default function InternshipChooseTrackPage() {
             <p className="mt-2 text-sm text-gray-600">
               Pick one track for your internship focus. You can request a switch during mentor review.
             </p>
+            <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <input
+                  value={search}
+                  onChange={(e) => {
+                    setOffset(0)
+                    setSearch(e.target.value)
+                  }}
+                  placeholder="Search courses"
+                  className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:w-64"
+                />
+              </div>
 
-            <div className="mt-8 grid gap-4 md:grid-cols-2">
-              {!tracksLoading && tracks.map((track) => {
-                const Icon = iconByTrack[track.track_id] ?? Globe
-                const isSelected = selectedTrack === track.track_id
+              <div className="space-y-2">
+                {coursesLoading && <p className="text-sm text-gray-600">Loading courses...</p>}
 
-                return (
+                {!coursesLoading && coursesPage?.courses.length === 0 && (
+                  <p className="text-sm text-gray-600">No courses found for this query.</p>
+                )}
+
+                {!coursesLoading &&
+                  coursesPage?.courses.map((course: InternshipTrackCourse) => {
+                    const isSelected = selectedCourseId === course.course_id
+                    return (
+                      <button
+                        key={course.course_id}
+                        type="button"
+                        onClick={() => setSelectedCourseId(course.course_id)}
+                        className={`w-full rounded-lg border p-3 text-left transition ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 bg-white hover:border-blue-300"
+                        }`}
+                      >
+                        <p className="text-sm font-semibold text-gray-900">{course.title}</p>
+                        {course.description && (
+                          <p className="mt-1 line-clamp-2 text-xs text-gray-600">{course.description}</p>
+                        )}
+                      </button>
+                    )
+                  })}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-xs text-gray-500">
+                  Page {currentPage} of {totalPages}
+                </p>
+                <div className="flex items-center gap-2">
                   <button
-                    key={track.track_id}
                     type="button"
-                    onClick={() => onTrackClick(track.track_id)}
-                    className={`rounded-xl border p-4 text-left transition ${
-                      isSelected
-                        ? "border-blue-500 bg-blue-50 shadow-sm"
-                        : "border-gray-200 bg-white hover:border-blue-300"
-                    }`}
+                    disabled={!coursesPage || coursesPage.offset === 0 || coursesLoading}
+                    onClick={() => setOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
+                    className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                            isSelected ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">{track.track_name}</p>
-                          <p className="text-xs text-gray-500">{track.level}</p>
-                        </div>
-                      </div>
-
-                      {isSelected && <CheckCircle2 className="h-5 w-5 text-blue-600" />}
-                    </div>
-
-                    <p className="mt-3 text-sm text-gray-600">{track.description}</p>
+                    Previous
                   </button>
-                )
-              })}
-
-              {tracksLoading && (
-                <div className="col-span-full rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                  Loading tracks...
+                  <button
+                    type="button"
+                    disabled={
+                      !coursesPage ||
+                      coursesLoading ||
+                      coursesPage.offset + coursesPage.limit >= coursesPage.total
+                    }
+                    onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
+                    className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Next
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
 
             {error && (
