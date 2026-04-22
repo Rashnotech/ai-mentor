@@ -2,14 +2,12 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { Code2, Globe, Database, Brain, PenSquare, BarChart3, CheckCircle2 } from "lucide-react"
 import {
   getApiErrorMessage,
   internshipApi,
   InternshipTrack,
-  InternshipTrackCourse,
-  InternshipTrackCoursesResponse,
 } from "@/lib/api"
 
 const steps = [
@@ -34,12 +32,7 @@ export default function InternshipChooseTrackPage() {
   const router = useRouter()
   const [tracks, setTracks] = useState<InternshipTrack[]>([])
   const [selectedTrack, setSelectedTrack] = useState<string>("")
-  const [coursesPage, setCoursesPage] = useState<InternshipTrackCoursesResponse | null>(null)
-  const [selectedCourseId, setSelectedCourseId] = useState<number | undefined>()
-  const [offset, setOffset] = useState(0)
-  const [search, setSearch] = useState("")
   const [tracksLoading, setTracksLoading] = useState(true)
-  const [coursesLoading, setCoursesLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
 
@@ -61,29 +54,6 @@ export default function InternshipChooseTrackPage() {
     }
     void loadTracks()
   }, [])
-
-  useEffect(() => {
-    if (!selectedTrack) return
-
-    const loadCourses = async () => {
-      setCoursesLoading(true)
-      setError("")
-      try {
-        const data = await internshipApi.getTrackCourses(selectedTrack, {
-          limit: PAGE_SIZE,
-          offset,
-          search: search.trim() || undefined,
-        })
-        setCoursesPage(data)
-      } catch (loadError) {
-        setError(getApiErrorMessage(loadError))
-      } finally {
-        setCoursesLoading(false)
-      }
-    }
-
-    void loadCourses()
-  }, [selectedTrack, offset, search])
 
   const handleContinue = async () => {
     setError("")
@@ -110,7 +80,6 @@ export default function InternshipChooseTrackPage() {
           | "ai-engineering"
           | "product-design"
           | "data-analytics",
-        course_id: selectedCourseId,
       })
       router.push("/internship/get-acceptance")
     } catch (submitError) {
@@ -120,20 +89,8 @@ export default function InternshipChooseTrackPage() {
     }
   }
 
-  const totalPages = useMemo(() => {
-    if (!coursesPage) return 1
-    return Math.max(1, Math.ceil(coursesPage.total / coursesPage.limit))
-  }, [coursesPage])
-
-  const currentPage = useMemo(() => {
-    if (!coursesPage) return 1
-    return Math.floor(coursesPage.offset / coursesPage.limit) + 1
-  }, [coursesPage])
-
   const onTrackClick = (trackId: string) => {
     setSelectedTrack(trackId)
-    setOffset(0)
-    setSelectedCourseId(undefined)
   }
 
   return (
@@ -232,79 +189,6 @@ export default function InternshipChooseTrackPage() {
                   Loading tracks...
                 </div>
               )}
-            </div>
-
-            <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-4">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-base font-semibold text-gray-900">Courses from database</h2>
-                <input
-                  value={search}
-                  onChange={(e) => {
-                    setOffset(0)
-                    setSearch(e.target.value)
-                  }}
-                  placeholder="Search courses"
-                  className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:w-64"
-                />
-              </div>
-
-              <div className="space-y-2">
-                {coursesLoading && <p className="text-sm text-gray-600">Loading courses...</p>}
-
-                {!coursesLoading && coursesPage?.courses.length === 0 && (
-                  <p className="text-sm text-gray-600">No courses found for this query.</p>
-                )}
-
-                {!coursesLoading &&
-                  coursesPage?.courses.map((course: InternshipTrackCourse) => {
-                    const isSelected = selectedCourseId === course.course_id
-                    return (
-                      <button
-                        key={course.course_id}
-                        type="button"
-                        onClick={() => setSelectedCourseId(course.course_id)}
-                        className={`w-full rounded-lg border p-3 text-left transition ${
-                          isSelected
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 bg-white hover:border-blue-300"
-                        }`}
-                      >
-                        <p className="text-sm font-semibold text-gray-900">{course.title}</p>
-                        {course.description && (
-                          <p className="mt-1 line-clamp-2 text-xs text-gray-600">{course.description}</p>
-                        )}
-                      </button>
-                    )
-                  })}
-              </div>
-
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-xs text-gray-500">
-                  Page {currentPage} of {totalPages}
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={!coursesPage || coursesPage.offset === 0 || coursesLoading}
-                    onClick={() => setOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
-                    className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    type="button"
-                    disabled={
-                      !coursesPage ||
-                      coursesLoading ||
-                      coursesPage.offset + coursesPage.limit >= coursesPage.total
-                    }
-                    onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
-                    className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
             </div>
 
             {error && (
