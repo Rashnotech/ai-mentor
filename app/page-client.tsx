@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { publicCourseApi, CourseListResponse } from "@/lib/api"
+import TawkTo from "@/components/tawk-to"
 import {
   ArrowRight,
   Code2,
@@ -108,6 +109,8 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#1a1f2e] text-white font-sans selection:bg-blue-500/30 overflow-x-hidden">
+      <TawkTo />
+
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-[#1a1f2e]/95 backdrop-blur-md border-b border-white/5">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">

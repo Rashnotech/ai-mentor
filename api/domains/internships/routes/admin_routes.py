@@ -472,7 +472,7 @@ async def _send_approval_email(
                     <li>Check your email for your internship onboarding package</li>
                     <li>Complete the required onboarding forms within 3 days</li>
                     <li>Join our intern orientation session (details coming soon)</li>
-                    <li>Get access to your learning materials and mentorship program</li>
+                    <li>Get access to your LMS dashboard, learning materials and mentorship program</li>
                 </ol>
 
                 {f'''
@@ -499,7 +499,7 @@ async def _send_approval_email(
                 
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
                     <p style="margin: 0; font-size: 15px;">Best regards,</p>
-                    <p style="margin: 5px 0; font-size: 15px; font-weight: bold; color: #2563eb;">The AI Mentor Team</p>
+                    <p style="margin: 5px 0; font-size: 15px; font-weight: bold; color: #2563eb;">The Rashnotech Team</p>
                 </div>
             </div>
         </div>
@@ -524,7 +524,7 @@ async def _send_approval_email(
         1. Check your email for your internship onboarding package
         2. Complete the required onboarding forms within 3 days
         3. Join our intern orientation session (details coming soon)
-        4. Get access to your learning materials and mentorship program
+        4. Get access to your LMS dashboard, learning materials and mentorship program
 
         {feedback_text}
         
@@ -533,7 +533,7 @@ async def _send_approval_email(
         We're excited to have you join our internship program and look forward to supporting your professional growth!
         
         Best regards,
-        The AI Mentor Team
+        The Rashnotech Team
         """
         
         success = await email_service._send_email(
@@ -571,7 +571,7 @@ async def _send_rejection_email(
                 <p style="font-size: 16px; line-height: 1.6;">Dear {application.first_name} {application.last_name},</p>
                 
                 <p style="font-size: 16px; line-height: 1.6;">
-                    Thank you for your interest in the <strong>{application.selected_track.replace('-', ' ').title()} Internship</strong> at AI Mentor. 
+                    Thank you for your interest in the <strong>{application.selected_track.replace('-', ' ').title()} Internship</strong> at Rashnotech. 
                     We appreciate the time and effort you put into your application.
                 </p>
                 
@@ -605,12 +605,12 @@ async def _send_rejection_email(
                 </div>
                 
                 <p style="font-size: 15px; line-height: 1.6; margin-top: 25px;">
-                    We wish you the best in your learning journey and future endeavors. Thank you again for your interest in AI Mentor.
+                    We wish you the best in your learning journey and future endeavors. Thank you again for your interest in Rashnotech.
                 </p>
                 
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
                     <p style="margin: 0; font-size: 15px;">Best regards,</p>
-                    <p style="margin: 5px 0; font-size: 15px; font-weight: bold; color: #2563eb;">The AI Mentor Team</p>
+                    <p style="margin: 5px 0; font-size: 15px; font-weight: bold; color: #2563eb;">The Rashnotech Team</p>
                 </div>
             </div>
         </div>
@@ -625,7 +625,7 @@ async def _send_rejection_email(
         
         Dear {application.first_name} {application.last_name},
         
-        Thank you for your interest in the {application.selected_track.replace('-', ' ').title()} Internship at AI Mentor. 
+        Thank you for your interest in the {application.selected_track.replace('-', ' ').title()} Internship at Rashnotech. 
         We appreciate the time and effort you put into your application.
         
         After careful review, we regret to inform you that we are unable to move forward with your application at this time.
@@ -642,10 +642,10 @@ async def _send_rejection_email(
         - Explore our free learning resources and courses
         - Connect with us on social media for updates
         
-        We wish you the best in your learning journey and future endeavors. Thank you again for your interest in AI Mentor.
+        We wish you the best in your learning journey and future endeavors. Thank you again for your interest in Rashnotech.
         
         Best regards,
-        The AI Mentor Team
+        The Rashnotech Team
         """
         
         success = await email_service._send_email(
