@@ -51,7 +51,12 @@ export default function InternshipChooseTrackPage() {
         const data = await internshipApi.getTracks()
         setTracks(data)
         if (data.length > 0) {
-          setSelectedTrack(data[0].track_id)
+          setSelectedTrack((prev) => {
+            if (prev && data.some((track) => track.track_id === prev)) {
+              return prev
+            }
+            return data[0].track_id
+          })
         }
       } catch (loadError) {
         setError(getApiErrorMessage(loadError))
@@ -131,9 +136,11 @@ export default function InternshipChooseTrackPage() {
   }, [coursesPage])
 
   const onTrackClick = (trackId: string) => {
+    if (trackId === selectedTrack) return
     setSelectedTrack(trackId)
     setOffset(0)
     setSelectedCourseId(undefined)
+    setCoursesPage(null)
   }
 
   return (
@@ -187,6 +194,55 @@ export default function InternshipChooseTrackPage() {
             <p className="mt-2 text-sm text-gray-600">
               Pick one track for your internship focus. You can request a switch during mentor review.
             </p>
+
+            <div className="mt-6">
+              <p className="mb-3 text-sm font-semibold text-gray-700">Available tracks</p>
+
+              {tracksLoading && <p className="text-sm text-gray-600">Loading tracks...</p>}
+
+              {!tracksLoading && tracks.length === 0 && (
+                <p className="text-sm text-gray-600">No internship tracks are available right now.</p>
+              )}
+
+              {!tracksLoading && tracks.length > 0 && (
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {tracks.map((track) => {
+                    const Icon = iconByTrack[track.track_id] ?? Code2
+                    const isActive = selectedTrack === track.track_id
+
+                    return (
+                      <button
+                        key={track.track_id}
+                        type="button"
+                        onClick={() => onTrackClick(track.track_id)}
+                        className={`rounded-xl border p-4 text-left transition ${
+                          isActive
+                            ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100"
+                            : "border-gray-200 bg-white hover:border-blue-300"
+                        }`}
+                        aria-pressed={isActive}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-md bg-gray-100 p-2 text-gray-700">
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <p className="text-sm font-semibold text-gray-900">{track.track_name}</p>
+                          </div>
+
+                          {isActive && <CheckCircle2 className="h-4 w-4 text-blue-600" />}
+                        </div>
+
+                        {track.description && (
+                          <p className="mt-2 line-clamp-2 text-xs text-gray-600">{track.description}</p>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
             <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-4">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <input
