@@ -30,7 +30,7 @@ export async function uploadToCloudinary(
     // Create FormData for Cloudinary upload
     const formData = new FormData()
     formData.append("file", file)
-    formData.append("upload_preset", "internship_documents") // Ensure this preset exists in Cloudinary
+    formData.append("upload_preset", "ml_default") // Ensure this preset exists in Cloudinary
     formData.append("folder", folder)
     formData.append("resource_type", resourceType)
 
