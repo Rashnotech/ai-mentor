@@ -1686,6 +1686,13 @@ export const internshipAdminApi = {
     )
     return response.data
   },
+
+  /**
+   * Delete internship application (Admin)
+   */
+  deleteApplication: async (applicationId: number): Promise<void> => {
+    await apiClient.delete(`/admin/internships/applications/${applicationId}`)
+  },
 }
 
 // ============================================================================

@@ -372,6 +372,67 @@ async def reject_application(
         )
 
 
+@router.delete(
+    "/applications/{application_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete internship application (Admin)",
+    description="Permanently delete an internship application",
+)
+async def delete_application(
+    application_id: int,
+    db_session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Delete an internship application.
+
+    **Path Parameters:**
+    - application_id: Application ID
+
+    **Side Effects:**
+    - Permanently removes the application record from the database
+
+    **Returns:**
+    - 204 No Content on successful deletion
+
+    **Admin Only:** Requires admin role
+    """
+    try:
+        current_admin_id = current_user.get("user_id")
+
+        stmt = select(InternshipApplication).where(
+            InternshipApplication.application_id == application_id
+        )
+        result = await db_session.execute(stmt)
+        application = result.scalar_one_or_none()
+
+        if not application:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Application {application_id} not found",
+            )
+
+        await db_session.delete(application)
+        await db_session.commit()
+
+        logger.info(
+            f"Application {application_id} deleted by admin {current_admin_id}"
+        )
+
+        return None
+
+    except HTTPException:
+        await db_session.rollback()
+        raise
+    except Exception as e:
+        await db_session.rollback()
+        logger.error(f"Error deleting application {application_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete application",
+        )
+
+
 # ====================================================================
 # Helper Functions
 # ====================================================================

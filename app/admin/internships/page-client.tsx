@@ -17,6 +17,7 @@ import {
   GraduationCap,
   Calendar,
   ExternalLink,
+  Trash2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -56,6 +57,7 @@ export default function InternshipsManagementView() {
   
   // Modal states
   const [showReviewModal, setShowReviewModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedApplication, setSelectedApplication] = useState<InternshipApplicationAdminResponse | null>(null)
   const [reviewAction, setReviewAction] = useState<"approve" | "reject" | null>(null)
   const [rejectionReason, setRejectionReason] = useState("")
@@ -127,6 +129,22 @@ export default function InternshipsManagementView() {
     },
   })
 
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (applicationId: number) => internshipAdminApi.deleteApplication(applicationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "internships"] })
+      toast.success("Application deleted successfully")
+      setShowDeleteModal(false)
+      setSelectedApplication(null)
+    },
+    onError: (error) => {
+      toast.error("Failed to delete application", {
+        description: getApiErrorMessage(error),
+      })
+    },
+  })
+
   // ============================================================================
   // HANDLERS
   // ============================================================================
@@ -145,6 +163,22 @@ export default function InternshipsManagementView() {
     setReviewAction(null)
     setRejectionReason("")
     setAdminNotes("")
+  }
+
+  const handleDelete = (application: InternshipApplicationAdminResponse) => {
+    setSelectedApplication(application)
+    setShowDeleteModal(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!selectedApplication) return
+    deleteMutation.mutate(selectedApplication.application_id)
+  }
+
+  const handleCloseDeleteModal = () => {
+    if (deleteMutation.isPending) return
+    setShowDeleteModal(false)
+    setSelectedApplication(null)
   }
 
   const handleApprove = () => {
@@ -399,15 +433,26 @@ export default function InternshipsManagementView() {
                         <p className="text-sm text-gray-900">{formatDate(application.submitted_at)}</p>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <Button
-                          onClick={() => handleReview(application)}
-                          size="sm"
-                          variant="outline"
-                          className="gap-2"
-                        >
-                          <Eye className="w-4 h-4" />
-                          Review
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            onClick={() => handleReview(application)}
+                            size="sm"
+                            variant="outline"
+                            className="gap-2"
+                          >
+                            <Eye className="w-4 h-4" />
+                            Review
+                          </Button>
+                          <Button
+                            onClick={() => handleDelete(application)}
+                            size="sm"
+                            variant="outline"
+                            className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -686,6 +731,59 @@ export default function InternshipsManagementView() {
                 )}
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteModal} onOpenChange={(open) => !open && handleCloseDeleteModal()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Application</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently remove this internship registration.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedApplication && (
+            <div className="py-2 text-sm text-gray-700">
+              <p>
+                <span className="font-semibold">Candidate:</span> {selectedApplication.first_name} {selectedApplication.last_name}
+              </p>
+              <p>
+                <span className="font-semibold">Email:</span> {selectedApplication.email}
+              </p>
+              <p>
+                <span className="font-semibold">Application ID:</span> #{selectedApplication.application_id}
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              onClick={handleCloseDeleteModal}
+              variant="outline"
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Application
+                </>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
