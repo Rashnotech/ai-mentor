@@ -22,12 +22,50 @@ from domains.courses.schemas.course_schema import (
     CourseBriefResponse,
     CourseReviewsListResponse,
     CourseReviewResponse,
+    PublicLearningPathResponse,
 )
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/public/courses", tags=["public-courses"])
+
+
+async def _get_public_learning_paths(
+    db_session: AsyncSession,
+    course_id: int,
+) -> List[PublicLearningPathResponse]:
+    """Build public learning path options for a course."""
+    paths_stmt = (
+        select(LearningPath)
+        .where(LearningPath.course_id == course_id)
+        .order_by(LearningPath.is_default.desc(), LearningPath.created_at.asc())
+    )
+    paths_result = await db_session.execute(paths_stmt)
+    paths = paths_result.scalars().all()
+
+    path_options: List[PublicLearningPathResponse] = []
+    for path in paths:
+        modules_stmt = select(func.count(Module.module_id)).where(Module.path_id == path.path_id)
+        modules_result = await db_session.execute(modules_stmt)
+        modules_count = modules_result.scalar() or 0
+
+        path_options.append(
+            PublicLearningPathResponse(
+                path_id=path.path_id,
+                title=path.title,
+                description=path.description,
+                price=float(path.price) if path.price else 0.0,
+                is_default=bool(path.is_default),
+                is_custom=bool(path.is_custom),
+                min_skill_level=path.min_skill_level.value if path.min_skill_level else None,
+                max_skill_level=path.max_skill_level.value if path.max_skill_level else None,
+                tags=path.tags or [],
+                modules_count=modules_count,
+            )
+        )
+
+    return path_options
 
 
 @router.get(
@@ -167,6 +205,7 @@ async def list_public_courses(
                 certificate_on_completion=course.certificate_on_completion or False,
                 average_rating=float(course.average_rating) if course.average_rating else 0.0,
                 total_reviews=course.total_reviews or 0,
+                learning_paths=await _get_public_learning_paths(db_session, course.course_id),
                 paths_count=paths_count,
                 modules_count=modules_count,
                 min_price=float(min_price) if min_price else 0.0,
@@ -253,6 +292,7 @@ async def get_public_course_by_slug(
             certificate_on_completion=course.certificate_on_completion or False,
             average_rating=float(course.average_rating) if course.average_rating else 0.0,
             total_reviews=course.total_reviews or 0,
+            learning_paths=await _get_public_learning_paths(db_session, course.course_id),
             paths_count=paths_count,
             modules_count=modules_count,
             min_price=float(min_price) if min_price else 0.0,
@@ -279,6 +319,7 @@ async def get_public_course_by_slug(
 )
 async def get_course_curriculum_by_slug(
     slug: str,
+    path_id: Optional[int] = Query(None, description="Specific learning path ID to preview"),
     db_session: AsyncSession = Depends(get_db_session),
 ):
     """
@@ -307,12 +348,26 @@ async def get_course_curriculum_by_slug(
         
         course_id = course.course_id
         
-        # Get the default learning path or first path
-        paths_stmt = select(LearningPath).where(
-            LearningPath.course_id == course_id
-        ).order_by(LearningPath.is_default.desc())
-        paths_result = await db_session.execute(paths_stmt)
-        path = paths_result.scalars().first()
+        path = None
+        if path_id is not None:
+            specific_path_stmt = select(LearningPath).where(
+                LearningPath.path_id == path_id,
+                LearningPath.course_id == course_id,
+            )
+            specific_path_result = await db_session.execute(specific_path_stmt)
+            path = specific_path_result.scalar_one_or_none()
+            if not path:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Learning path not found for this course",
+                )
+        else:
+            # Get the default learning path or first path
+            paths_stmt = select(LearningPath).where(
+                LearningPath.course_id == course_id
+            ).order_by(LearningPath.is_default.desc())
+            paths_result = await db_session.execute(paths_stmt)
+            path = paths_result.scalars().first()
         
         if not path:
             return {
@@ -567,6 +622,7 @@ async def get_public_course(
             certificate_on_completion=course.certificate_on_completion or False,
             average_rating=float(course.average_rating) if course.average_rating else 0.0,
             total_reviews=course.total_reviews or 0,
+            learning_paths=await _get_public_learning_paths(db_session, course.course_id),
             paths_count=paths_count,
             modules_count=modules_count,
             min_price=float(min_price),
@@ -593,6 +649,7 @@ async def get_public_course(
 )
 async def get_course_curriculum(
     course_id: int,
+    path_id: Optional[int] = Query(None, description="Specific learning path ID to preview"),
     db_session: AsyncSession = Depends(get_db_session),
 ):
     """
@@ -619,12 +676,26 @@ async def get_course_curriculum(
                 detail="Course not found",
             )
         
-        # Get the default learning path or first path
-        paths_stmt = select(LearningPath).where(
-            LearningPath.course_id == course_id
-        ).order_by(LearningPath.is_default.desc())
-        paths_result = await db_session.execute(paths_stmt)
-        path = paths_result.scalars().first()
+        path = None
+        if path_id is not None:
+            specific_path_stmt = select(LearningPath).where(
+                LearningPath.path_id == path_id,
+                LearningPath.course_id == course_id,
+            )
+            specific_path_result = await db_session.execute(specific_path_stmt)
+            path = specific_path_result.scalar_one_or_none()
+            if not path:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Learning path not found for this course",
+                )
+        else:
+            # Get the default learning path or first path
+            paths_stmt = select(LearningPath).where(
+                LearningPath.course_id == course_id
+            ).order_by(LearningPath.is_default.desc())
+            paths_result = await db_session.execute(paths_stmt)
+            path = paths_result.scalars().first()
         
         if not path:
             return {

@@ -19,6 +19,7 @@ from domains.courses.schemas.course_schema import (
     ModuleProgressResponse,
     StudentCoursesListResponse,
     StudentProjectsListResponse,
+    EnrollInCourseRequest,
     CourseReviewCreateRequest,
     CourseReviewUpdateRequest,
     CourseReviewResponse,
@@ -636,6 +637,7 @@ async def get_learning_content_by_slug(
 )
 async def enroll_in_course(
     course_id: int,
+    request: EnrollInCourseRequest | None = None,
     current_user: User = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db_session),
 ):
@@ -680,6 +682,7 @@ async def enroll_in_course(
         enrollment = await service.enroll_student_in_course(
             student_id=current_user.get("user_id"),
             course_id=course_id,
+            preferred_path_id=request.preferred_path_id if request else None,
         )
 
         return enrollment

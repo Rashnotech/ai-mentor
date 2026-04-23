@@ -660,6 +660,20 @@ export interface CourseListResponse extends CourseResponse {
   paths_count: number
   modules_count: number
   min_price?: number
+  learning_paths: PublicLearningPathResponse[]
+}
+
+export interface PublicLearningPathResponse {
+  path_id: number
+  title: string
+  description: string
+  price: number
+  is_default: boolean
+  is_custom: boolean
+  min_skill_level?: string | null
+  max_skill_level?: string | null
+  tags: string[]
+  modules_count: number
 }
 
 // Minimal course response for onboarding (brief)
@@ -1381,16 +1395,22 @@ export const publicCourseApi = {
   /**
    * Get course curriculum (modules, lessons, projects)
    */
-  getCurriculum: async (courseId: number): Promise<CourseCurriculumResponse> => {
-    const response = await apiClient.get<CourseCurriculumResponse>(`/public/courses/${courseId}/curriculum`)
+  getCurriculum: async (courseId: number, pathId?: number): Promise<CourseCurriculumResponse> => {
+    const searchParams = new URLSearchParams()
+    if (typeof pathId === "number") searchParams.append("path_id", pathId.toString())
+    const query = searchParams.toString()
+    const response = await apiClient.get<CourseCurriculumResponse>(`/public/courses/${courseId}/curriculum${query ? `?${query}` : ""}`)
     return response.data
   },
 
   /**
    * Get course curriculum by slug
    */
-  getCurriculumBySlug: async (slug: string): Promise<CourseCurriculumResponse> => {
-    const response = await apiClient.get<CourseCurriculumResponse>(`/public/courses/by-slug/${slug}/curriculum`)
+  getCurriculumBySlug: async (slug: string, pathId?: number): Promise<CourseCurriculumResponse> => {
+    const searchParams = new URLSearchParams()
+    if (typeof pathId === "number") searchParams.append("path_id", pathId.toString())
+    const query = searchParams.toString()
+    const response = await apiClient.get<CourseCurriculumResponse>(`/public/courses/by-slug/${slug}/curriculum${query ? `?${query}` : ""}`)
     return response.data
   },
 
@@ -2012,8 +2032,12 @@ export const studentCoursesApi = {
   /**
    * Enroll in a course
    */
-  enrollInCourse: async (courseId: number): Promise<{ enrollment: unknown; course: unknown; assigned_path: unknown }> => {
-    const response = await apiClient.post(`/enrollments/courses/${courseId}`)
+  enrollInCourse: async (
+    courseId: number,
+    preferredPathId?: number
+  ): Promise<{ enrollment: unknown; course: unknown; assigned_path: unknown }> => {
+    const payload = typeof preferredPathId === "number" ? { preferred_path_id: preferredPathId } : undefined
+    const response = await apiClient.post(`/enrollments/courses/${courseId}`, payload)
     return response.data
   },
 

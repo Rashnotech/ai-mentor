@@ -101,6 +101,10 @@ class CourseListResponse(BaseModel):
     paths_count: int = Field(description="Number of learning paths")
     modules_count: int = Field(description="Total number of modules")
     min_price: Optional[float] = Field(0.0, description="Minimum price across all learning paths (0 = free)")
+    learning_paths: List["PublicLearningPathResponse"] = Field(
+        default_factory=list,
+        description="Available learning paths under this course",
+    )
     prerequisites: Optional[List[str]] = Field(None, description="List of prerequisites")
     what_youll_learn: Optional[List[str]] = Field(None, description="Learning outcomes")
     certificate_on_completion: bool = Field(False, description="Whether certificate is awarded")
@@ -112,6 +116,39 @@ class CourseListResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PublicLearningPathResponse(BaseModel):
+    """Public response schema for a selectable learning path option under a course."""
+
+    path_id: int = Field(description="Learning path ID")
+    title: str = Field(description="Learning path title")
+    description: str = Field(description="Learning path description")
+    price: float = Field(default=0.0, description="Price for this path")
+    is_default: bool = Field(description="Whether this is the default path")
+    is_custom: bool = Field(description="Whether this is a custom (user-specific) path")
+    min_skill_level: Optional[str] = Field(None, description="Minimum skill level")
+    max_skill_level: Optional[str] = Field(None, description="Maximum skill level")
+    tags: List[str] = Field(default_factory=list, description="Path tags")
+    modules_count: int = Field(0, description="Number of modules in this path")
+
+    class Config:
+        from_attributes = True
+
+
+class EnrollInCourseRequest(BaseModel):
+    """Request body for course enrollment with optional preferred path selection."""
+
+    preferred_path_id: Optional[int] = Field(
+        default=None,
+        description="Preferred learning path ID to enroll into for this course",
+    )
+
+    class Config:
+        from_attributes = True
+
+
+CourseListResponse.model_rebuild()
 
 
 # Learning Path Schemas

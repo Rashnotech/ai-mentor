@@ -2,7 +2,7 @@
 
 import { useState, use, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   Star,
@@ -39,6 +39,7 @@ import {
 export default function CourseDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: slug } = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState("curriculum")
@@ -46,6 +47,11 @@ export default function CourseDetailsPage({ params }: { params: Promise<{ id: st
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [isEnrolling, setIsEnrolling] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const selectedPathIdFromQuery = Number(searchParams.get("path"))
+  const selectedPathId = Number.isFinite(selectedPathIdFromQuery) && selectedPathIdFromQuery > 0
+    ? selectedPathIdFromQuery
+    : undefined
 
   // Fetch course details by slug
   const { data: course, isLoading: courseLoading, error: courseError } = useQuery<CourseListResponse>({
@@ -56,10 +62,15 @@ export default function CourseDetailsPage({ params }: { params: Promise<{ id: st
 
   // Fetch curriculum by slug
   const { data: curriculum, isLoading: curriculumLoading } = useQuery<CourseCurriculumResponse>({
-    queryKey: ["public-curriculum", slug],
-    queryFn: () => publicCourseApi.getCurriculumBySlug(slug),
+    queryKey: ["public-curriculum", slug, selectedPathId],
+    queryFn: () => publicCourseApi.getCurriculumBySlug(slug, selectedPathId),
     enabled: !!slug,
   })
+
+  const selectedPath = course?.learning_paths?.find((path) => path.path_id === selectedPathId) ||
+    course?.learning_paths?.find((path) => path.is_default) ||
+    course?.learning_paths?.[0]
+  const selectedPathPrice = selectedPath?.price ?? course?.min_price ?? 0
 
   // Fetch reviews by slug
   const { data: reviewsData, isLoading: reviewsLoading } = useQuery<CourseReviewsListResponse>({
@@ -70,10 +81,10 @@ export default function CourseDetailsPage({ params }: { params: Promise<{ id: st
 
   // Open first module by default when curriculum loads
   useEffect(() => {
-    if (curriculum?.modules?.length && Object.keys(openModules).length === 0) {
+    if (curriculum?.modules?.length) {
       setOpenModules({ [`module-${curriculum.modules[0].module_id}`]: true })
     }
-  }, [curriculum])
+  }, [curriculum?.path_id])
 
   const toggleModule = (moduleId: string) => {
     setOpenModules((prev) => ({
@@ -86,7 +97,7 @@ export default function CourseDetailsPage({ params }: { params: Promise<{ id: st
   const enrollMutation = useMutation({
     mutationFn: async () => {
       if (!course?.course_id) throw new Error("Course not found")
-      return studentCoursesApi.enrollInCourse(course.course_id)
+      return studentCoursesApi.enrollInCourse(course.course_id, selectedPath?.path_id)
     },
     onSuccess: () => {
       toast.success("Successfully enrolled! Redirecting to course...")
@@ -110,7 +121,7 @@ export default function CourseDetailsPage({ params }: { params: Promise<{ id: st
     }
 
     // Check if course is free or paid
-    const coursePrice = course?.min_price || 0
+    const coursePrice = selectedPathPrice
     
     if (coursePrice > 0) {
       // Course has a cost - show payment modal
@@ -614,10 +625,36 @@ export default function CourseDetailsPage({ params }: { params: Promise<{ id: st
                   </div>
                 </div>
                 <div className="p-6">
+                  {course.learning_paths && course.learning_paths.length > 0 && (
+                    <div className="mb-5 rounded-lg border border-gray-200 p-3">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Select learning path</p>
+                      <div className="space-y-2">
+                        {course.learning_paths.map((path) => {
+                          const isSelected = selectedPath?.path_id === path.path_id
+                          return (
+                            <button
+                              key={path.path_id}
+                              type="button"
+                              onClick={() => router.push(`/courses/${slug}?path=${path.path_id}`)}
+                              className={`w-full rounded-md border px-3 py-2 text-left transition ${
+                                isSelected
+                                  ? "border-blue-500 bg-blue-50"
+                                  : "border-gray-200 bg-white hover:border-blue-300"
+                              }`}
+                            >
+                              <p className="text-sm font-semibold text-gray-900">{path.title}</p>
+                              <p className="text-xs text-gray-600">{path.modules_count} modules</p>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 mb-6">
                     <span className="text-2xl font-bold text-green-600">
-                      {course.min_price && course.min_price > 0
-                        ? new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(course.min_price)
+                      {selectedPathPrice > 0
+                        ? new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(selectedPathPrice)
                         : "Free"}
                     </span>
                     <span className="text-sm text-gray-500">• Includes certificate</span>
@@ -636,8 +673,8 @@ export default function CourseDetailsPage({ params }: { params: Promise<{ id: st
                         </>
                       ) : !isAuthenticated ? (
                         "Enroll Now"
-                      ) : course.min_price && course.min_price > 0 ? (
-                        `Enroll for ${new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(course.min_price)}`
+                      ) : selectedPathPrice > 0 ? (
+                        `Enroll for ${new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(selectedPathPrice)}`
                       ) : (
                         "Start Learning - Free"
                       )}
@@ -706,7 +743,7 @@ export default function CourseDetailsPage({ params }: { params: Promise<{ id: st
           courseId={course.course_id}
           courseTitle={course.title}
           courseDescription={course.description}
-          price={course.min_price || 0}
+          price={selectedPathPrice}
           currency="NGN"
           slug={slug}
         />

@@ -85,6 +85,7 @@ class EnrollmentService:
         self,
         student_id: str,
         course_id: int,
+        preferred_path_id: Optional[int] = None,
     ) -> dict:
         """
         Enroll a student in a course and assign learning path.
@@ -106,10 +107,59 @@ class EnrollmentService:
             AppError: If course not found or enrollment fails
         """
         try:
+            preferred_path = None
+            if preferred_path_id is not None:
+                preferred_path = await self._get_course_path(course_id, preferred_path_id)
+                if not preferred_path:
+                    raise AppError(
+                        status_code=404,
+                        detail="Selected learning path was not found for this course",
+                        error_code="LEARNING_PATH_NOT_FOUND",
+                    )
+
             # Check if already enrolled
             existing_enrollment = await self.check_already_enrolled(student_id, course_id)
             if existing_enrollment:
                 course = await self._get_course(course_id)
+
+                # Allow path switching for already-enrolled students within the same course.
+                existing_path_id = existing_enrollment.get("path_id")
+                if preferred_path and existing_path_id != preferred_path.path_id:
+                    enrollment_date = datetime.now(timezone.utc)
+                    path_service = PathAssignmentService(self.db_session)
+                    profile = await path_service._get_user_profile(student_id)
+                    await path_service._update_user_enrollment(student_id, course_id, preferred_path.path_id, profile)
+                    await self._create_enrollment_record(
+                        user_id=student_id,
+                        course_id=course_id,
+                        path_id=preferred_path.path_id,
+                        enrolled_at=enrollment_date,
+                    )
+
+                    return {
+                        "enrollment": {
+                            "student_id": student_id,
+                            "course_id": course_id,
+                            "already_enrolled": True,
+                            "path_switched": True,
+                        },
+                        "course": {
+                            "course_id": course.course_id,
+                            "title": course.title,
+                            "description": course.description,
+                            "difficulty_level": course.difficulty_level,
+                            "estimated_hours": course.estimated_hours,
+                        } if course else None,
+                        "assigned_path": {
+                            "path_id": preferred_path.path_id,
+                            "title": preferred_path.title,
+                            "description": preferred_path.description,
+                            "is_default": preferred_path.is_default,
+                            "is_custom": preferred_path.is_custom,
+                            "assignment_reason": "user_selected_path_switch",
+                        },
+                    }
+
                 return {
                     "enrollment": {
                         "student_id": student_id,
@@ -147,12 +197,24 @@ class EnrollmentService:
                     error_code="COURSE_INACTIVE",
                 )
 
-            # Assign personalized or default path
-            path_service = PathAssignmentService(self.db_session)
-            assigned_path = await path_service.assign_path_for_student(
-                user_id=student_id,
-                course_id=course_id,
-            )
+            # Assign user-selected path when provided, otherwise use personalized/default logic.
+            if preferred_path:
+                assigned_path = preferred_path
+                path_service = PathAssignmentService(self.db_session)
+                profile = await path_service._get_user_profile(student_id)
+                await path_service._update_user_enrollment(student_id, course_id, assigned_path.path_id, profile)
+                assigned_path = path_service._attach_assignment_metadata(
+                    assigned_path,
+                    reason="user_selected_path",
+                    source_path_id=assigned_path.path_id,
+                    score=100,
+                )
+            else:
+                path_service = PathAssignmentService(self.db_session)
+                assigned_path = await path_service.assign_path_for_student(
+                    user_id=student_id,
+                    course_id=course_id,
+                )
 
             logger.info(f"Student {student_id} enrolled in course {course_id} with path {assigned_path.path_id}")
 
@@ -314,6 +376,19 @@ class EnrollmentService:
             logger.error(f"Error fetching course: {str(e)}")
             return None
 
+    async def _get_course_path(self, course_id: int, path_id: int) -> Optional[LearningPath]:
+        """Get a specific path for a course by path ID."""
+        try:
+            stmt = select(LearningPath).where(
+                LearningPath.path_id == path_id,
+                LearningPath.course_id == course_id,
+            )
+            result = await self.db_session.execute(stmt)
+            return result.scalar_one_or_none()
+        except Exception as e:
+            logger.error(f"Error fetching learning path: {str(e)}")
+            return None
+
     async def get_course_min_price(self, course_id: int) -> float:
         """Get minimum learning path price for a course."""
         try:
@@ -349,7 +424,13 @@ class EnrollmentService:
             existing = result.scalar_one_or_none()
             
             if existing:
-                logger.info(f"Enrollment record already exists for user {user_id} in course {course_id}")
+                if existing.path_id != path_id:
+                    existing.path_id = path_id
+                    existing.updated_at = datetime.now(timezone.utc)
+                    await self.db_session.commit()
+                    logger.info(f"Updated enrollment path for user {user_id} in course {course_id} to {path_id}")
+                else:
+                    logger.info(f"Enrollment record already exists for user {user_id} in course {course_id}")
                 return
             
             enrollment = UserCourseEnrollment(

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { CheckCircle2, ChevronRight, BookOpen, Rocket, Briefcase, Trophy, Code2, Brain, Check, Users, Sparkles, Database, Globe, Smartphone, Loader2 } from "lucide-react"
-import { onboardingApi, publicCourseApi, getApiErrorMessage, type UserGoal, type CourseBriefResponse } from "@/lib/api"
+import { onboardingApi, publicCourseApi, getApiErrorMessage, type UserGoal, type CourseListResponse } from "@/lib/api"
 import { useUserStore } from "@/lib/stores/user-store"
 import { PaymentModal } from "@/components/payment-modal"
 
@@ -49,7 +49,10 @@ const goals = [
 // Self-Paced courses interface
 interface SelfPacedCourse {
   id: string
+  courseId: string
+  pathId: string
   title: string
+  pathTitle: string
   description: string
   icon: "code" | "database" | "globe" | "mobile"
   duration: string
@@ -84,18 +87,21 @@ function getIconForCourse(title: string): "code" | "database" | "globe" | "mobil
 }
 
 // Transform API response to UI format
-function mapCourseToSelfPaced(course: CourseBriefResponse & { slug?: string; min_price?: number }): SelfPacedCourse {
+function mapCoursePathToSelfPaced(course: CourseListResponse, path: CourseListResponse["learning_paths"][number]): SelfPacedCourse {
   return {
-    id: course.course_id.toString(),
+    id: `${course.course_id}-${path.path_id}`,
+    courseId: course.course_id.toString(),
+    pathId: path.path_id.toString(),
     title: course.title,
-    description: course.description,
+    pathTitle: path.title,
+    description: path.description || course.description,
     icon: getIconForCourse(course.title),
     duration: "Self-paced",
-    modules: 0, // Not available in brief response
-    level: "All Levels", // Not available in brief response
+    modules: path.modules_count || 0,
+    level: "All Levels",
     skills: [], // Not available in brief response
-    slug: course.slug || "",
-    price: course.min_price || 0,
+    slug: course.slug,
+    price: path.price || 0,
   }
 }
 
@@ -144,6 +150,7 @@ export default function OnboardingPage() {
   const [learningMode, setLearningMode] = useState<string | null>(null)
   const [cohortId, setCohortId] = useState<string | null>(null)
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
+  const [selectedPathId, setSelectedPathId] = useState<string | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
 
   // Simulation for the adaptive assessment
@@ -158,7 +165,25 @@ export default function OnboardingPage() {
   })
 
   // Transform API courses to UI format
-  const selfPacedCourses: SelfPacedCourse[] = coursesData?.map(mapCourseToSelfPaced) || []
+  const selfPacedCourses: SelfPacedCourse[] = (coursesData || []).flatMap((course) => {
+    const paths = course.learning_paths?.length
+      ? course.learning_paths
+      : [
+          {
+            path_id: 0,
+            title: "Default path",
+            description: course.description,
+            price: course.min_price || 0,
+            is_default: true,
+            is_custom: false,
+            min_skill_level: null,
+            max_skill_level: null,
+            tags: [],
+            modules_count: course.modules_count || 0,
+          },
+        ]
+    return paths.map((path) => mapCoursePathToSelfPaced(course, path))
+  })
 
   // Map frontend goal IDs to backend UserGoal enum values
   const goalToApiMap: Record<string, UserGoal> = {
@@ -216,6 +241,7 @@ export default function OnboardingPage() {
     const mode = localStorage.getItem("learningMode")
     const cohort = localStorage.getItem("selectedCohortId")
     const course = localStorage.getItem("selectedCourseId")
+    const path = localStorage.getItem("selectedPathId")
     
     if (!mode) {
       // If no mode selected, redirect to mode selection
@@ -226,6 +252,7 @@ export default function OnboardingPage() {
     setLearningMode(mode)
     if (cohort) setCohortId(cohort)
     if (course) setSelectedCourseId(course)
+    if (path) setSelectedPathId(path)
   }, [router])
 
   // Processing animation for self-paced mode
@@ -253,7 +280,7 @@ export default function OnboardingPage() {
     
     // Self-paced mode: after course selection, persist selection and trigger payment if needed.
     if (learningMode === "self-paced" && step === 2) {
-      if (!selectedCourseId) return
+      if (!selectedCourseId || !selectedPathId) return
 
       try {
         await updateSelectionMutation.mutateAsync(selectedCourseId)
@@ -261,7 +288,7 @@ export default function OnboardingPage() {
         return
       }
 
-      const selected = selfPacedCourses.find((c) => c.id === selectedCourseId)
+      const selected = selfPacedCourses.find((c) => c.pathId === selectedPathId)
       if (selected && selected.price > 0) {
         setShowPaymentModal(true)
         return
@@ -277,9 +304,11 @@ export default function OnboardingPage() {
     }
   }
 
-  const handleSelectCourse = (courseId: string) => {
+  const handleSelectCourse = (courseId: string, pathId: string) => {
     setSelectedCourseId(courseId)
+    setSelectedPathId(pathId)
     localStorage.setItem("selectedCourseId", courseId)
+    localStorage.setItem("selectedPathId", pathId)
   }
 
   const handleComplete = () => {
@@ -287,7 +316,7 @@ export default function OnboardingPage() {
     completeOnboardingMutation.mutate()
   }
 
-  const selectedCourse = selfPacedCourses.find(c => c.id === selectedCourseId)
+  const selectedCourse = selfPacedCourses.find((c) => c.pathId === selectedPathId)
 
   const handlePaymentSuccess = () => {
     setShowPaymentModal(false)
@@ -407,7 +436,7 @@ export default function OnboardingPage() {
               ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 {selfPacedCourses.map((course) => {
-                  const isSelected = selectedCourseId === course.id
+                  const isSelected = selectedPathId === course.pathId
                   const levelColors = {
                     Beginner: "bg-green-100 text-green-700",
                     Intermediate: "bg-blue-100 text-blue-700",
@@ -417,7 +446,7 @@ export default function OnboardingPage() {
                   return (
                     <button
                       key={course.id}
-                      onClick={() => handleSelectCourse(course.id)}
+                      onClick={() => handleSelectCourse(course.courseId, course.pathId)}
                       className={`relative p-5 rounded-xl border-2 text-left transition-all duration-200 ${
                         isSelected
                           ? "border-purple-600 bg-purple-50 ring-2 ring-purple-600 ring-offset-2"
@@ -440,6 +469,9 @@ export default function OnboardingPage() {
                               <CheckCircle2 className="w-5 h-5 text-purple-600" />
                             )}
                           </div>
+                          <p className={`text-xs font-medium ${isSelected ? "text-purple-700" : "text-gray-500"}`}>
+                            Path: {course.pathTitle}
+                          </p>
                         </div>
                       </div>
 
@@ -472,9 +504,9 @@ export default function OnboardingPage() {
               <div className="flex justify-end w-full">
                 <button
                   onClick={handleNext}
-                  disabled={!selectedCourseId || updateSelectionMutation.isPending}
+                  disabled={!selectedCourseId || !selectedPathId || updateSelectionMutation.isPending}
                   className={`flex items-center gap-2 px-8 py-3 rounded-lg font-semibold transition-all ${
-                    selectedCourseId
+                    selectedCourseId && selectedPathId
                       ? "bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-600/20"
                       : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}

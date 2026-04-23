@@ -55,8 +55,8 @@ export default function CoursesPage() {
     queryFn: () => publicCourseApi.listCourses(),
   })
 
-  const filteredCourses = useMemo(() => {
-    return courses.filter((course) => {
+  const filteredPathOptions = useMemo(() => {
+    return courses.flatMap((course) => {
       // Search Filter
       const matchesSearch =
         course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -65,7 +65,32 @@ export default function CoursesPage() {
       // Level Filter
       const matchesLevel = selectedLevels.length === 0 || selectedLevels.includes(course.difficulty_level.toUpperCase())
 
-      return matchesSearch && matchesLevel
+      if (!matchesSearch || !matchesLevel) {
+        return []
+      }
+
+      const pathOptions = course.learning_paths?.length
+        ? course.learning_paths
+        : [
+            {
+              path_id: 0,
+              title: "Default Path",
+              description: course.description,
+              price: course.min_price || 0,
+              is_default: true,
+              is_custom: false,
+              min_skill_level: null,
+              max_skill_level: null,
+              tags: [],
+              modules_count: course.modules_count || 0,
+            },
+          ]
+
+      return pathOptions.map((path) => ({
+        course,
+        path,
+        cardKey: `${course.course_id}-${path.path_id}`,
+      }))
     })
   }, [courses, searchQuery, selectedLevels])
 
@@ -270,8 +295,8 @@ export default function CoursesPage() {
         <div className="flex-1">
           <div className="flex items-center justify-between mb-6">
             <p className="text-sm text-gray-500">
-              Showing <span className="font-semibold text-gray-900">{filteredCourses.length}</span> of{" "}
-              <span className="font-semibold text-gray-900">{courses.length}</span> results
+              Showing <span className="font-semibold text-gray-900">{filteredPathOptions.length}</span> path options from{" "}
+              <span className="font-semibold text-gray-900">{courses.length}</span> courses
             </p>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Sort by:</span>
@@ -285,9 +310,9 @@ export default function CoursesPage() {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
-          ) : filteredCourses.length === 0 ? (
+          ) : filteredPathOptions.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">No courses found</h3>
+              <h3 className="text-lg font-semibold text-gray-900">No learning paths found</h3>
               <p className="text-gray-500">Try adjusting your filters or search query.</p>
               <button
                 onClick={clearFilters}
@@ -298,8 +323,12 @@ export default function CoursesPage() {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredCourses.map((course, index) => (
-                <Link href={`/courses/${course.slug}`} key={course.course_id} className="block group h-full">
+              {filteredPathOptions.map(({ course, path, cardKey }, index) => (
+                <Link
+                  href={`/courses/${course.slug}${path.path_id ? `?path=${path.path_id}` : ""}`}
+                  key={cardKey}
+                  className="block group h-full"
+                >
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-200 transition-all hover:shadow-lg hover:shadow-blue-900/5 h-full flex flex-col">
                     {/* Card Image */}
                     <div className={`h-40 w-full ${GRADIENTS[index % GRADIENTS.length]} relative p-4 shrink-0`}>
@@ -310,9 +339,9 @@ export default function CoursesPage() {
                         >
                           {course.difficulty_level.charAt(0) + course.difficulty_level.slice(1).toLowerCase()}
                         </span>
-                        {course.modules_count > 0 && (
+                        {(path.modules_count || course.modules_count) > 0 && (
                           <span className="text-[10px] font-semibold px-2 py-1 rounded-full border backdrop-blur-sm bg-white/90 text-purple-600 border-purple-200">
-                            {`${course.modules_count} Modules`}
+                            {`${path.modules_count || course.modules_count} Modules`}
                           </span>
                         )}
                       </div>
@@ -323,18 +352,21 @@ export default function CoursesPage() {
                       <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
                         {course.title}
                       </h3>
-                      <p className="text-sm text-gray-500 mb-4 line-clamp-2">{course.description}</p>
+                      <p className="text-sm font-semibold text-gray-800 mb-1 line-clamp-1">{path.title}</p>
+                      <p className="text-sm text-gray-500 mb-4 line-clamp-2">{path.description || course.description}</p>
                       
                       <div className="mb-4">
                         <span className="text-lg font-bold text-green-600">
-                          {course.min_price && course.min_price > 0 ? `${course.min_price.toLocaleString("en-US", { style: "currency", currency: "NGN" })}` : "Free"}
+                          {path.price && path.price > 0
+                            ? `${path.price.toLocaleString("en-US", { style: "currency", currency: "NGN" })}`
+                            : "Free"}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
                         <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
                           <Layers className="w-3.5 h-3.5" />
-                          {course.paths_count || 0} Paths
+                          {path.is_default ? "Default path" : "Path variant"}
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
                           <Clock className="w-3.5 h-3.5" />
@@ -349,7 +381,7 @@ export default function CoursesPage() {
           )}
 
           {/* Pagination (Mock) */}
-          {filteredCourses.length > 0 && (
+          {filteredPathOptions.length > 0 && (
             <div className="flex justify-center mt-12 gap-2">
               <button className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-400 hover:text-gray-900 hover:border-gray-300 transition-all">
                 &lt;
