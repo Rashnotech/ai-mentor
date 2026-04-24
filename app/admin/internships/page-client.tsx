@@ -557,7 +557,7 @@ export default function InternshipsManagementView() {
                     <p className="text-sm text-blue-700 mt-1">Course: {selectedApplication.course_title}</p>
                   ) : selectedApplication.course_id ? (
                     <p className="text-sm text-blue-700 mt-1">Course: #{selectedApplication.course_id}</p>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
