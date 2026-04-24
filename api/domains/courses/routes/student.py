@@ -325,19 +325,22 @@ async def get_learning_content_by_slug(
         
         # Determine the appropriate learning path
         path = None
-        
-        # For bootcamp mode, always use default path
-        if user_learning_mode == LearningMode.BOOTCAMP:
+
+        # Always prioritize the user-selected/saved path when available.
+        if path_id:
+            path_stmt = select(LearningPath).where(
+                LearningPath.path_id == path_id,
+                LearningPath.course_id == course.course_id,
+            )
+            path_result = await db_session.execute(path_stmt)
+            path = path_result.scalar_one_or_none()
+
+        # If no saved path exists, use default for bootcamp mode.
+        if not path and user_learning_mode == LearningMode.BOOTCAMP:
             path_stmt = select(LearningPath).where(
                 LearningPath.course_id == course.course_id,
                 LearningPath.is_default == True
             )
-            path_result = await db_session.execute(path_stmt)
-            path = path_result.scalar_one_or_none()
-        
-        # If user has a saved path_id, try to use it
-        elif path_id:
-            path_stmt = select(LearningPath).where(LearningPath.path_id == path_id)
             path_result = await db_session.execute(path_stmt)
             path = path_result.scalar_one_or_none()
         

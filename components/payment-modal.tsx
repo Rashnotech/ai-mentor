@@ -24,6 +24,7 @@ interface PaymentModalProps {
   onClose: () => void
   onSuccess: () => void
   courseId: number
+  pathId?: number
   courseTitle: string
   courseDescription?: string
   price: number
@@ -44,6 +45,7 @@ export function PaymentModal({
   onClose,
   onSuccess,
   courseId,
+  pathId,
   courseTitle,
   courseDescription,
   price,
@@ -72,7 +74,13 @@ export function PaymentModal({
 
   // Initiate payment mutation
   const initiateMutation = useMutation({
-    mutationFn: () => paymentApi.initiatePayment({ course_id: courseId }),
+    mutationFn: () => {
+      const payload: { course_id: number; path_id?: number } = { course_id: courseId }
+      if (typeof pathId === "number" && Number.isFinite(pathId) && pathId > 0) {
+        payload.path_id = pathId
+      }
+      return paymentApi.initiatePayment(payload)
+    },
     onSuccess: (data) => {
       setPaymentData(data)
       setState("checkout")

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -143,6 +143,7 @@ function ModeBadge({ mode }: { mode: string | null }) {
 }
 
 export default function OnboardingPage() {
+  const COURSES_PER_PAGE = 6
   const router = useRouter()
   const updateUser = useUserStore((state) => state.updateUser)
   const [step, setStep] = useState(1)
@@ -152,6 +153,9 @@ export default function OnboardingPage() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [selectedPathId, setSelectedPathId] = useState<string | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [searchInput, setSearchInput] = useState("")
+  const [appliedSearch, setAppliedSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Simulation for the adaptive assessment
   const [assessmentProgress, setAssessmentProgress] = useState(0)
@@ -185,6 +189,22 @@ export default function OnboardingPage() {
     return paths.map((path) => mapCoursePathToSelfPaced(course, path))
   })
 
+  const filteredCourses = useMemo(() => {
+    const query = appliedSearch.trim().toLowerCase()
+    if (!query) return selfPacedCourses
+
+    return selfPacedCourses.filter((course) => {
+      return (
+        course.title.toLowerCase().includes(query) ||
+        course.pathTitle.toLowerCase().includes(query) ||
+        course.description.toLowerCase().includes(query)
+      )
+    })
+  }, [selfPacedCourses, appliedSearch])
+
+  const totalPages = Math.max(1, Math.ceil(filteredCourses.length / COURSES_PER_PAGE))
+  const paginatedCourses = filteredCourses.slice((currentPage - 1) * COURSES_PER_PAGE, currentPage * COURSES_PER_PAGE)
+
   // Map frontend goal IDs to backend UserGoal enum values
   const goalToApiMap: Record<string, UserGoal> = {
     job: "Get a job",
@@ -209,7 +229,13 @@ export default function OnboardingPage() {
   })
 
   const updateSelectionMutation = useMutation({
-    mutationFn: async (courseId: string) => onboardingApi.update({ selected_course_id: courseId }),
+    mutationFn: async ({ courseId, pathId }: { courseId: string; pathId: string }) => {
+      const parsedPathId = Number(pathId)
+      return onboardingApi.update({
+        selected_course_id: courseId,
+        selected_path_id: Number.isFinite(parsedPathId) && parsedPathId > 0 ? parsedPathId : undefined,
+      })
+    },
     onError: (error) => {
       toast.error("Failed to save selected course", {
         description: getApiErrorMessage(error),
@@ -272,6 +298,12 @@ export default function OnboardingPage() {
     }
   }, [step, learningMode])
 
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
+
   const handleNext = async () => {
     // Save goal to backend when moving from step 1
     if (step === 1 && selectedGoal) {
@@ -283,7 +315,7 @@ export default function OnboardingPage() {
       if (!selectedCourseId || !selectedPathId) return
 
       try {
-        await updateSelectionMutation.mutateAsync(selectedCourseId)
+        await updateSelectionMutation.mutateAsync({ courseId: selectedCourseId, pathId: selectedPathId })
       } catch {
         return
       }
@@ -309,6 +341,11 @@ export default function OnboardingPage() {
     setSelectedPathId(pathId)
     localStorage.setItem("selectedCourseId", courseId)
     localStorage.setItem("selectedPathId", pathId)
+  }
+
+  const handleSearch = () => {
+    setAppliedSearch(searchInput)
+    setCurrentPage(1)
   }
 
   const handleComplete = () => {
@@ -338,7 +375,7 @@ export default function OnboardingPage() {
       <div className="w-full max-w-4xl mb-8 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="w-6 h-6 text-blue-600" />
-          <span className="text-xl font-bold tracking-tight text-gray-900">LearnTech</span>
+          <span className="text-xl font-bold tracking-tight text-gray-900">Rashnotech</span>
         </div>
         <div className="text-sm text-gray-500">Step {getCurrentStepDisplay()} of {getTotalSteps()}</div>
       </div>
@@ -424,6 +461,29 @@ export default function OnboardingPage() {
                 Select a course to start your self-paced learning journey. AI will personalize your path within this course.
               </p>
 
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      handleSearch()
+                    }
+                  }}
+                  placeholder="Search by course, path, or keyword"
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={handleSearch}
+                  className="px-5 py-3 rounded-lg font-semibold bg-gray-900 text-white hover:bg-black transition-colors"
+                >
+                  Search
+                </button>
+              </div>
+
               {isLoadingCourses ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
@@ -433,9 +493,13 @@ export default function OnboardingPage() {
                 <div className="text-center py-12 text-gray-500">
                   No courses available at the moment. Please check back later.
                 </div>
+              ) : filteredCourses.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  No courses match your search. Try a different keyword.
+                </div>
               ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                {selfPacedCourses.map((course) => {
+                {paginatedCourses.map((course) => {
                   const isSelected = selectedPathId === course.pathId
                   const levelColors = {
                     Beginner: "bg-green-100 text-green-700",
@@ -483,6 +547,35 @@ export default function OnboardingPage() {
                   )
                 })}
               </div>
+              )}
+
+              {!isLoadingCourses && filteredCourses.length > 0 && (
+                <div className="flex items-center justify-between mb-8 text-sm text-gray-600">
+                  <span>
+                    Showing {(currentPage - 1) * COURSES_PER_PAGE + 1}-{Math.min(currentPage * COURSES_PER_PAGE, filteredCourses.length)} of {filteredCourses.length}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    >
+                      Prev
+                    </button>
+                    <span className="font-medium text-gray-800">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               )}
 
               {/* Info Banner */}
@@ -653,7 +746,8 @@ export default function OnboardingPage() {
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
           onSuccess={handlePaymentSuccess}
-          courseId={Number(selectedCourse.id)}
+          courseId={Number(selectedCourse.courseId)}
+          pathId={Number(selectedCourse.pathId)}
           courseTitle={selectedCourse.title}
           courseDescription={selectedCourse.description}
           price={selectedCourse.price}

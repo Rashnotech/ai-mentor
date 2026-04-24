@@ -265,10 +265,10 @@ class PaymentService:
         payment.transaction_reference = verification.get("transactionReference")
         payment.payment_method = verification.get("paymentMethod")
 
-        if nomba_status in ("SUCCESSFUL", "SUCCESS", "COMPLETED", "APPROVED"):
+        if self._is_success_status(nomba_status):
             await self._activate_enrollment(payment, enrollment)
             message = "Payment verified successfully. Enrollment activated."
-        elif nomba_status in ("FAILED", "DECLINED", "REJECTED", "CANCELLED"):
+        elif self._is_failed_status(nomba_status):
             payment.status = PaymentStatus.FAILED
             payment.verified_at = datetime.now(timezone.utc)
             message = "Payment failed. You can retry the payment."
@@ -279,6 +279,22 @@ class PaymentService:
         await self.db.commit()
 
         return self._build_verification_response(payment, enrollment, message)
+
+    @staticmethod
+    def _is_success_status(status: str) -> bool:
+        """Return True when Nomba status represents a successful payment."""
+        normalized = (status or "").strip().upper()
+        if normalized in ("SUCCESSFUL", "SUCCESS", "COMPLETED", "APPROVED"):
+            return True
+        return any(token in normalized for token in ("SUCCESS", "APPROVED", "COMPLETED"))
+
+    @staticmethod
+    def _is_failed_status(status: str) -> bool:
+        """Return True when Nomba status represents a failed payment."""
+        normalized = (status or "").strip().upper()
+        if normalized in ("FAILED", "DECLINED", "REJECTED", "CANCELLED", "CANCELED"):
+            return True
+        return any(token in normalized for token in ("FAIL", "DECLIN", "REJECT", "CANCEL"))
 
     # ─── Retry Payment ─────────────────────────────────────────────
 

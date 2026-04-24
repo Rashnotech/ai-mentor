@@ -188,12 +188,12 @@ AI Mentor Team
         verification_link: str,
     ) -> bool:
         """
-        Send email verification with both a clickable link and a 6-digit code.
+        Send welcome email verification with one-click verification link.
 
         Args:
             user_email:        Recipient email address
             user_name:         Recipient's display name
-            verification_code: 6-digit code for manual entry
+            verification_code: Deprecated/manual code (kept for backward compatibility)
             verification_link: Full URL for one-click verification
 
         Returns:
@@ -214,12 +214,7 @@ AI Mentor Team
                 .header h1 {{ margin: 0; font-size: 24px; font-weight: 700; }}
                 .content {{ background: #ffffff; padding: 40px 30px; border-radius: 0 0 12px 12px; }}
                 .btn {{ display: inline-block; background: #0f766e; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 24px 0; }}
-                .divider {{ display: flex; align-items: center; margin: 28px 0; color: #9ca3af; font-size: 13px; }}
-                .divider::before, .divider::after {{ content: ''; flex: 1; border-bottom: 1px solid #e5e7eb; }}
-                .divider::before {{ margin-right: 12px; }}
-                .divider::after {{ margin-left: 12px; }}
-                .code-box {{ background: #f0fdfa; border: 2px dashed #0f766e; border-radius: 12px; padding: 24px; text-align: center; margin: 20px 0; }}
-                .code {{ font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #115e59; font-family: 'Courier New', monospace; }}
+                .notice-box {{ background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 12px; padding: 16px; margin: 20px 0; color: #134e4a; font-size: 14px; }}
                 .info {{ color: #6b7280; font-size: 14px; margin-top: 24px; }}
                 .footer {{ text-align: center; color: #9ca3af; font-size: 12px; margin-top: 24px; padding: 16px; }}
             </style>
@@ -227,25 +222,23 @@ AI Mentor Team
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>Welcome to Rashnotech Solutions!</h1>
+                    <h1>Welcome to Rashnotech Solutions</h1>
                 </div>
                 <div class="content">
                     <p>Hi {user_name or 'there'},</p>
-                    <p>Thanks for registering. We are excited to have you onboard at Rashnotech Solutions.</p>
-                    <p>Please verify your email address to complete your registration and continue.</p>
+                    <p>Thanks for signing up. Your account is almost ready.</p>
+                    <p>Please confirm your email address to activate your account and start learning.</p>
 
                     <div style="text-align: center;">
-                        <a href="{verification_link}" class="btn">Verify Email Address</a>
+                        <a href="{verification_link}" class="btn">Confirm My Email</a>
                     </div>
 
-                    <div class="divider">or enter this code manually</div>
-
-                    <div class="code-box">
-                        <div class="code">{verification_code}</div>
+                    <div class="notice-box">
+                        <strong>Verification link:</strong> This secure link can only be used for your account.
                     </div>
 
                     <div class="info">
-                        <p>⏱️ This link and code expire in <strong>24 hours</strong>.</p>
+                        <p>This verification link expires in <strong>24 hours</strong>.</p>
                         <p>If you did not create an account with Rashnotech Solutions, you can safely ignore this email.</p>
                     </div>
                 </div>
@@ -259,13 +252,12 @@ AI Mentor Team
 
         text_content = f"""Hi {user_name or 'there'},
 
-Welcome to Rashnotech Solutions. Please verify your email address to complete your registration.
+    Welcome to Rashnotech Solutions.
 
-Click this link to verify: {verification_link}
+    Please confirm your email address to activate your account:
+    {verification_link}
 
-Or enter this verification code: {verification_code}
-
-This link and code expire in 24 hours.
+    This verification link expires in 24 hours.
 
 If you didn't create this account, please ignore this email.
 

@@ -570,6 +570,7 @@ export interface OnboardingUpdatePayload {
   learning_style?: LearningStyle
   primary_goal?: UserGoal
   selected_course_id?: string
+  selected_path_id?: number
   preferred_language?: string
   timezone?: string
   notification_preferences?: Record<string, unknown>
@@ -584,6 +585,7 @@ export interface OnboardingProfileResponse {
   learning_style: LearningStyle | null
   primary_goal: UserGoal | null
   selected_course_id: string | null
+  selected_path_id: number | null
   preferred_language: string
   timezone: string
   notification_preferences: Record<string, unknown>

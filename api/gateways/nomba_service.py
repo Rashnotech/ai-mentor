@@ -199,64 +199,82 @@ class NombaService:
         """Verify payment status using the order reference."""
         token = await self.get_access_token()
 
-        verify_url = f"{self.base_url}/v1/checkout/order/{order_reference}"
+        url = f"{self.base_url}/v1/checkout/transaction"
+
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
             "accountId": self.account_id,
         }
 
+        params = {
+            "idType": "ORDER_REFERENCE",
+            "id": order_reference,
+        }
         logger.info("Verifying Nomba payment: reference=%s", order_reference)
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(verify_url, headers=headers)
+                response = await client.get(url, headers=headers, params=params)
 
             if response.status_code != 200:
                 logger.error(
-                    "Payment verification failed: %s - %s",
+                    "Nomba verification failed: status=%s body=%s",
                     response.status_code,
                     response.text,
                 )
                 return None
 
-            payment_data = response.json()
-            if not isinstance(payment_data, dict):
-                logger.error("Invalid payment verification data format")
+            res = response.json()
+
+            if res.get("code") != "00":
+                logger.error("Nomba verification returned non-success code: %s", res)
                 return None
 
-            if payment_data.get("code") != "00":
-                logger.error(
-                    "Verification returned error code: %s", payment_data.get("code")
-                )
-                return None
-
-            data = payment_data.get("data", {})
+            data = res.get("data", {})
             if not data:
                 logger.error("No data in payment verification response")
                 return None
 
+            success_value = data.get("success")
+            success = str(success_value).lower() == "true"
+            message = str(data.get("message") or "")
+
+            # Nomba can return code=00 with success=false when order is not found.
+            if not success and "no order found" in message.lower():
+                logger.info(
+                    "Nomba verification not found yet: reference=%s message=%s",
+                    order_reference,
+                    message,
+                )
+                return None
+            
+            order = data.get("order") or {}
+            txn = data.get("transactionDetails") or {}
+            card = data.get("cardDetails") or {}
+
+            status_text = str(txn.get("statusCode") or "")
+            normalized_status = status_text.upper().strip()
+
+            if "APPROVED" in normalized_status:
+                normalized_status = "APPROVED"
+            elif "SUCCESS" in normalized_status:
+                normalized_status = "SUCCESS"
+
             logger.info("Payment verification completed: reference=%s", order_reference)
 
-            # The Nomba checkout order status endpoint returns the order directly
             return {
-                "status": data.get("status", "UNKNOWN"),
-                "orderReference": data.get("orderReference", order_reference),
-                "amount": data.get("amount"),
-                "currency": data.get("currency", "NGN"),
-                "paymentMethod": data.get("onlineCheckoutPaymentMethod"),
-                "customerEmail": data.get("customerEmail"),
-                "cardType": data.get("onlineCheckoutCardType"),
-                "cardLast4": data.get("onlineCheckoutCardPanLast4Digits"),
-                "gatewayMessage": data.get("gatewayMessage"),
-                "timeCreated": data.get("timeCreated"),
-                "timeUpdated": data.get("timeUpdated"),
-                "transactionReference": data.get("id", order_reference),
-                "responseCode": payment_data.get("code"),
-                "responseDescription": payment_data.get("description"),
+                "status": normalized_status or status_text,
+                "orderReference": order.get("orderReference"),
+                "amount": order.get("amount"),
+                "currency": order.get("currency"),
+                "paymentReference": txn.get("paymentReference"),
+                "transactionReference": txn.get("paymentVendorReference") or txn.get("paymentReference"),
+                "paymentMethod": card.get("cardType") or "card",
+                "transactionDate": txn.get("transactionDate"),
                 "verifiedAt": datetime.now(timezone.utc).isoformat(),
+                "gatewayMessage": message,
             }
-
         except httpx.RequestError as e:
             logger.error("Network error during verification: %s", str(e))
             raise Exception(f"Network error during verification: {str(e)}")

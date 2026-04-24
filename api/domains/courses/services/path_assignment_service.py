@@ -493,6 +493,17 @@ class PathAssignmentService:
         First checks for custom path, then default.
         """
         try:
+            profile = await self._get_user_profile(user_id)
+            if profile and profile.current_path_id:
+                current_path_stmt = select(LearningPath).where(
+                    LearningPath.path_id == profile.current_path_id,
+                    LearningPath.course_id == course_id,
+                )
+                current_path_result = await self.db_session.execute(current_path_stmt)
+                current_path = current_path_result.scalar_one_or_none()
+                if current_path:
+                    return current_path
+
             custom_path = await self._get_student_custom_path(user_id, course_id)
             if custom_path:
                 return custom_path

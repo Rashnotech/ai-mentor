@@ -101,6 +101,7 @@ class OnboardingService:
         learning_style: Optional[LearningStyle] = None,
         primary_goal: Optional[UserGoal] = None,
         selected_course_id: Optional[str] = None,
+        selected_path_id: Optional[int] = None,
         preferred_language: Optional[str] = None,
         timezone: Optional[str] = None,
         notification_preferences: Optional[dict] = None,
@@ -115,6 +116,7 @@ class OnboardingService:
             learning_style: User's learning style (PROJECT_FIRST, INSTRUCTION_FIRST, etc.)
             primary_goal: User's primary goal (GET_A_JOB, BUILD_A_STARTUP, etc.)
             selected_course_id: ID of the selected course
+            selected_path_id: ID of the selected learning path
             preferred_language: Preferred language code (e.g., 'en', 'es', 'fr')
             timezone: User's timezone
             notification_preferences: User's notification preferences
@@ -144,7 +146,26 @@ class OnboardingService:
             if primary_goal:
                 profile.primary_goal = primary_goal
             if selected_course_id:
+                if profile.selected_course_id != selected_course_id and selected_path_id is None:
+                    profile.current_path_id = None
                 profile.selected_course_id = selected_course_id
+            if selected_path_id is not None:
+                resolved_course_id = self._parse_course_id(selected_course_id or profile.selected_course_id)
+                if resolved_course_id is None:
+                    raise AppError(
+                        status_code=400,
+                        detail="Please select a valid course before selecting a learning path.",
+                        error_code="COURSE_REQUIRED_FOR_PATH",
+                    )
+
+                path = await self._get_learning_path(selected_path_id, resolved_course_id)
+                if not path:
+                    raise AppError(
+                        status_code=404,
+                        detail="Selected learning path was not found for the chosen course.",
+                        error_code="LEARNING_PATH_NOT_FOUND",
+                    )
+                profile.current_path_id = path.path_id
             if preferred_language:
                 profile.preferred_language = preferred_language
             if timezone:
@@ -240,6 +261,7 @@ class OnboardingService:
                     await enrollment_service.enroll_student_in_course(
                         student_id=user_id,
                         course_id=course_id,
+                        preferred_path_id=profile.current_path_id,
                     )
 
             profile.onboarding_completed = True
@@ -376,3 +398,11 @@ class OnboardingService:
         if min_price is None:
             return 0.0
         return float(min_price)
+
+    async def _get_learning_path(self, path_id: int, course_id: int) -> Optional[LearningPath]:
+        stmt = select(LearningPath).where(
+            LearningPath.path_id == path_id,
+            LearningPath.course_id == course_id,
+        )
+        result = await self.db_session.execute(stmt)
+        return result.scalar_one_or_none()

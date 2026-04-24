@@ -15,6 +15,7 @@ class OnboardingStepRequest(BaseModel):
     learning_style: Optional[LearningStyle] = Field(None, description="User's preferred learning style")
     primary_goal: Optional[UserGoal] = Field(None, description="User's primary learning goal")
     selected_course_id: Optional[str] = Field(None, description="Selected course ID")
+    selected_path_id: Optional[int] = Field(None, description="Selected learning path ID")
     preferred_language: Optional[str] = Field("en", description="Preferred language code (e.g., 'en', 'es')")
     timezone: Optional[str] = Field("UTC", description="User's timezone")
     notification_preferences: Optional[Dict[str, Any]] = Field(
@@ -36,6 +37,7 @@ class OnboardingProfileResponse(BaseModel):
     learning_style: Optional[str] = Field(None, description="User's learning style")
     primary_goal: Optional[str] = Field(None, description="User's primary goal")
     selected_course_id: Optional[str] = Field(None, description="Selected course ID")
+    selected_path_id: Optional[int] = Field(None, description="Selected learning path ID")
     preferred_language: str = Field(description="Preferred language")
     timezone: str = Field(description="User's timezone")
     notification_preferences: Dict[str, Any] = Field(description="Notification preferences")
