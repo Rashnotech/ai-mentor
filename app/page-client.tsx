@@ -227,7 +227,7 @@ export default function LandingPage() {
                 href="/courses"
                 className="px-8 py-4 bg-transparent hover:bg-white/5 text-white border border-white/30 font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
               >
-                Learn Tech for Business
+                AI-mentor for Business
               </Link>
             </div>
             

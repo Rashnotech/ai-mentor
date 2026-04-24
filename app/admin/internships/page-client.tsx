@@ -553,8 +553,10 @@ export default function InternshipsManagementView() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Selected Track</h3>
                 <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                   <p className="font-medium text-blue-900">{formatTrack(selectedApplication.selected_track)}</p>
-                  {selectedApplication.course_id && (
-                    <p className="text-sm text-blue-700 mt-1">Course ID: {selectedApplication.course_id}</p>
+                  {selectedApplication.course_title ? (
+                    <p className="text-sm text-blue-700 mt-1">Course: {selectedApplication.course_title}</p>
+                  ) : selectedApplication.course_id ? (
+                    <p className="text-sm text-blue-700 mt-1">Course: #{selectedApplication.course_id}</p>
                   )}
                 </div>
               </div>

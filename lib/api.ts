@@ -1632,6 +1632,7 @@ export const internshipApi = {
 // ============================================================================
 
 export interface InternshipApplicationAdminResponse extends InternshipApplicationResponse {
+  course_title?: string | null
   verification_notes?: string
   admin_notes?: string
   reviewed_by?: string

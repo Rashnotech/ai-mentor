@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { FormEvent, useEffect, useMemo, useState } from "react"
 import { getApiErrorMessage, internshipApi } from "@/lib/api"
+import InternshipHeader from "../_components/internship-header"
 
 const getStatesFromApi = async () => {
   const response = await fetch("https://nga-states-lga.onrender.com/fetch")
@@ -137,17 +138,17 @@ export default function InternshipCreateProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-5 py-8 md:px-10 md:py-10">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8">
-          <Link href="/internship" className="inline-flex items-center gap-2 text-base font-medium text-gray-600 hover:text-gray-900">
-            <span aria-hidden>←</span>
-            <span>Go to Internship</span>
-          </Link>
-        </div>
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_10%_10%,#dbeafe_0%,transparent_36%),radial-gradient(circle_at_95%_0%,#bfdbfe_0%,transparent_30%),linear-gradient(175deg,#f8fafc_0%,#eff6ff_65%,#dbeafe_100%)] px-4 py-6 sm:px-6 md:px-10 md:py-10">
+      <InternshipHeader />
+      <div className="pointer-events-none absolute inset-0 opacity-35">
+        <div className="absolute left-0 top-12 h-52 w-52 rounded-full bg-blue-200/60 blur-3xl" />
+        <div className="absolute right-0 top-0 h-60 w-60 rounded-full bg-blue-200/60 blur-3xl" />
+      </div>
 
-        <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
-          <aside className="rounded-2xl border border-gray-200 bg-white p-6">
+      <div className="relative mx-auto max-w-6xl pt-20">
+
+        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+          <aside className="overflow-x-auto rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur md:p-6">
             <ol className="space-y-0">
               {steps.map((step, index) => (
                 <li key={step.id} className="relative flex items-start gap-4 pb-7 last:pb-0">
@@ -156,12 +157,12 @@ export default function InternshipCreateProfilePage() {
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-base font-semibold ${
                       step.active
                         ? "border-blue-600 bg-blue-600 text-white"
-                        : "border-gray-300 bg-white text-gray-500"
+                        : "border-slate-300 bg-white text-slate-500"
                     }`}
                   >
                     {step.id}
                   </span>
-                  <span className={`pt-1 text-lg font-semibold ${step.active ? "text-gray-900" : "text-gray-500"}`}>
+                  <span className={`pt-1 text-base font-semibold md:text-lg ${step.active ? "text-slate-900" : "text-slate-500"}`}>
                     {step.label}
                   </span>
                 </li>
@@ -169,12 +170,13 @@ export default function InternshipCreateProfilePage() {
             </ol>
           </aside>
 
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 md:p-8">
-            <h1 className="text-3xl font-bold text-gray-900">Create Profile</h1>
+          <section className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-lg shadow-slate-200/70 backdrop-blur md:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Step 1 of 4</p>
+            <h1 className="mt-2 text-2xl font-bold text-slate-900 md:text-3xl">Create Profile</h1>
 
             <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
               <div>
-                <label htmlFor="email" className="mb-2 block text-sm font-semibold text-gray-900">
+                <label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-900">
                   Email
                 </label>
                 <input
@@ -185,13 +187,13 @@ export default function InternshipCreateProfilePage() {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                  className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label htmlFor="firstName" className="mb-2 block text-sm font-semibold text-gray-900">
+                  <label htmlFor="firstName" className="mb-2 block text-sm font-semibold text-slate-900">
                     First name
                   </label>
                   <input
@@ -202,11 +204,11 @@ export default function InternshipCreateProfilePage() {
                     required
                     value={formData.first_name}
                     onChange={(e) => setFormData((prev) => ({ ...prev, first_name: e.target.value }))}
-                    className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                 </div>
                 <div>
-                  <label htmlFor="lastName" className="mb-2 block text-sm font-semibold text-gray-900">
+                  <label htmlFor="lastName" className="mb-2 block text-sm font-semibold text-slate-900">
                     Last name
                   </label>
                   <input
@@ -217,13 +219,13 @@ export default function InternshipCreateProfilePage() {
                     required
                     value={formData.last_name}
                     onChange={(e) => setFormData((prev) => ({ ...prev, last_name: e.target.value }))}
-                    className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="telephone" className="mb-2 block text-sm font-semibold text-gray-900">
+                <label htmlFor="telephone" className="mb-2 block text-sm font-semibold text-slate-900">
                   Telephone
                 </label>
                 <input
@@ -234,20 +236,20 @@ export default function InternshipCreateProfilePage() {
                   required
                   value={formData.telephone}
                   onChange={(e) => setFormData((prev) => ({ ...prev, telephone: e.target.value }))}
-                  className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </div>
 
               <div>
-                <label htmlFor="hearAboutUs" className="mb-2 block text-sm font-semibold text-gray-900">
-                  How did you hear about us <span className="font-normal text-gray-500">(optional)</span>
+                <label htmlFor="hearAboutUs" className="mb-2 block text-sm font-semibold text-slate-900">
+                  How did you hear about us <span className="font-normal text-slate-500">(optional)</span>
                 </label>
                 <select
                   id="hearAboutUs"
                   name="hearAboutUs"
                   value={formData.hear_about_us}
                   onChange={(e) => setFormData((prev) => ({ ...prev, hear_about_us: e.target.value }))}
-                  className="h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   <option value="">Select</option>
                   <option value="friend">Friend or colleague</option>
@@ -261,7 +263,7 @@ export default function InternshipCreateProfilePage() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label htmlFor="country" className="mb-2 block text-sm font-semibold text-gray-900">
+                  <label htmlFor="country" className="mb-2 block text-sm font-semibold text-slate-900">
                     Country
                   </label>
                   <select
@@ -273,7 +275,7 @@ export default function InternshipCreateProfilePage() {
                       setSelectedCountry(nextCountry)
                       setFormData((prev) => ({ ...prev, country: nextCountry, state: "" }))
                     }}
-                    className="h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   >
                     {countries.map((country) => (
                       <option key={country} value={country}>
@@ -284,7 +286,7 @@ export default function InternshipCreateProfilePage() {
                 </div>
 
                 <div>
-                  <label htmlFor="state" className="mb-2 block text-sm font-semibold text-gray-900">
+                  <label htmlFor="state" className="mb-2 block text-sm font-semibold text-slate-900">
                     State or Territory
                   </label>
                   <select
@@ -295,7 +297,7 @@ export default function InternshipCreateProfilePage() {
                     onChange={(e) => setFormData((prev) => ({ ...prev, state: e.target.value }))}
                     key={selectedCountry}
                     disabled={selectedCountry === "Nigeria" && isLoadingStates}
-                    className="h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   >
                     <option value="" disabled>
                       {selectedCountry === "Nigeria" && isLoadingStates ? "Loading states..." : "Select a state"}
@@ -310,7 +312,7 @@ export default function InternshipCreateProfilePage() {
               </div>
 
               <div>
-                <label htmlFor="institution" className="mb-2 block text-sm font-semibold text-gray-900">
+                <label htmlFor="institution" className="mb-2 block text-sm font-semibold text-slate-900">
                   Institution
                 </label>
                 <select
@@ -324,7 +326,7 @@ export default function InternshipCreateProfilePage() {
                       institution_type: e.target.value as "" | "university" | "polytechnic" | "college",
                     }))
                   }
-                  className="h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   <option value="" disabled>
                     Select institution type
@@ -345,7 +347,7 @@ export default function InternshipCreateProfilePage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex h-12 items-center justify-center rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 md:w-auto"
                 >
                   {isSubmitting ? "Creating profile..." : "Continue"}
                 </button>

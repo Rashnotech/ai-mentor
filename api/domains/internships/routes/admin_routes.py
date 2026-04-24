@@ -17,6 +17,7 @@ from domains.internships.models.internship import (
     ApplicationStatus,
     VerificationStatus,
 )
+from domains.courses.models.course import Course
 from domains.internships.schemas.internship_schema import InternshipApplicationResponse
 from domains.mailings.services.email_service import EmailService
 from core.errors import AppError
@@ -41,6 +42,7 @@ class RejectApplicationRequest(BaseModel):
 
 class InternshipApplicationAdminResponse(InternshipApplicationResponse):
     """Extended response with admin fields."""
+    course_title: Optional[str] = None
     verification_notes: Optional[str]
     admin_notes: Optional[str]
     reviewed_by: Optional[str]
@@ -140,6 +142,14 @@ async def list_applications(
         # Execute query
         result = await db_session.execute(stmt)
         applications = result.scalars().all()
+
+        # Resolve course titles for display in admin UI
+        course_ids = {app.course_id for app in applications if app.course_id is not None}
+        course_titles: dict[int, str] = {}
+        if course_ids:
+            courses_stmt = select(Course.course_id, Course.title).where(Course.course_id.in_(course_ids))
+            courses_result = await db_session.execute(courses_stmt)
+            course_titles = {course_id: title for course_id, title in courses_result.all()}
         
         # Convert to response format
         response_apps = [
@@ -161,6 +171,7 @@ async def list_applications(
                 verification_notes=app.verification_notes,
                 selected_track=app.selected_track,
                 course_id=app.course_id,
+                course_title=course_titles.get(app.course_id) if app.course_id is not None else None,
                 status=app.status.value,
                 acknowledgment_sent=app.acknowledgment_sent,
                 admin_notes=app.admin_notes,
@@ -683,6 +694,7 @@ def _to_admin_response(application: InternshipApplication) -> InternshipApplicat
         verification_notes=application.verification_notes,
         selected_track=application.selected_track,
         course_id=application.course_id,
+        course_title=None,
         status=application.status.value,
         acknowledgment_sent=application.acknowledgment_sent,
         admin_notes=application.admin_notes,

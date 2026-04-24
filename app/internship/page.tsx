@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ArrowRight, FileText, BadgeCheck, Upload } from "lucide-react"
+import InternshipHeader from "./_components/internship-header"
 
 const steps = [
   {
@@ -66,32 +67,33 @@ const verificationDocs = [
 
 export default function InternshipPage() {
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-6 md:p-12">
-      <div className="mx-auto max-w-6xl">
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_12%_18%,#dbeafe_0%,transparent_40%),radial-gradient(circle_at_88%_0%,#bfdbfe_0%,transparent_34%),linear-gradient(160deg,#f8fafc_0%,#eef2ff_60%,#dbeafe_100%)] px-4 py-6 sm:px-6 md:px-10 md:py-10">
+      <InternshipHeader />
+      <div className="pointer-events-none absolute inset-0 opacity-40">
+        <div className="absolute -left-20 top-20 h-56 w-56 rounded-full bg-blue-200/45 blur-3xl" />
+        <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-blue-200/50 blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto max-w-6xl pt-20">
         {/* Header */}
-        <div className="mb-12 flex items-center justify-between">
+        <div className="mb-8 rounded-2xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur md:mb-10">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 md:text-4xl">
-              Rashnotech Internship
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">Internship Programme</p>
+            <h1 className="mt-2 text-2xl font-bold text-slate-900 md:text-4xl">
+              Build Real Experience While You Learn
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-sm text-slate-600 md:text-base">
               Your path from learning courses to real internship experience
             </p>
           </div>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
-          >
-            ← Back Home
-          </Link>
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid gap-8 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3">
           {/* Left Column: Steps */}
           <div className="lg:col-span-2">
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-              <h2 className="mb-8 text-2xl font-bold text-gray-900">
+            <div className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-lg shadow-slate-200/70 backdrop-blur md:p-8">
+              <h2 className="mb-6 text-xl font-bold text-slate-900 md:mb-8 md:text-2xl">
                 Your next steps
               </h2>
 
@@ -117,10 +119,10 @@ export default function InternshipPage() {
                       <div
                         className={`relative mb-8 flex gap-6 rounded-xl border p-6 transition-all ${
                           isActive
-                            ? "border-blue-200 bg-blue-50"
+                            ? "border-blue-200 bg-blue-50/80"
                             : isLocked
-                              ? "border-gray-200 bg-gray-50"
-                              : "border-green-200 bg-green-50"
+                              ? "border-slate-200 bg-slate-50"
+                              : "border-emerald-200 bg-emerald-50"
                         }`}
                       >
                         {/* Number Badge */}
@@ -129,8 +131,8 @@ export default function InternshipPage() {
                             isActive
                               ? "bg-blue-600 text-white"
                               : isLocked
-                                ? "border-2 border-gray-400 text-gray-400"
-                                : "border-2 border-green-600 text-green-600"
+                                ? "border-2 border-slate-400 text-slate-400"
+                                : "border-2 border-emerald-600 text-emerald-600"
                           }`}
                         >
                           {step.id}
@@ -140,14 +142,14 @@ export default function InternshipPage() {
                         <div className="flex-1">
                           <h3
                             className={`text-lg font-semibold ${
-                              isLocked ? "text-gray-400" : "text-gray-900"
+                              isLocked ? "text-slate-400" : "text-slate-900"
                             }`}
                           >
                             {step.title}
                           </h3>
                           <p
                             className={`mt-1 text-sm ${
-                              isLocked ? "text-gray-400" : "text-gray-600"
+                              isLocked ? "text-slate-400" : "text-slate-600"
                             }`}
                           >
                             {step.description}
@@ -158,7 +160,7 @@ export default function InternshipPage() {
                         {isActive && (
                           <Link
                             href="/internship/create-profile"
-                            className="ml-4 flex h-12 shrink-0 items-center gap-2 rounded-lg border border-blue-600 bg-blue-600 px-4 py-3 font-semibold text-white transition-all hover:border-blue-700 hover:bg-blue-700"
+                            className="ml-0 mt-4 flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-600 bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:border-blue-700 hover:bg-blue-700 md:ml-4 md:mt-0 md:h-12 md:w-auto"
                           >
                             Go
                             <ArrowRight className="h-4 w-4" />
@@ -176,21 +178,21 @@ export default function InternshipPage() {
           <div className="lg:col-span-1">
             <div className="space-y-4">
               {/* Student Types Card */}
-              <div className="rounded-xl border border-gray-200 bg-white p-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              <div className="rounded-2xl border border-white/70 bg-white/90 p-6 shadow-sm backdrop-blur">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                   Who can apply
                 </p>
-                <h3 className="mt-3 text-lg font-bold text-gray-900">
+                <h3 className="mt-3 text-lg font-bold text-slate-900">
                   Open for all students
                 </h3>
-                <p className="mt-4 text-sm text-gray-600">
+                <p className="mt-4 text-sm text-slate-600">
                   Whether you're a student at a university, polytechnic, or college, Rashnotech internship is designed for you. We welcome motivated learners ready to gain real-world experience and build their professional portfolio.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {studentTypes.map((type) => (
                     <span
                       key={type}
-                      className="inline-block rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700"
+                      className="inline-block rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700"
                     >
                       {type}
                     </span>
@@ -199,8 +201,8 @@ export default function InternshipPage() {
               </div>
 
               {/* Verification Documents Card */}
-              <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              <div className="space-y-3 rounded-2xl border border-white/70 bg-white/90 p-5 shadow-sm backdrop-blur">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                   Verification process
                 </p>
 
@@ -238,15 +240,15 @@ export default function InternshipPage() {
               </div>
 
               {/* Benefits / Info Cards */}
-              <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <div className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-1">
                   <div className="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-800">
                     Structured Learning
                   </div>
-                  <div className="rounded-lg bg-sky-50 px-3 py-2 text-sm font-medium text-sky-800">
+                  <div className="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
                     Work Experience
                   </div>
-                  <div className="rounded-lg bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-800">
+                  <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
                     Career Ready
                   </div>
                 </div>
