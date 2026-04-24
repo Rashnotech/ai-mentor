@@ -67,19 +67,19 @@ const verificationDocs = [
 
 export default function InternshipPage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_12%_18%,#dbeafe_0%,transparent_40%),radial-gradient(circle_at_88%_0%,#bfdbfe_0%,transparent_34%),linear-gradient(160deg,#f8fafc_0%,#eef2ff_60%,#dbeafe_100%)] px-4 py-6 sm:px-6 md:px-10 md:py-10">
+    <div className="relative min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_12%_18%,#dbeafe_0%,transparent_40%),radial-gradient(circle_at_88%_0%,#bfdbfe_0%,transparent_34%),linear-gradient(160deg,#f8fafc_0%,#eef2ff_60%,#dbeafe_100%)] px-4 py-6 sm:px-6 md:px-10 md:py-10">
       <InternshipHeader />
       <div className="pointer-events-none absolute inset-0 opacity-40">
         <div className="absolute -left-20 top-20 h-56 w-56 rounded-full bg-blue-200/45 blur-3xl" />
         <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-blue-200/50 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-6xl pt-20">
+      <div className="relative pt-24 sm:pt-24 md:pt-20">
         {/* Header */}
-        <div className="mb-8 rounded-2xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur md:mb-10">
+        <div className="mb-8 -mx-4 rounded-2xl border border-white/60 bg-white/80 p-4 shadow-sm backdrop-blur sm:-mx-6 sm:p-5 md:-mx-10 md:mb-10">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">Internship Programme</p>
-            <h1 className="mt-2 text-2xl font-bold text-slate-900 md:text-4xl">
+            <h1 className="mt-2 text-xl font-bold leading-tight text-slate-900 sm:text-2xl md:text-4xl">
               Build Real Experience While You Learn
             </h1>
             <p className="mt-2 text-sm text-slate-600 md:text-base">
@@ -89,7 +89,8 @@ export default function InternshipPage() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-6 lg:grid-cols-3">
           {/* Left Column: Steps */}
           <div className="lg:col-span-2">
             <div className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-lg shadow-slate-200/70 backdrop-blur md:p-8">
@@ -117,7 +118,7 @@ export default function InternshipPage() {
 
                       {/* Step Card */}
                       <div
-                        className={`relative mb-8 flex gap-6 rounded-xl border p-6 transition-all ${
+                        className={`relative mb-8 flex flex-col gap-4 rounded-xl border p-6 transition-all md:flex-row md:gap-6 ${
                           isActive
                             ? "border-blue-200 bg-blue-50/80"
                             : isLocked
@@ -139,7 +140,7 @@ export default function InternshipPage() {
                         </div>
 
                         {/* Step Content */}
-                        <div className="flex-1">
+                        <div className="min-w-0 flex-1">
                           <h3
                             className={`text-lg font-semibold ${
                               isLocked ? "text-slate-400" : "text-slate-900"
@@ -160,7 +161,7 @@ export default function InternshipPage() {
                         {isActive && (
                           <Link
                             href="/internship/create-profile"
-                            className="ml-0 mt-4 flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-600 bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:border-blue-700 hover:bg-blue-700 md:ml-4 md:mt-0 md:h-12 md:w-auto"
+                            className="mt-2 flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-600 bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:border-blue-700 hover:bg-blue-700 md:ml-4 md:mt-0 md:h-12 md:w-auto"
                           >
                             Go
                             <ArrowRight className="h-4 w-4" />
@@ -256,6 +257,7 @@ export default function InternshipPage() {
 
 
             </div>
+          </div>
           </div>
         </div>
       </div>
