@@ -357,7 +357,19 @@ export default function OnboardingPage() {
 
   const handlePaymentSuccess = () => {
     setShowPaymentModal(false)
-    setStep(3)
+    
+    // Update Zustand store with onboarding status
+    updateUser({ onboarding_completed: true })
+    
+    // Show success message and redirect to dashboard
+    toast.success("Payment verified!", {
+      description: "Welcome to your course! Redirecting to dashboard...",
+    })
+    
+    // Redirect to dashboard after a brief delay
+    setTimeout(() => {
+      router.push("/dashboard")
+    }, 1500)
   }
 
   // Get total steps based on mode

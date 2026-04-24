@@ -111,7 +111,7 @@ export function PaymentModal({
       const detail = error.response?.data?.detail || error.message
       const errorCode = error.response?.data?.error_code
 
-      if (errorCode === "ALREADY_ACTIVE" || errorCode === "ALREADY_PAID") {
+      if (errorCode === "ALREADY_ACTIVE" || errorCode === "ALREADY_PAID" || errorCode === "ALREADY_ENROLLED") {
         toast.success("Your enrollment is already active!")
         onSuccess()
         return
