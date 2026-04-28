@@ -2,7 +2,7 @@
 """
 Student enrollment and progress routes.
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
 from typing import List
@@ -255,6 +255,7 @@ async def check_enrollment_status_by_slug(
 )
 async def get_learning_content_by_slug(
     slug: str,
+    preview: bool = Query(False, description="Allow mentors and admins to preview course content without enrollment"),
     current_user: User = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db_session),
 ):
@@ -301,6 +302,7 @@ async def get_learning_content_by_slug(
         path_id = None
         user_skill_level = None
         user_learning_mode = None
+        is_preview_mode = preview and current_user.get("role") in [UserRole.ADMIN, UserRole.MENTOR]
         
         if profile:
             user_skill_level = profile.skill_level
@@ -317,7 +319,7 @@ async def get_learning_content_by_slug(
                         is_enrolled = True
                         path_id = profile.current_path_id
         
-        if not is_enrolled:
+        if not is_enrolled and not is_preview_mode:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You are not enrolled in this course",
@@ -411,7 +413,7 @@ async def get_learning_content_by_slug(
             )
         
         # Update user's current_path_id if it changed
-        if profile and profile.current_path_id != path.path_id:
+        if profile and profile.current_path_id != path.path_id and not is_preview_mode:
             profile.current_path_id = path.path_id
             await db_session.commit()
         
@@ -421,20 +423,26 @@ async def get_learning_content_by_slug(
         modules = modules_result.scalars().all()
         
         # Get lesson progress for the user (from lesson_progress table)
-        lesson_progress_stmt = select(LessonProgress).where(
-            LessonProgress.user_id == user_id,
-            LessonProgress.completed == True
-        )
-        lesson_progress_result = await db_session.execute(lesson_progress_stmt)
-        lesson_progress_records = lesson_progress_result.scalars().all()
+        if is_preview_mode:
+            lesson_progress_records = []
+        else:
+            lesson_progress_stmt = select(LessonProgress).where(
+                LessonProgress.user_id == user_id,
+                LessonProgress.completed == True
+            )
+            lesson_progress_result = await db_session.execute(lesson_progress_stmt)
+            lesson_progress_records = lesson_progress_result.scalars().all()
         
         # Get project submissions for the user (to get solution_url and completion status)
         # Order by submitted_at descending so the dictionary keeps the most recent submission
-        submissions_stmt = select(ProjectSubmission).where(
-            ProjectSubmission.user_id == user_id
-        ).order_by(ProjectSubmission.submitted_at.desc())
-        submissions_result = await db_session.execute(submissions_stmt)
-        submissions_records = submissions_result.scalars().all()
+        if is_preview_mode:
+            submissions_records = []
+        else:
+            submissions_stmt = select(ProjectSubmission).where(
+                ProjectSubmission.user_id == user_id
+            ).order_by(ProjectSubmission.submitted_at.desc())
+            submissions_result = await db_session.execute(submissions_stmt)
+            submissions_records = submissions_result.scalars().all()
         # Build dict with most recent submission per project (first one in desc order)
         project_submissions = {}
         for sub in submissions_records:
@@ -475,7 +483,7 @@ async def get_learning_content_by_slug(
             # Get user's quiz responses for this module
             question_ids = [q.question_id for q in questions]
             user_responses = {}
-            if question_ids:
+            if question_ids and not is_preview_mode:
                 responses_stmt = select(AssessmentResponse).where(
                     AssessmentResponse.user_id == user_id,
                     AssessmentResponse.question_id.in_(question_ids)

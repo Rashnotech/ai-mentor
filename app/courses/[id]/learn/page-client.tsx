@@ -2,7 +2,7 @@
 
 import { useState, use, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { 
   ChevronLeft, 
   PlayCircle, 
@@ -29,6 +29,7 @@ import {
   FileCheck,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { studentCoursesApi, type LearningContentResponse, type ModuleContent, type LessonContent, type ProjectContent, type QuizContent, type QuizQuestion } from "@/lib/api"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
@@ -289,43 +290,45 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
                          (module.quiz?.is_completed ? 1 : 0)
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white max-w-full">
       <button
         onClick={onToggle}
-        className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        className="w-full p-3 flex items-center justify-between gap-3 hover:bg-gray-50 transition-colors"
       >
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
             module.progress_percent === 100 ? "bg-green-100" : "bg-blue-100"
           }`}>
             {module.progress_percent === 100 ? (
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
+              <CheckCircle2 className="w-4 h-4 text-green-600" />
             ) : (
-              <span className="text-sm font-bold text-blue-600">{module.order}</span>
+              <span className="text-xs font-bold text-blue-600">{module.order}</span>
             )}
           </div>
-          <div className="text-left">
-            <h3 className="font-semibold text-gray-900">{module.title}</h3>
-            <p className="text-sm text-gray-500">
+          <div className="text-left min-w-0 flex-1">
+            <h3 className="font-semibold text-gray-900 text-sm leading-snug line-clamp-1 break-words">
+              {module.title}
+            </h3>
+            <p className="text-xs text-gray-500 line-clamp-1 break-words">
               {completedItems}/{totalItems} completed • {module.progress_percent}%
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden hidden sm:block">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden hidden md:block">
             <div
               className="h-full bg-blue-600 transition-all duration-300"
               style={{ width: `${module.progress_percent}%` }}
             />
           </div>
-          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
         </div>
       </button>
 
       {isExpanded && (
-        <div className="p-4 pt-0 space-y-3 border-t border-gray-100">
+        <div className="p-3 pt-0 space-y-2 border-t border-gray-100">
           {module.description && (
-            <p className="text-sm text-gray-600 px-1 py-2">{module.description}</p>
+            <p className="text-xs text-gray-600 px-1 py-2 line-clamp-2 break-words">{module.description}</p>
           )}
           
           {module.lessons.map((lesson) => (
@@ -341,7 +344,7 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
           {module.quiz && module.quiz.questions.length > 0 && (
             <div
               onClick={() => onSelectItem(`quiz-${module.module_id}`, "quiz")}
-              className={`p-4 rounded-xl border transition-all cursor-pointer ${
+              className={`p-3 rounded-xl border transition-all cursor-pointer max-w-full ${
                 activeItemId === `quiz-${module.module_id}`
                   ? "border-amber-300 bg-amber-50 shadow-sm"
                   : module.quiz.is_completed
@@ -349,9 +352,9 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
                   : "border-gray-200 bg-white hover:border-amber-200 hover:shadow-sm"
               }`}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 min-w-0">
                 <div
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                     module.quiz.is_completed
                       ? "bg-green-100 text-green-600"
                       : activeItemId === `quiz-${module.module_id}`
@@ -359,27 +362,27 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
                       : "bg-gray-100 text-gray-500"
                   }`}
                 >
-                  {module.quiz.is_completed ? <CheckCircle2 className="w-5 h-5" /> : <HelpCircle className="w-5 h-5" />}
+                  {module.quiz.is_completed ? <CheckCircle2 className="w-4 h-4" /> : <HelpCircle className="w-4 h-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] font-medium px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
                       Quiz
                     </span>
                     {module.quiz.is_completed && (
-                      <span className="text-xs font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded">
+                      <span className="text-[11px] font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded">
                         {module.quiz.score_percent}%
                       </span>
                     )}
                   </div>
-                  <h4 className={`font-semibold mt-1 ${module.quiz.is_completed ? "text-green-700" : "text-gray-900"}`}>
+                  <h4 className={`font-semibold mt-1 text-sm leading-snug break-words ${module.quiz.is_completed ? "text-green-700" : "text-gray-900"}`}>
                     Module Quiz
                   </h4>
-                  <p className="text-sm text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     {module.quiz.answered_count}/{module.quiz.total_questions} questions answered
                   </p>
                 </div>
-                {activeItemId === `quiz-${module.module_id}` && <ArrowRight className="w-5 h-5 text-amber-500 shrink-0" />}
+                {activeItemId === `quiz-${module.module_id}` && <ArrowRight className="w-4 h-4 text-amber-500 shrink-0" />}
               </div>
             </div>
           )}
@@ -409,9 +412,10 @@ interface LessonContentViewProps {
   onNext: () => void
   hasNext: boolean
   isCompleting: boolean
+  previewMode?: boolean
 }
 
-function LessonContentView({ lesson, onComplete, onNext, hasNext, isCompleting }: LessonContentViewProps) {
+function LessonContentView({ lesson, onComplete, onNext, hasNext, isCompleting, previewMode = false }: LessonContentViewProps) {
   // Helper function to extract YouTube video ID from various URL formats
   const getYouTubeEmbedUrl = (url: string): string | null => {
     if (!url) return null
@@ -593,7 +597,7 @@ function LessonContentView({ lesson, onComplete, onNext, hasNext, isCompleting }
       {/* Completion and Navigation Buttons */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
         <div>
-          {!lesson.is_completed ? (
+          {!previewMode && !lesson.is_completed ? (
             <Button 
               onClick={onComplete} 
               className="bg-green-600 hover:bg-green-700"
@@ -611,11 +615,13 @@ function LessonContentView({ lesson, onComplete, onNext, hasNext, isCompleting }
                 </>
               )}
             </Button>
-          ) : (
+          ) : !previewMode ? (
             <div className="flex items-center gap-2 text-green-600">
               <CheckCircle2 className="w-5 h-5" />
               <span className="font-medium">Lesson Completed</span>
             </div>
+          ) : (
+            <div className="text-sm text-gray-500">Preview mode hides completion controls.</div>
           )}
         </div>
         
@@ -623,7 +629,7 @@ function LessonContentView({ lesson, onComplete, onNext, hasNext, isCompleting }
           <Button 
             onClick={onNext} 
             className="bg-blue-600 hover:bg-blue-700"
-            disabled={!lesson.is_completed}
+            disabled={!previewMode && !lesson.is_completed}
           >
             Next
             <ArrowRight className="w-4 h-4 ml-2" />
@@ -643,9 +649,10 @@ interface ProjectContentViewProps {
   onSubmit: (link: string) => Promise<void>
   onNext: () => void
   hasNext: boolean
+  previewMode?: boolean
 }
 
-function ProjectContentView({ project, onSubmit, onNext, hasNext }: ProjectContentViewProps) {
+function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = false }: ProjectContentViewProps) {
   const [linkValue, setLinkValue] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -746,7 +753,14 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext }: ProjectConte
         </div>
       )}
 
-      {!project.is_submitted ? (
+      {previewMode ? (
+        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+          <h3 className="font-semibold text-gray-900 mb-2">Preview Mode</h3>
+          <p className="text-sm text-gray-600">
+            Students would normally see the project submission area here. In preview, submission controls are hidden.
+          </p>
+        </div>
+      ) : !project.is_submitted ? (
         <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
           <h3 className="font-semibold text-gray-900 mb-3">Submit Your Project</h3>
           <div className="flex gap-2">
@@ -874,7 +888,7 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext }: ProjectConte
           <Button 
             onClick={onNext} 
             className="bg-blue-600 hover:bg-blue-700"
-            disabled={!project.is_completed}
+            disabled={!previewMode && !project.is_completed}
           >
             Next
             <ArrowRight className="w-4 h-4 ml-2" />
@@ -900,9 +914,10 @@ interface QuizContentViewProps {
   }>
   onNext: () => void
   hasNext: boolean
+  previewMode?: boolean
 }
 
-function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext }: QuizContentViewProps) {
+function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, previewMode = false }: QuizContentViewProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [showResults, setShowResults] = useState(quiz.is_completed)
@@ -979,7 +994,7 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext }:
     ? Math.round((correctAnswers.length / localQuestions.length) * 100) 
     : quiz.score_percent
 
-  if (showResults || quiz.is_completed) {
+  if (!previewMode && (showResults || quiz.is_completed)) {
     const passPercentage = 70
     const passed = localScorePercent >= passPercentage
 
@@ -1146,8 +1161,8 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext }:
                 return (
                   <button
                     key={idx}
-                    onClick={() => !isAnswered && setSelectedAnswer(option)}
-                    disabled={isAnswered}
+                    onClick={() => !isAnswered && !previewMode && setSelectedAnswer(option)}
+                    disabled={isAnswered || previewMode}
                     className={`w-full p-4 rounded-xl border text-left transition-all ${
                       isAnswered
                         ? isCorrect
@@ -1187,8 +1202,8 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext }:
           ) : (
             <textarea
               value={selectedAnswer || currentQuestion.user_answer || ""}
-              onChange={(e) => !currentQuestion.is_answered && setSelectedAnswer(e.target.value)}
-              disabled={currentQuestion.is_answered}
+              onChange={(e) => !currentQuestion.is_answered && !previewMode && setSelectedAnswer(e.target.value)}
+              disabled={currentQuestion.is_answered || previewMode}
               placeholder="Type your answer here..."
               className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 min-h-[100px] disabled:bg-gray-50 disabled:text-gray-500"
             />
@@ -1257,7 +1272,27 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext }:
           Previous
         </Button>
         
-        {currentQuestion?.is_answered ? (
+          {previewMode ? (
+            hasNext ? (
+              <Button
+                onClick={() => {
+                  if (isLastQuestion) {
+                    onNext()
+                  } else {
+                    handleNextQuestion()
+                  }
+                }}
+                className="bg-amber-600 hover:bg-amber-700"
+              >
+                {isLastQuestion ? "Next" : "Next Question"}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            ) : (
+              <Button className="bg-amber-600 hover:bg-amber-700" disabled>
+                Preview Complete
+              </Button>
+            )
+          ) : currentQuestion?.is_answered ? (
           <Button
             onClick={handleNextQuestion}
             className="bg-amber-600 hover:bg-amber-700"
@@ -1296,6 +1331,8 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext }:
 export default function LearningModulePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isPreviewMode = searchParams.get("preview") === "1" || searchParams.get("preview") === "true"
   const [isLoading, setIsLoading] = useState(true)
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [courseContent, setCourseContent] = useState<LearningContentResponse | null>(null)
@@ -1307,7 +1344,7 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const content = await studentCoursesApi.getLearningContentBySlug(id)
+        const content = await studentCoursesApi.getLearningContentBySlug(id, isPreviewMode ? { preview: true } : undefined)
         setCourseContent(content)
         setIsEnrolled(true)
         
@@ -1350,7 +1387,7 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
     }
 
     fetchContent()
-  }, [id, router])
+  }, [id, router, isPreviewMode])
 
   const handleToggleModule = (moduleId: number) => {
     setExpandedModules(prev => {
@@ -1665,6 +1702,11 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {isPreviewMode && (
+              <div className="hidden sm:inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 border border-amber-200">
+                Preview mode
+              </div>
+            )}
             <div className="hidden sm:flex items-center gap-3">
               <span className="text-sm text-gray-500">
                 Progress: {courseContent.progress.overall_percent}%
@@ -1683,7 +1725,7 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
 
       <div className="container mx-auto px-4 py-6">
         <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 space-y-3">
+          <div className="lg:col-span-1 space-y-3 lg:sticky lg:top-24 lg:self-start">
             <div className="p-4 bg-white rounded-xl border border-gray-200 mb-4">
               <h2 className="font-semibold text-gray-900 mb-2">Course Progress</h2>
               <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -1698,16 +1740,31 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            {courseContent.modules.map((module) => (
-              <ModuleAccordion
-                key={module.module_id}
-                module={module}
-                isExpanded={expandedModules.has(module.module_id)}
-                onToggle={() => handleToggleModule(module.module_id)}
-                activeItemId={activeItemId}
-                onSelectItem={handleSelectItem}
-              />
-            ))}
+            <div className="rounded-xl border border-gray-200 bg-white">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <div>
+                  <h2 className="font-semibold text-gray-900">Modules</h2>
+                  <p className="text-xs text-gray-500">Scroll to view the rest of the course</p>
+                </div>
+                <span className="text-xs font-medium text-gray-400">
+                  {courseContent.modules.length} total
+                </span>
+              </div>
+              <ScrollArea className="h-[calc(100vh-15rem)]">
+                <div className="space-y-3 p-4 pr-3">
+                  {courseContent.modules.map((module) => (
+                    <ModuleAccordion
+                      key={module.module_id}
+                      module={module}
+                      isExpanded={expandedModules.has(module.module_id)}
+                      onToggle={() => handleToggleModule(module.module_id)}
+                      activeItemId={activeItemId}
+                      onSelectItem={handleSelectItem}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
           </div>
 
           <div className="lg:col-span-2">
@@ -1719,6 +1776,7 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
                   onNext={handleNext}
                   hasNext={hasNextItem()}
                   isCompleting={isCompleting}
+                  previewMode={isPreviewMode}
                 />
               )}
 
@@ -1728,6 +1786,7 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
                   onSubmit={handleSubmitProject}
                   onNext={handleNext}
                   hasNext={hasNextItem()}
+                  previewMode={isPreviewMode}
                 />
               )}
 
@@ -1738,6 +1797,7 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
                   onSubmitAnswer={handleSubmitQuizAnswer}
                   onNext={handleNext}
                   hasNext={hasNextItem()}
+                  previewMode={isPreviewMode}
                 />
               )}
 

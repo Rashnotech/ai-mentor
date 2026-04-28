@@ -119,6 +119,7 @@ class BootcampStartService:
         Args:
             bootcamp_id: The bootcamp ID
             course_id: The linked course ID
+            path_id: The linked learning path ID
             now: Current timestamp
             
         Returns:
@@ -163,7 +164,6 @@ class BootcampStartService:
                     course_id=course_id,
                     enrolled_at=now,
                     is_active=True,
-                    # Note: enrollment_type="bootcamp" could be added with migration
                 )
                 self.session.add(course_enrollment)
                 enrollments_created += 1

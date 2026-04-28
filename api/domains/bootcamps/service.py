@@ -16,6 +16,7 @@ from domains.bootcamps.models import (
     BootcampStatus,
     EnrollmentPaymentStatus,
 )
+from domains.courses.models.course import LearningPath
 from domains.users.models.user import User, UserRole
 from core.errors import AppError
 import logging
@@ -124,6 +125,8 @@ class BootcampService:
                     detail="End date must be after start date",
                     error_code="INVALID_DATES",
                 )
+
+            # No longer validating linked learning path here (path support was reverted)
 
             bootcamp = Bootcamp(
                 name=name,
@@ -372,6 +375,8 @@ class BootcampService:
                 detail="Error updating bootcamp",
                 error_code="BOOTCAMP_UPDATE_ERROR",
             )
+
+    # Note: linked-path validation removed as bootcamps no longer store a path_id
 
     async def delete_bootcamp(self, bootcamp_id: int) -> None:
         """

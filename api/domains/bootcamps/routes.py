@@ -299,7 +299,7 @@ async def get_bootcamp(
             instructor_id=bootcamp.instructor_id,
             instructor_name=bootcamp.instructor_name,
             curriculum=bootcamp.curriculum,
-            course_id=bootcamp.course_id,
+                course_id=bootcamp.course_id,
             cover_image_url=bootcamp.cover_image_url,
             created_by=bootcamp.created_by,
             created_at=bootcamp.created_at.isoformat(),

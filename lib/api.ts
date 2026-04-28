@@ -2068,8 +2068,16 @@ export const studentCoursesApi = {
   /**
    * Get full learning content for an enrolled course
    */
-  getLearningContentBySlug: async (slug: string): Promise<LearningContentResponse> => {
-    const response = await apiClient.get<LearningContentResponse>(`/enrollments/courses/by-slug/${slug}/learning-content`)
+  getLearningContentBySlug: async (
+    slug: string,
+    options?: { preview?: boolean }
+  ): Promise<LearningContentResponse> => {
+    const searchParams = new URLSearchParams()
+    if (options?.preview) searchParams.append("preview", "true")
+    const query = searchParams.toString()
+    const response = await apiClient.get<LearningContentResponse>(
+      `/enrollments/courses/by-slug/${slug}/learning-content${query ? `?${query}` : ""}`
+    )
     return response.data
   },
 

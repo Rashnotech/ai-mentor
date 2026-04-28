@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useState, type ChangeEvent } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,6 +50,7 @@ import {
   Plus,
   Loader2,
   Pencil,
+  Eye,
   Trash2,
   XCircle,
   FolderOpen,
@@ -1211,6 +1213,11 @@ export default function MyCoursesPage() {
                       className="h-8 w-8"
                     >
                       <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                      <Link href={`/courses/${course.slug}/learn?preview=1`} aria-label={`Preview ${course.title}`}>
+                        <Eye className="w-4 h-4" />
+                      </Link>
                     </Button>
                     <Button
                       variant="ghost"

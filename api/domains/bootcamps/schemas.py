@@ -77,6 +77,7 @@ class BootcampCreateRequest(BaseModel):
     
     # Optional link to course
     course_id: Optional[int] = Field(None, description="Linked course ID")
+
     
     # Cover image
     cover_image_url: Optional[str] = Field(None, max_length=500, description="Cover image URL")
