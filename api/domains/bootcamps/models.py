@@ -108,7 +108,8 @@ class Bootcamp(Base):
     course_id = Column(Integer, ForeignKey("courses.course_id", ondelete="SET NULL"), nullable=True)
 
     # Optional: Link to a specific learning path under the course
-    # (Removed path_id linkage — bootcamps link to courses only)
+    path_id = Column(Integer, ForeignKey("learning_paths.path_id", ondelete="SET NULL"), nullable=True)
+
     # Cover image
     cover_image_url = Column(String(500), nullable=True)
     

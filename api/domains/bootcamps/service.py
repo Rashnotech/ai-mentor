@@ -72,6 +72,7 @@ class BootcampService:
         instructor_name: Optional[str] = None,
         curriculum: Optional[List[str]] = None,
         course_id: Optional[int] = None,
+        path_id: Optional[int] = None,
         cover_image_url: Optional[str] = None,
     ) -> Bootcamp:
         """
@@ -97,6 +98,7 @@ class BootcampService:
             instructor_name: Instructor name
             curriculum: List of topics
             course_id: Linked course ID
+            path_id: Linked learning path ID
             cover_image_url: Cover image URL
 
         Returns:
@@ -126,7 +128,7 @@ class BootcampService:
                     error_code="INVALID_DATES",
                 )
 
-            # No longer validating linked learning path here (path support was reverted)
+            await self._validate_linked_path(course_id, path_id)
 
             bootcamp = Bootcamp(
                 name=name,
@@ -149,6 +151,7 @@ class BootcampService:
                 instructor_name=instructor_name,
                 curriculum=curriculum,
                 course_id=course_id,
+                path_id=path_id,
                 cover_image_url=cover_image_url,
                 created_by=self.current_user.get("user_id"),
             )
@@ -357,6 +360,8 @@ class BootcampService:
                 if value is not None and hasattr(bootcamp, key):
                     setattr(bootcamp, key, value)
 
+            await self._validate_linked_path(bootcamp.course_id, bootcamp.path_id)
+
             bootcamp.updated_at = datetime.now(timezone.utc)
             self.db_session.add(bootcamp)
             await self.db_session.commit()
@@ -376,7 +381,34 @@ class BootcampService:
                 error_code="BOOTCAMP_UPDATE_ERROR",
             )
 
-    # Note: linked-path validation removed as bootcamps no longer store a path_id
+    async def _validate_linked_path(
+        self,
+        course_id: Optional[int],
+        path_id: Optional[int],
+    ) -> None:
+        if path_id is None:
+            return
+
+        if course_id is None:
+            raise AppError(
+                status_code=400,
+                detail="A course must be selected when linking a learning path",
+                error_code="BOOTCAMP_PATH_INVALID",
+            )
+
+        stmt = select(LearningPath).where(
+            LearningPath.path_id == path_id,
+            LearningPath.course_id == course_id,
+        )
+        result = await self.db_session.execute(stmt)
+        path = result.scalar_one_or_none()
+
+        if not path:
+            raise AppError(
+                status_code=400,
+                detail="Selected learning path does not belong to the linked course",
+                error_code="BOOTCAMP_PATH_INVALID",
+            )
 
     async def delete_bootcamp(self, bootcamp_id: int) -> None:
         """

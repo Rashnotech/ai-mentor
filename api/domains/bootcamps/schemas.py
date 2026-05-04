@@ -78,6 +78,8 @@ class BootcampCreateRequest(BaseModel):
     # Optional link to course
     course_id: Optional[int] = Field(None, description="Linked course ID")
 
+    # Optional link to a specific learning path under the course
+    path_id: Optional[int] = Field(None, description="Linked learning path ID")
     
     # Cover image
     cover_image_url: Optional[str] = Field(None, max_length=500, description="Cover image URL")
@@ -134,6 +136,7 @@ class BootcampUpdateRequest(BaseModel):
     
     curriculum: Optional[List[str]] = Field(None)
     course_id: Optional[int] = Field(None)
+    path_id: Optional[int] = Field(None, description="Linked learning path ID")
     cover_image_url: Optional[str] = Field(None, max_length=500)
 
 
@@ -170,6 +173,7 @@ class BootcampResponse(BaseModel):
     
     curriculum: Optional[List[str]] = Field(None, description="Curriculum topics")
     course_id: Optional[int] = Field(None, description="Linked course ID")
+    path_id: Optional[int] = Field(None, description="Linked learning path ID")
     cover_image_url: Optional[str] = Field(None, description="Cover image URL")
     
     created_by: Optional[str] = Field(None, description="Creator ID")
@@ -204,6 +208,7 @@ class BootcampListResponse(BaseModel):
     instructor_name: Optional[str] = None
     curriculum: Optional[List[str]] = None
     course_id: Optional[int] = None  # Linked course ID
+    path_id: Optional[int] = None  # Linked learning path ID
     
     class Config:
         from_attributes = True

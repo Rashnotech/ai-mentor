@@ -106,6 +106,7 @@ async def create_bootcamp(
             instructor_name=request.instructor_name,
             curriculum=request.curriculum,
             course_id=request.course_id,
+            path_id=request.path_id,
             cover_image_url=request.cover_image_url,
         )
 
@@ -133,6 +134,7 @@ async def create_bootcamp(
             instructor_name=bootcamp.instructor_name,
             curriculum=bootcamp.curriculum,
             course_id=bootcamp.course_id,
+            path_id=bootcamp.path_id,
             cover_image_url=bootcamp.cover_image_url,
             created_by=bootcamp.created_by,
             created_at=bootcamp.created_at.isoformat(),
@@ -238,6 +240,7 @@ async def list_bootcamps(
                 instructor_name=bootcamp.instructor_name,
                 curriculum=bootcamp.curriculum,
                 course_id=bootcamp.course_id,
+                path_id=bootcamp.path_id,
             )
             for bootcamp, enrolled_count in results
         ]
@@ -299,7 +302,8 @@ async def get_bootcamp(
             instructor_id=bootcamp.instructor_id,
             instructor_name=bootcamp.instructor_name,
             curriculum=bootcamp.curriculum,
-                course_id=bootcamp.course_id,
+            course_id=bootcamp.course_id,
+            path_id=bootcamp.path_id,
             cover_image_url=bootcamp.cover_image_url,
             created_by=bootcamp.created_by,
             created_at=bootcamp.created_at.isoformat(),
@@ -376,6 +380,7 @@ async def update_bootcamp(
             instructor_name=bootcamp.instructor_name,
             curriculum=bootcamp.curriculum,
             course_id=bootcamp.course_id,
+            path_id=bootcamp.path_id,
             cover_image_url=bootcamp.cover_image_url,
             created_by=bootcamp.created_by,
             created_at=bootcamp.created_at.isoformat(),
@@ -447,6 +452,7 @@ async def publish_bootcamp(
             instructor_name=bootcamp.instructor_name,
             curriculum=bootcamp.curriculum,
             course_id=bootcamp.course_id,
+            path_id=bootcamp.path_id,
             cover_image_url=bootcamp.cover_image_url,
             created_by=bootcamp.created_by,
             created_at=bootcamp.created_at.isoformat(),

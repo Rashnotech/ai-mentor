@@ -126,6 +126,7 @@ async def list_courses(
     created_by: Optional[str] = Query(None, description="Filter by creator user ID (for mentors to see only their courses)"),
     limit: int = Query(50, ge=1, le=100, description="Max results"),
     offset: int = Query(0, ge=0, description="Skip results"),
+    include_paths: bool = Query(False, description="Include full learning paths for each course"),
     current_user: User = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db_session),
 ):
@@ -176,21 +177,38 @@ async def list_courses(
         courses = result.scalars().all()
 
         
-        # Get module counts for each course
+        # Build responses; optionally include full learning paths
         course_responses = []
         for course in courses:
-            # Get paths count
+            # Get paths for this course
             paths_stmt = select(LearningPath).where(LearningPath.course_id == course.course_id)
             paths_result = await db_session.execute(paths_stmt)
             paths = paths_result.scalars().all()
-            
+
             # Get total modules across all paths
             total_modules = 0
+            learning_paths_payload = []
             for path in paths:
                 modules_stmt = select(Module).where(Module.path_id == path.path_id)
                 modules_result = await db_session.execute(modules_stmt)
-                total_modules += len(modules_result.scalars().all())
-            
+                modules = modules_result.scalars().all()
+                modules_count = len(modules)
+                total_modules += modules_count
+
+                if include_paths:
+                    learning_paths_payload.append({
+                        "path_id": path.path_id,
+                        "title": path.title,
+                        "description": path.description or "",
+                        "price": float(path.price) if path.price is not None else 0.0,
+                        "is_default": bool(path.is_default),
+                        "is_custom": bool(path.is_custom),
+                        "min_skill_level": path.min_skill_level.name if path.min_skill_level else None,
+                        "max_skill_level": path.max_skill_level.name if path.max_skill_level else None,
+                        "tags": path.tags or [],
+                        "modules_count": modules_count,
+                    })
+
             course_responses.append(CourseListResponse(
                 course_id=course.course_id,
                 title=course.title,
@@ -206,6 +224,7 @@ async def list_courses(
                 total_reviews=course.total_reviews or 0,
                 paths_count=len(paths),
                 modules_count=total_modules,
+                learning_paths=learning_paths_payload,
                 created_by=course.created_by,
                 created_at=course.created_at.isoformat(),
                 updated_at=course.updated_at.isoformat(),

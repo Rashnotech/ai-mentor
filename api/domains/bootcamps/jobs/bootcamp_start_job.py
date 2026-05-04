@@ -80,6 +80,7 @@ class BootcampStartService:
                         enrollments_count = await self._enroll_participants_in_course(
                             bootcamp.bootcamp_id,
                             bootcamp.course_id,
+                            bootcamp.path_id,
                             now,
                         )
                         course_enrollments_created += enrollments_count
@@ -111,6 +112,7 @@ class BootcampStartService:
         self,
         bootcamp_id: int,
         course_id: int,
+        path_id: Optional[int],
         now: datetime,
     ) -> int:
         """
@@ -142,6 +144,30 @@ class BootcampStartService:
             for enrollment in bootcamp_enrollments:
                 user_id = enrollment.user_id
                 
+                # Resolve learning path to use for this bootcamp enrollment.
+                # Prefer the bootcamp's explicit path_id; if none, pick the course default
+                # path (or the first available path) to avoid creating personalized paths.
+                resolved_path_id = path_id
+                if resolved_path_id is None:
+                    from domains.courses.models.course import LearningPath
+
+                    default_stmt = select(LearningPath).where(
+                        LearningPath.course_id == course_id,
+                        LearningPath.is_default == True,
+                    )
+                    default_result = await self.session.execute(default_stmt)
+                    default_path = default_result.scalar_one_or_none()
+
+                    if default_path:
+                        resolved_path_id = default_path.path_id
+                    else:
+                        # Fallback: pick any available path for the course
+                        any_stmt = select(LearningPath).where(LearningPath.course_id == course_id).limit(1)
+                        any_result = await self.session.execute(any_stmt)
+                        any_path = any_result.scalar_one_or_none()
+                        if any_path:
+                            resolved_path_id = any_path.path_id
+
                 # Check if user is already enrolled in the course
                 existing_stmt = select(UserCourseEnrollment).where(
                     and_(
@@ -151,23 +177,28 @@ class BootcampStartService:
                 )
                 existing_result = await self.session.execute(existing_stmt)
                 existing_enrollment = existing_result.scalar_one_or_none()
-                
+
                 if existing_enrollment:
+                    # Update path only if we have a resolved path and it differs
+                    if resolved_path_id is not None and existing_enrollment.path_id != resolved_path_id:
+                        existing_enrollment.path_id = resolved_path_id
+                        self.session.add(existing_enrollment)
                     logger.debug(
                         f"User {user_id} already enrolled in course {course_id}"
                     )
                     continue
-                
-                # Create new course enrollment
+
+                # Create new course enrollment using the resolved path id (may be None)
                 course_enrollment = UserCourseEnrollment(
                     user_id=user_id,
                     course_id=course_id,
+                    path_id=resolved_path_id,
                     enrolled_at=now,
                     is_active=True,
                 )
                 self.session.add(course_enrollment)
                 enrollments_created += 1
-                
+
                 logger.info(
                     f"Enrolled user {user_id} in course {course_id} via bootcamp {bootcamp_id}"
                 )

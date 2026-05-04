@@ -1188,6 +1188,7 @@ export interface BootcampCreatePayload {
   instructor_name?: string
   curriculum?: string[]
   course_id?: number
+  path_id?: number
   cover_image_url?: string
 }
 
@@ -1213,6 +1214,7 @@ export interface BootcampUpdatePayload {
   instructor_name?: string
   curriculum?: string[]
   course_id?: number
+  path_id?: number
   cover_image_url?: string
 }
 
@@ -1240,6 +1242,7 @@ export interface BootcampResponse {
   instructor_name: string | null
   curriculum: string[] | null
   course_id: number | null
+  path_id: number | null
   cover_image_url: string | null
   created_by: string | null
   created_at: string
@@ -1268,6 +1271,7 @@ export interface BootcampListResponse {
   instructor_name: string | null
   curriculum: string[] | null
   course_id: number | null
+  path_id: number | null
 }
 
 export interface EnrollmentCreatePayload {
@@ -1748,6 +1752,7 @@ export const courseAdminApi = {
     created_by?: string
     limit?: number
     offset?: number
+    include_paths?: boolean
   }): Promise<CourseListResponse[]> => {
     const searchParams = new URLSearchParams()
     if (params?.status) searchParams.append("status_filter", params.status)
@@ -1755,6 +1760,7 @@ export const courseAdminApi = {
     if (params?.created_by) searchParams.append("created_by", params.created_by)
     if (params?.limit) searchParams.append("limit", params.limit.toString())
     if (params?.offset) searchParams.append("offset", params.offset.toString())
+    if (params?.include_paths) searchParams.append("include_paths", "true")
     
     const query = searchParams.toString()
     const response = await apiClient.get<CourseListResponse[]>(`/courses${query ? `?${query}` : ""}`)

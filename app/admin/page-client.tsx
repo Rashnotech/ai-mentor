@@ -6046,6 +6046,27 @@ export function SettingsView() {
 // Bootcamp Management Component
 export function BootcampManagementView() {
   const queryClient = useQueryClient()
+
+  type BootcampFormState = {
+    name: string
+    slug: string
+    description: string
+    startDate: string
+    endDate: string
+    duration: string
+    schedule: string
+    format: "online" | "in-person" | "hybrid"
+    location: string
+    fee: number
+    earlyBirdFee: number
+    earlyBirdDeadline: string
+    maxCapacity: number
+    instructor: string
+    curriculum: string
+    courseId: number | null
+    pathId: number | null
+  }
+
   const [selectedBootcamp, setSelectedBootcamp] = useState<number | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -6063,7 +6084,7 @@ export function BootcampManagementView() {
     notes: "",
   })
   
-  const [bootcampForm, setBootcampForm] = useState({
+  const [bootcampForm, setBootcampForm] = useState<BootcampFormState>({
     name: "",
     slug: "",
     description: "",
@@ -6080,6 +6101,7 @@ export function BootcampManagementView() {
     instructor: "",
     curriculum: "",
     courseId: null as number | null, // Linked course for bootcamp
+    pathId: null as number | null,
   })
 
   // ============================================================================
@@ -6111,10 +6133,39 @@ export function BootcampManagementView() {
   // Fetch courses for bootcamp course linking
   const { data: availableCourses = [] } = useQuery({
     queryKey: ["admin", "bootcamp-courses"],
-    queryFn: () => courseAdminApi.listCourses({ limit: 100 }),
+    queryFn: async () => {
+      const pageSize = 100
+      const courses: CourseListResponse[] = []
+      let offset = 0
+
+      while (true) {
+        const page = await courseAdminApi.listCourses({ limit: pageSize, offset, include_paths: true })
+        courses.push(...page)
+
+        if (page.length < pageSize) {
+          break
+        }
+
+        offset += pageSize
+      }
+
+      return courses
+    },
     staleTime: 60000,
     enabled: showCreateModal || showEditModal,
   })
+
+  const courseSelectionGroups = useMemo(() => {
+    return availableCourses.map((course) => ({
+      course,
+      learningPaths: course.learning_paths || [],
+    }))
+  }, [availableCourses])
+
+  const selectedCourseGroup = useMemo(
+    () => courseSelectionGroups.find((group) => group.course.course_id === bootcampForm.courseId) || null,
+    [courseSelectionGroups, bootcampForm.courseId],
+  )
 
   // Create bootcamp mutation
   const createBootcampMutation = useMutation({
@@ -6214,6 +6265,7 @@ export function BootcampManagementView() {
       duration: "", schedule: "", format: "online", location: "", fee: 0,
       earlyBirdFee: 0, earlyBirdDeadline: "", maxCapacity: 25, instructor: "", curriculum: "",
       courseId: null,
+      pathId: null,
     })
   }
 
@@ -6282,6 +6334,7 @@ export function BootcampManagementView() {
       duration: "", schedule: "", format: "online", location: "", fee: 0,
       earlyBirdFee: 0, earlyBirdDeadline: "", maxCapacity: 25, instructor: "", curriculum: "",
       courseId: null,
+      pathId: null,
     })
     setShowCreateModal(true)
   }
@@ -6305,8 +6358,25 @@ export function BootcampManagementView() {
       instructor: bootcamp.instructor_name || "",
       curriculum: bootcamp.curriculum?.join(", ") || "",
       courseId: bootcamp.course_id || null,
+      pathId: bootcamp.path_id || null,
     })
     setShowEditModal(true)
+  }
+
+  const handleSelectBootcampCourse = (courseId: number) => {
+    setBootcampForm((current) => ({
+      ...current,
+      courseId,
+      pathId: null,
+    }))
+  }
+
+  const handleSelectBootcampPath = (courseId: number, pathId: number) => {
+    setBootcampForm((current) => ({
+      ...current,
+      courseId,
+      pathId,
+    }))
   }
 
   const handleViewMembers = (bootcampId: number) => {
@@ -6332,6 +6402,7 @@ export function BootcampManagementView() {
       instructor_name: bootcampForm.instructor || undefined,
       curriculum: bootcampForm.curriculum ? bootcampForm.curriculum.split(",").map(c => c.trim()) : undefined,
       course_id: bootcampForm.courseId || undefined, // Linked course
+      path_id: bootcampForm.pathId || undefined,
     }
 
     if (editingBootcamp) {
@@ -6809,20 +6880,123 @@ export function BootcampManagementView() {
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-sm font-semibold text-gray-900 mb-4">Linked Course</h3>
                   <p className="text-sm text-gray-500 mb-3">
-                    Select a course to link to this bootcamp. Enrolled students will be automatically enrolled in this course.
+                    Select a full course or a specific learning path within a course. Full course selection links all paths; path selection links only that track.
                   </p>
-                  <select
-                    value={bootcampForm.courseId || ""}
-                    onChange={(e) => setBootcampForm({ ...bootcampForm, courseId: e.target.value ? parseInt(e.target.value) : null })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">No linked course</option>
-                    {availableCourses.map((course) => (
-                      <option key={course.course_id} value={course.course_id}>
-                        {course.title} ({course.difficulty_level})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+                    <button
+                      type="button"
+                      onClick={() => setBootcampForm((current) => ({ ...current, courseId: null, pathId: null }))}
+                      className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+                        !bootcampForm.courseId
+                          ? "border-blue-500 bg-blue-50 shadow-sm"
+                          : "border-gray-200 bg-white hover:border-blue-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="font-medium text-gray-900">No linked course</p>
+                          <p className="text-sm text-gray-500">Leave this bootcamp standalone.</p>
+                        </div>
+                        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Optional</span>
+                      </div>
+                    </button>
+
+                    {courseSelectionGroups.map(({ course, learningPaths }) => {
+                      const isSelectedFullCourse = bootcampForm.courseId === course.course_id && bootcampForm.pathId === null
+                      const isSelectedCoursePath = bootcampForm.courseId === course.course_id && bootcampForm.pathId !== null
+
+                      return (
+                        <details
+                          key={course.course_id}
+                          open={isSelectedFullCourse || isSelectedCoursePath}
+                          className={`group rounded-xl border transition ${
+                            isSelectedFullCourse || isSelectedCoursePath
+                              ? "border-blue-500 bg-blue-50 shadow-sm"
+                              : "border-gray-200 bg-white"
+                          }`}
+                        >
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-gray-900">{course.title}</p>
+                              <p className="text-sm text-gray-500">
+                                {course.difficulty_level} • {learningPaths.length} learning path{learningPaths.length === 1 ? "" : "s"}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {isSelectedFullCourse ? (
+                                <Badge className="border-0 bg-blue-600 text-white">Full course</Badge>
+                              ) : isSelectedCoursePath ? (
+                                <Badge className="border-0 bg-indigo-600 text-white">Path selected</Badge>
+                              ) : null}
+                              <span className="text-xs font-medium text-gray-500 group-open:hidden">View paths</span>
+                              <span className="text-xs font-medium text-gray-500 hidden group-open:inline">Hide paths</span>
+                            </div>
+                          </summary>
+
+                          <div className="border-t border-gray-200 px-4 py-4">
+                            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">Link the entire course</p>
+                                <p className="text-sm text-gray-500">All paths stay available and students are linked to the course as a whole.</p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="bg-transparent"
+                                onClick={() => handleSelectBootcampCourse(course.course_id)}
+                              >
+                                Select full course
+                              </Button>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Learning paths</p>
+                              {learningPaths.length > 0 ? (
+                                learningPaths.map((path) => {
+                                  const isSelectedPath = bootcampForm.courseId === course.course_id && bootcampForm.pathId === path.path_id
+
+                                  return (
+                                    <button
+                                      key={path.path_id}
+                                      type="button"
+                                      onClick={() => handleSelectBootcampPath(course.course_id, path.path_id)}
+                                      className={`w-full rounded-lg border px-3 py-3 text-left transition ${
+                                        isSelectedPath
+                                          ? "border-indigo-500 bg-indigo-50"
+                                          : "border-gray-200 bg-white hover:border-indigo-300"
+                                      }`}
+                                    >
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                          <p className="font-medium text-gray-900">{path.title}</p>
+                                          <p className="text-sm text-gray-500">
+                                            {path.is_default ? "Default path" : "Custom path"}
+                                            {path.min_skill_level || path.max_skill_level ? (
+                                              <span>
+                                                {" "}
+                                                • {path.min_skill_level || "Any"}
+                                                {path.max_skill_level ? ` to ${path.max_skill_level}` : ""}
+                                              </span>
+                                            ) : null}
+                                          </p>
+                                        </div>
+                                        {isSelectedPath ? <Badge className="border-0 bg-indigo-600 text-white">Selected</Badge> : null}
+                                      </div>
+                                    </button>
+                                  )
+                                })
+                              ) : (
+                                <div className="rounded-lg border border-dashed border-gray-300 px-3 py-3 text-sm text-gray-500">
+                                  This course has no learning paths yet.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </details>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
               <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3 shrink-0">
@@ -6931,23 +7105,126 @@ export function BootcampManagementView() {
                       className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-2 border-t border-gray-200 pt-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Linked Course</label>
-                    <p className="text-xs text-gray-500 mb-2">
-                      Enrolled students will be automatically enrolled in this course.
+                    <p className="text-xs text-gray-500 mb-3">
+                      Link the whole course or pick a specific learning path. Paths are shown under each course.
                     </p>
-                    <select
-                      value={bootcampForm.courseId || ""}
-                      onChange={(e) => setBootcampForm({ ...bootcampForm, courseId: e.target.value ? parseInt(e.target.value) : null })}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">No linked course</option>
-                      {availableCourses.map((course) => (
-                        <option key={course.course_id} value={course.course_id}>
-                          {course.title} ({course.difficulty_level})
-                        </option>
-                      ))}
-                    </select>
+                    <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+                      <button
+                        type="button"
+                        onClick={() => setBootcampForm((current) => ({ ...current, courseId: null, pathId: null }))}
+                        className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+                          !bootcampForm.courseId
+                            ? "border-blue-500 bg-blue-50 shadow-sm"
+                            : "border-gray-200 bg-white hover:border-blue-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="font-medium text-gray-900">No linked course</p>
+                            <p className="text-sm text-gray-500">Leave this bootcamp standalone.</p>
+                          </div>
+                          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Optional</span>
+                        </div>
+                      </button>
+
+                      {courseSelectionGroups.map(({ course, learningPaths }) => {
+                        const isSelectedFullCourse = bootcampForm.courseId === course.course_id && bootcampForm.pathId === null
+                        const isSelectedCoursePath = bootcampForm.courseId === course.course_id && bootcampForm.pathId !== null
+
+                        return (
+                          <details
+                            key={course.course_id}
+                            open={isSelectedFullCourse || isSelectedCoursePath}
+                            className={`group rounded-xl border transition ${
+                              isSelectedFullCourse || isSelectedCoursePath
+                                ? "border-blue-500 bg-blue-50 shadow-sm"
+                                : "border-gray-200 bg-white"
+                            }`}
+                          >
+                            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-gray-900">{course.title}</p>
+                                <p className="text-sm text-gray-500">
+                                  {course.difficulty_level} • {learningPaths.length} learning path{learningPaths.length === 1 ? "" : "s"}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {isSelectedFullCourse ? (
+                                  <Badge className="border-0 bg-blue-600 text-white">Full course</Badge>
+                                ) : isSelectedCoursePath ? (
+                                  <Badge className="border-0 bg-indigo-600 text-white">Path selected</Badge>
+                                ) : null}
+                                <span className="text-xs font-medium text-gray-500 group-open:hidden">View paths</span>
+                                <span className="text-xs font-medium text-gray-500 hidden group-open:inline">Hide paths</span>
+                              </div>
+                            </summary>
+
+                            <div className="border-t border-gray-200 px-4 py-4">
+                              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">Link the entire course</p>
+                                  <p className="text-sm text-gray-500">All paths stay available and students are linked to the course as a whole.</p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-transparent"
+                                  onClick={() => handleSelectBootcampCourse(course.course_id)}
+                                >
+                                  Select full course
+                                </Button>
+                              </div>
+
+                              <div className="space-y-2">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Learning paths</p>
+                                {learningPaths.length > 0 ? (
+                                  learningPaths.map((path) => {
+                                    const isSelectedPath = bootcampForm.courseId === course.course_id && bootcampForm.pathId === path.path_id
+
+                                    return (
+                                      <button
+                                        key={path.path_id}
+                                        type="button"
+                                        onClick={() => handleSelectBootcampPath(course.course_id, path.path_id)}
+                                        className={`w-full rounded-lg border px-3 py-3 text-left transition ${
+                                          isSelectedPath
+                                            ? "border-indigo-500 bg-indigo-50"
+                                            : "border-gray-200 bg-white hover:border-indigo-300"
+                                        }`}
+                                      >
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="min-w-0">
+                                            <p className="font-medium text-gray-900">{path.title}</p>
+                                            <p className="text-sm text-gray-500">
+                                              {path.is_default ? "Default path" : "Custom path"}
+                                              {path.min_skill_level || path.max_skill_level ? (
+                                                <span>
+                                                  {" "}
+                                                  • {path.min_skill_level || "Any"}
+                                                  {path.max_skill_level ? ` to ${path.max_skill_level}` : ""}
+                                                </span>
+                                              ) : null}
+                                            </p>
+                                          </div>
+                                          {isSelectedPath ? <Badge className="border-0 bg-indigo-600 text-white">Selected</Badge> : null}
+                                        </div>
+                                      </button>
+                                    )
+                                  })
+                                ) : (
+                                  <div className="rounded-lg border border-dashed border-gray-300 px-3 py-3 text-sm text-gray-500">
+                                    This course has no learning paths yet.
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </details>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
