@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { 
   ChevronLeft, 
+  PanelLeft,
   PlayCircle, 
   FileText, 
   CheckCircle2, 
@@ -30,6 +31,13 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { studentCoursesApi, type LearningContentResponse, type ModuleContent, type LessonContent, type ProjectContent, type QuizContent, type QuizQuestion } from "@/lib/api"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
@@ -306,10 +314,10 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
             )}
           </div>
           <div className="text-left min-w-0 flex-1">
-            <h3 className="font-semibold text-gray-900 text-sm leading-snug line-clamp-1 break-words">
+            <h3 className="font-semibold text-gray-900 text-sm leading-snug line-clamp-1 wrap-break-word">
               {module.title}
             </h3>
-            <p className="text-xs text-gray-500 line-clamp-1 break-words">
+            <p className="text-xs text-gray-500 line-clamp-1 wrap-break-word">
               {completedItems}/{totalItems} completed • {module.progress_percent}%
             </p>
           </div>
@@ -328,7 +336,7 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
       {isExpanded && (
         <div className="p-3 pt-0 space-y-2 border-t border-gray-100">
           {module.description && (
-            <p className="text-xs text-gray-600 px-1 py-2 line-clamp-2 break-words">{module.description}</p>
+            <p className="text-xs text-gray-600 px-1 py-2 line-clamp-2 wrap-break-word">{module.description}</p>
           )}
           
           {module.lessons.map((lesson) => (
@@ -375,7 +383,7 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
                       </span>
                     )}
                   </div>
-                  <h4 className={`font-semibold mt-1 text-sm leading-snug break-words ${module.quiz.is_completed ? "text-green-700" : "text-gray-900"}`}>
+                  <h4 className={`font-semibold mt-1 text-sm leading-snug wrap-break-word ${module.quiz.is_completed ? "text-green-700" : "text-gray-900"}`}>
                     Module Quiz
                   </h4>
                   <p className="text-xs text-gray-500 mt-0.5">
@@ -447,14 +455,14 @@ function LessonContentView({ lesson, onComplete, onNext, hasNext, isCompleting, 
   const embedUrl = youtubeEmbedUrl || contentEmbedUrl
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Overview Section - Title and Description at the Top */}
       <div className="prose prose-gray max-w-none">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">{lesson.title}</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-2 sm:text-2xl">{lesson.title}</h2>
         {lesson.description && (
-          <p className="text-gray-600 text-lg leading-relaxed mb-4">{lesson.description}</p>
+          <p className="mb-4 text-sm leading-relaxed text-gray-600 sm:text-lg">{lesson.description}</p>
         )}
-        <div className="flex items-center gap-4 text-sm text-gray-500">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 sm:gap-4 sm:text-sm">
           {lesson.content_type && (
             <span className="flex items-center gap-1 capitalize">
               <FileText className="w-4 h-4" />
@@ -508,8 +516,8 @@ function LessonContentView({ lesson, onComplete, onNext, hasNext, isCompleting, 
 
       {/* Lesson Content/Overview Text */}
       {lesson.content && (
-        <div className="p-6 bg-gray-50 rounded-xl border border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 sm:p-6">
+          <h3 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
             <BookOpen className="w-5 h-5 text-blue-600" />
             Lesson Overview
           </h3>
@@ -553,8 +561,8 @@ function LessonContentView({ lesson, onComplete, onNext, hasNext, isCompleting, 
 
       {/* Expected Outcomes */}
       {lesson.expected_outcomes && lesson.expected_outcomes.length > 0 && (
-        <div className="p-6 bg-blue-50 rounded-xl border border-blue-100">
-          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 sm:p-6">
+          <h3 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
             <CheckCircle2 className="w-5 h-5 text-blue-600" />
             What You'll Learn
           </h3>
@@ -571,8 +579,8 @@ function LessonContentView({ lesson, onComplete, onNext, hasNext, isCompleting, 
 
       {/* External Resources */}
       {lesson.external_resources && lesson.external_resources.length > 0 && (
-        <div className="p-6 bg-purple-50 rounded-xl border border-purple-100">
-          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <div className="rounded-xl border border-purple-100 bg-purple-50 p-4 sm:p-6">
+          <h3 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
             <ExternalLink className="w-5 h-5 text-purple-600" />
             External Resources
           </h3>
@@ -595,7 +603,7 @@ function LessonContentView({ lesson, onComplete, onNext, hasNext, isCompleting, 
       )}
 
       {/* Completion and Navigation Buttons */}
-      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+      <div className="flex flex-col gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           {!previewMode && !lesson.is_completed ? (
             <Button 
@@ -667,17 +675,17 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
   }
 
   return (
-    <div className="space-y-6">
-      <div className="p-6 bg-linear-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-100">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="rounded-xl border border-purple-100 bg-linear-to-r from-purple-50 to-blue-50 p-4 sm:p-6">
+        <div className="mb-4 flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100 sm:h-12 sm:w-12">
             <Code2 className="w-6 h-6 text-purple-600" />
           </div>
           <div>
-            <span className="text-xs font-medium px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
+            <span className="rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
               Project
             </span>
-            <h2 className="text-2xl font-bold text-gray-900 mt-1">{project.title}</h2>
+            <h2 className="mt-1 text-xl font-bold text-gray-900 sm:text-2xl">{project.title}</h2>
           </div>
         </div>
         
@@ -716,7 +724,7 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-gray-500">
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-gray-500 sm:gap-4 sm:text-sm">
           {project.estimated_hours && (
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
@@ -739,7 +747,7 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
 
       {project.required_skills && project.required_skills.length > 0 && (
         <div>
-          <h3 className="font-semibold text-gray-900 mb-2">Required Skills</h3>
+          <h3 className="mb-2 font-semibold text-gray-900">Required Skills</h3>
           <div className="flex flex-wrap gap-2">
             {project.required_skills.map((skill, idx) => (
               <span
@@ -761,9 +769,9 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
           </p>
         </div>
       ) : !project.is_submitted ? (
-        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-3">Submit Your Project</h3>
-          <div className="flex gap-2">
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <h3 className="mb-3 font-semibold text-gray-900">Submit Your Project</h3>
+          <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Link2 className="w-5 h-5 text-gray-400" />
@@ -779,7 +787,7 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
             <Button
               onClick={handleSubmit}
               disabled={!linkValue.trim() || isSubmitting}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="w-full bg-purple-600 hover:bg-purple-700 sm:w-auto"
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -804,7 +812,7 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
             project.submission_status === 'in_review' ? 'bg-yellow-50 border-yellow-200' :
             'bg-blue-50 border-blue-200'
           }`}>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="mb-2 flex items-center gap-2">
               {project.submission_status === 'approved' ? (
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
               ) : project.submission_status === 'rejected' ? (
@@ -860,7 +868,7 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
           {project.reviewer_feedback && (
             <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-purple-600">
                   <User className="w-4 h-4 text-white" />
                 </div>
                 <div>
@@ -884,10 +892,10 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
 
       {/* Next Button */}
       {hasNext && (
-        <div className="flex justify-end pt-4 border-t border-gray-200">
+        <div className="border-t border-gray-200 pt-4">
           <Button 
             onClick={onNext} 
-            className="bg-blue-600 hover:bg-blue-700"
+            className="w-full bg-blue-600 hover:bg-blue-700 sm:w-auto"
             disabled={!previewMode && !project.is_completed}
           >
             Next
@@ -1098,20 +1106,20 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
   }
 
   return (
-    <div className="space-y-6">
-      <div className="p-6 bg-linear-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-100">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="rounded-xl border border-amber-100 bg-linear-to-r from-amber-50 to-orange-50 p-4 sm:p-6">
+        <div className="mb-4 flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 sm:h-12 sm:w-12">
             <HelpCircle className="w-6 h-6 text-amber-600" />
           </div>
           <div>
-            <span className="text-xs font-medium px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
+            <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
               Quiz
             </span>
-            <h2 className="text-2xl font-bold text-gray-900 mt-1">{moduleTitle} Quiz</h2>
+            <h2 className="mt-1 text-xl font-bold text-gray-900 sm:text-2xl">{moduleTitle} Quiz</h2>
           </div>
         </div>
-        <p className="text-gray-600">
+        <p className="text-sm text-gray-600 sm:text-base">
           Test your knowledge with {quiz.total_questions} questions.
         </p>
       </div>
@@ -1130,7 +1138,7 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
 
       {/* Current Question */}
       {currentQuestion && (
-        <div className="p-6 bg-white rounded-xl border border-gray-200">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-4">
             {currentQuestion.difficulty_level && (
               <span className={`text-xs font-medium px-2 py-0.5 rounded ${
@@ -1146,7 +1154,7 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
             <span className="text-xs text-gray-400">{currentQuestion.points} points</span>
           </div>
 
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">
+          <h3 className="mb-6 text-base font-semibold text-gray-900 sm:text-lg">
             {currentQuestion.question_text}
           </h3>
 
@@ -1163,7 +1171,7 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
                     key={idx}
                     onClick={() => !isAnswered && !previewMode && setSelectedAnswer(option)}
                     disabled={isAnswered || previewMode}
-                    className={`w-full p-4 rounded-xl border text-left transition-all ${
+                    className={`w-full rounded-xl border p-3 text-left transition-all sm:p-4 ${
                       isAnswered
                         ? isCorrect
                           ? "border-green-300 bg-green-50"
@@ -1205,7 +1213,7 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
               onChange={(e) => !currentQuestion.is_answered && !previewMode && setSelectedAnswer(e.target.value)}
               disabled={currentQuestion.is_answered || previewMode}
               placeholder="Type your answer here..."
-              className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 min-h-[100px] disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 min-h-25 disabled:bg-gray-50 disabled:text-gray-500"
             />
           )}
 
@@ -1263,11 +1271,12 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
       )}
 
       {/* Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
           variant="outline"
           onClick={handlePrevious}
           disabled={isFirstQuestion}
+          className="w-full sm:w-auto"
         >
           Previous
         </Button>
@@ -1282,20 +1291,20 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
                     handleNextQuestion()
                   }
                 }}
-                className="bg-amber-600 hover:bg-amber-700"
+                className="w-full bg-amber-600 hover:bg-amber-700 sm:w-auto"
               >
                 {isLastQuestion ? "Next" : "Next Question"}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
-              <Button className="bg-amber-600 hover:bg-amber-700" disabled>
+              <Button className="w-full bg-amber-600 hover:bg-amber-700 sm:w-auto" disabled>
                 Preview Complete
               </Button>
             )
           ) : currentQuestion?.is_answered ? (
           <Button
             onClick={handleNextQuestion}
-            className="bg-amber-600 hover:bg-amber-700"
+            className="w-full bg-amber-600 hover:bg-amber-700 sm:w-auto"
           >
             {isLastQuestion ? "View Results" : "Next Question"}
             <ArrowRight className="w-4 h-4 ml-2" />
@@ -1304,7 +1313,7 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
           <Button
             onClick={handleSubmitAnswer}
             disabled={!selectedAnswer || isSubmitting}
-            className="bg-amber-600 hover:bg-amber-700"
+            className="w-full bg-amber-600 hover:bg-amber-700 sm:w-auto"
           >
             {isSubmitting ? (
               <>
@@ -1325,6 +1334,96 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
 }
 
 // ============================================
+// LEARNING NAVIGATION PANEL
+// ============================================
+
+interface LearningNavigationPanelProps {
+  courseContent: LearningContentResponse
+  expandedModules: Set<number>
+  activeItemId: string | null
+  onToggleModule: (moduleId: number) => void
+  onSelectItem: (itemId: string, type: "lesson" | "project" | "quiz") => void
+  onClose?: () => void
+}
+
+function LearningNavigationPanel({
+  courseContent,
+  expandedModules,
+  activeItemId,
+  onToggleModule,
+  onSelectItem,
+  onClose,
+}: LearningNavigationPanelProps) {
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-linear-to-b from-white to-slate-50">
+      <SheetHeader className="border-b border-gray-100 px-5 py-4 text-left">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <SheetTitle className="text-base font-semibold text-gray-900">Course outline</SheetTitle>
+            <SheetDescription className="text-xs text-gray-500">
+              Browse modules without leaving the lesson view.
+            </SheetDescription>
+          </div>
+          {onClose ? (
+            <Button variant="ghost" size="icon-sm" onClick={onClose} className="rounded-full">
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+          ) : null}
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 pt-3">
+          <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-blue-600">Modules</p>
+            <p className="text-sm font-semibold text-gray-900">{courseContent.modules.length}</p>
+          </div>
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-emerald-600">Lessons</p>
+            <p className="text-sm font-semibold text-gray-900">{courseContent.progress.completed_lessons}/{courseContent.progress.total_lessons}</p>
+          </div>
+          <div className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-amber-600">Projects</p>
+            <p className="text-sm font-semibold text-gray-900">{courseContent.progress.completed_projects}/{courseContent.progress.total_projects}</p>
+          </div>
+        </div>
+      </SheetHeader>
+
+      <div className="px-5 pt-4">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <span>Overall progress</span>
+            <span className="font-semibold text-gray-900">{courseContent.progress.overall_percent}%</span>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
+            <div
+              className="h-full rounded-full bg-linear-to-r from-blue-500 to-cyan-500 transition-all duration-300"
+              style={{ width: `${courseContent.progress.overall_percent}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <ScrollArea className="min-h-0 flex-1 px-5 pb-5 pt-4">
+        <div className="space-y-3 pr-1">
+          {courseContent.modules.map((module) => (
+            <ModuleAccordion
+              key={module.module_id}
+              module={module}
+              isExpanded={expandedModules.has(module.module_id)}
+              onToggle={() => onToggleModule(module.module_id)}
+              activeItemId={activeItemId}
+              onSelectItem={(itemId, type) => {
+                onSelectItem(itemId, type)
+                onClose?.()
+              }}
+            />
+          ))}
+        </div>
+      </ScrollArea>
+    </div>
+  )
+}
+
+// ============================================
 // MAIN PAGE COMPONENT  
 // ============================================
 
@@ -1340,6 +1439,7 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
   const [activeItemId, setActiveItemId] = useState<string | null>(null)
   const [activeItemType, setActiveItemType] = useState<"lesson" | "project" | "quiz" | null>(null)
   const [isCompleting, setIsCompleting] = useState(false)
+  const [isModulePanelOpen, setIsModulePanelOpen] = useState(false)
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -1405,6 +1505,26 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
     setActiveItemId(itemId)
     setActiveItemType(type)
   }
+
+  const activeModule = courseContent
+    ? courseContent.modules.find((module) => {
+        if (!activeItemId) return false
+
+        if (activeItemType === "quiz") {
+          return activeItemId === `quiz-${module.module_id}`
+        }
+
+        if (activeItemType === "lesson") {
+          return module.lessons.some((lesson) => activeItemId === `lesson-${lesson.lesson_id}`)
+        }
+
+        if (activeItemType === "project") {
+          return module.projects.some((project) => activeItemId === `project-${project.project_id}`)
+        }
+
+        return false
+      })
+    : null
 
   const getActiveLesson = (): LessonContent | null => {
     if (!activeItemId || activeItemType !== "lesson" || !courseContent) return null
@@ -1682,38 +1802,63 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
   const activeQuiz = getActiveQuiz()
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#f8fafc_0%,#f1f5f9_42%,#e2e8f0_100%)] font-sans text-gray-900">
+      <nav className="sticky top-0 z-40 border-b border-white/70 bg-white/85 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <Link
               href={`/courses/${id}`}
-              className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50"
             >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
+              <ChevronLeft className="w-5 h-5" />
             </Link>
-            <div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
                 {courseContent.path.title}
               </p>
-              <h1 className="text-sm font-bold text-gray-900 line-clamp-1">
-                {courseContent.course.title}
-              </h1>
+              <div className="flex min-w-0 items-center gap-2">
+                <h1 className="truncate text-sm font-semibold text-gray-900 sm:text-base">
+                  {courseContent.course.title}
+                </h1>
+                {isPreviewMode && (
+                  <span className="hidden rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 sm:inline-flex">
+                    Preview
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            {isPreviewMode && (
-              <div className="hidden sm:inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 border border-amber-200">
-                Preview mode
-              </div>
-            )}
-            <div className="hidden sm:flex items-center gap-3">
-              <span className="text-sm text-gray-500">
-                Progress: {courseContent.progress.overall_percent}%
-              </span>
-              <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-600 transition-all duration-300" 
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Sheet open={isModulePanelOpen} onOpenChange={setIsModulePanelOpen}>
+              <Button
+                variant="outline"
+                onClick={() => setIsModulePanelOpen(true)}
+                className="hidden border-gray-200 bg-white/90 shadow-none sm:inline-flex"
+              >
+                <PanelLeft className="w-4 h-4" />
+                Modules
+              </Button>
+              <SheetContent side="left" className="w-full border-r-0 p-0 sm:max-w-md">
+                {courseContent && (
+                  <LearningNavigationPanel
+                    courseContent={courseContent}
+                    expandedModules={expandedModules}
+                    activeItemId={activeItemId}
+                    onToggleModule={handleToggleModule}
+                    onSelectItem={handleSelectItem}
+                    onClose={() => setIsModulePanelOpen(false)}
+                  />
+                )}
+              </SheetContent>
+            </Sheet>
+
+            <div className="hidden items-center gap-3 rounded-full border border-gray-200 bg-white px-3 py-1.5 shadow-sm md:flex">
+              <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Progress</span>
+              <span className="text-sm font-semibold text-gray-900">{courseContent.progress.overall_percent}%</span>
+              <div className="h-2 w-28 overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className="h-full rounded-full bg-linear-to-r from-blue-500 to-cyan-500 transition-all duration-300"
                   style={{ width: `${courseContent.progress.overall_percent}%` }}
                 />
               </div>
@@ -1723,115 +1868,134 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
         </div>
       </nav>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 space-y-3 lg:sticky lg:top-24 lg:self-start">
-            <div className="p-4 bg-white rounded-xl border border-gray-200 mb-4">
-              <h2 className="font-semibold text-gray-900 mb-2">Course Progress</h2>
-              <div className="flex items-center gap-4 text-sm text-gray-600">
-                <span>{courseContent.progress.completed_lessons}/{courseContent.progress.total_lessons} Lessons</span>
-                <span>{courseContent.progress.completed_projects}/{courseContent.progress.total_projects} Projects</span>
+      <div className="mx-auto flex w-full max-w-7xl gap-8 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <div className="min-w-0 flex-1 space-y-5">
+          <div className="rounded-3xl border border-white/80 bg-white/90 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-600">Learning space</p>
+                <h2 className="mt-1 text-lg font-semibold tracking-tight text-gray-950 sm:text-xl">
+                  Focus on the lesson, keep the curriculum one tap away.
+                </h2>
+                <p className="mt-2 max-w-2xl text-xs leading-5 text-gray-600 sm:text-sm">
+                  A cleaner course view with the module list tucked into a toggleable panel so the content stays centered and easy to scan.
+                </p>
               </div>
-              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mt-3">
-                <div 
-                  className="h-full bg-green-500 transition-all duration-300" 
-                  style={{ width: `${courseContent.progress.overall_percent}%` }}
-                />
+
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsModulePanelOpen(true)}
+                  className="border-gray-200 bg-white shadow-none sm:hidden"
+                >
+                  <PanelLeft className="w-4 h-4" />
+                  Modules
+                </Button>
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-gray-500">Current item</p>
+                  <p className="mt-1 text-xs font-semibold text-gray-900">
+                    {activeItemType ? activeItemType.charAt(0).toUpperCase() + activeItemType.slice(1) : "Start here"}
+                  </p>
+                  <p className="text-[11px] text-gray-500">
+                    {activeModule ? activeModule.title : "Select a module from the panel"}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <div>
-                  <h2 className="font-semibold text-gray-900">Modules</h2>
-                  <p className="text-xs text-gray-500">Scroll to view the rest of the course</p>
-                </div>
-                <span className="text-xs font-medium text-gray-400">
-                  {courseContent.modules.length} total
-                </span>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600">Lessons</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-950">
+                  {courseContent.progress.completed_lessons}
+                  <span className="text-sm font-medium text-gray-500"> / {courseContent.progress.total_lessons}</span>
+                </p>
               </div>
-              <ScrollArea className="h-[calc(100vh-15rem)]">
-                <div className="space-y-3 p-4 pr-3">
-                  {courseContent.modules.map((module) => (
-                    <ModuleAccordion
-                      key={module.module_id}
-                      module={module}
-                      isExpanded={expandedModules.has(module.module_id)}
-                      onToggle={() => handleToggleModule(module.module_id)}
-                      activeItemId={activeItemId}
-                      onSelectItem={handleSelectItem}
-                    />
-                  ))}
-                </div>
-              </ScrollArea>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-600">Projects</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-950">
+                  {courseContent.progress.completed_projects}
+                  <span className="text-sm font-medium text-gray-500"> / {courseContent.progress.total_projects}</span>
+                </p>
+              </div>
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/80 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-600">Completion</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-950">{courseContent.progress.overall_percent}%</p>
+              </div>
             </div>
           </div>
 
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              {activeLesson && (
-                <LessonContentView
-                  lesson={activeLesson}
-                  onComplete={handleCompleteLesson}
-                  onNext={handleNext}
-                  hasNext={hasNextItem()}
-                  isCompleting={isCompleting}
-                  previewMode={isPreviewMode}
-                />
-              )}
+          <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-6 lg:p-8">
+            {activeLesson && (
+              <LessonContentView
+                lesson={activeLesson}
+                onComplete={handleCompleteLesson}
+                onNext={handleNext}
+                hasNext={hasNextItem()}
+                isCompleting={isCompleting}
+                previewMode={isPreviewMode}
+              />
+            )}
 
-              {activeProject && (
-                <ProjectContentView
-                  project={activeProject.project}
-                  onSubmit={handleSubmitProject}
-                  onNext={handleNext}
-                  hasNext={hasNextItem()}
-                  previewMode={isPreviewMode}
-                />
-              )}
+            {activeProject && (
+              <ProjectContentView
+                project={activeProject.project}
+                onSubmit={handleSubmitProject}
+                onNext={handleNext}
+                hasNext={hasNextItem()}
+                previewMode={isPreviewMode}
+              />
+            )}
 
-              {activeQuiz && (
-                <QuizContentView
-                  quiz={activeQuiz.quiz}
-                  moduleTitle={activeQuiz.moduleTitle}
-                  onSubmitAnswer={handleSubmitQuizAnswer}
-                  onNext={handleNext}
-                  hasNext={hasNextItem()}
-                  previewMode={isPreviewMode}
-                />
-              )}
+            {activeQuiz && (
+              <QuizContentView
+                quiz={activeQuiz.quiz}
+                moduleTitle={activeQuiz.moduleTitle}
+                onSubmitAnswer={handleSubmitQuizAnswer}
+                onNext={handleNext}
+                hasNext={hasNextItem()}
+                previewMode={isPreviewMode}
+              />
+            )}
 
-              {!activeLesson && !activeProject?.project && !activeQuiz && (
-                <div className="text-center py-12">
-                  <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                    Select a lesson, project, or quiz
-                  </h3>
-                  <p className="text-gray-400">
-                    Choose an item from the sidebar to begin learning.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {courseContent.progress.overall_percent === 100 && (
-              <div className="mt-6 p-6 bg-green-50 border border-green-200 rounded-xl text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-xl font-bold text-green-800 mb-2">🎉 Course Completed!</h3>
-                <p className="text-green-700 mb-4">
-                  Congratulations! You have completed all lessons and projects.
+            {!activeLesson && !activeProject?.project && !activeQuiz && (
+              <div className="flex min-h-105 flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/70 px-6 text-center">
+                <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                  Choose a lesson, project, or quiz
+                </h3>
+                <p className="max-w-md text-sm leading-6 text-gray-500">
+                  Open the module panel to navigate the curriculum. The selected item will load here with minimal distractions.
                 </p>
-                <Link href="/dashboard/courses">
-                  <Button className="bg-green-600 hover:bg-green-700">
-                    Back to My Courses
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsModulePanelOpen(true)}
+                  className="mt-5 border-gray-200 bg-white"
+                >
+                  <PanelLeft className="w-4 h-4" />
+                  Open modules
+                </Button>
               </div>
             )}
           </div>
+
+          {courseContent.progress.overall_percent === 100 && (
+            <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-sm">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h3 className="mb-2 text-xl font-bold text-emerald-800">Course completed</h3>
+              <p className="mb-4 text-emerald-700">
+                You have completed all lessons and projects in this course.
+              </p>
+              <Link href="/dashboard/courses">
+                <Button className="bg-emerald-600 hover:bg-emerald-700">
+                  Back to My Courses
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>
