@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { useQuery } from "@tanstack/react-query"
 import { courseAdminApi, MentorStudentInfo, StudentProjectSubmission } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
@@ -38,6 +40,9 @@ export default function MyStudentsPage() {
   const [messageText, setMessageText] = useState("")
   const [studentProjects, setStudentProjects] = useState<StudentProjectSubmission[]>([])
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
+  const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null)
+  const [reviewFeedback, setReviewFeedback] = useState<Record<number, string>>({})
+  const [reviewPoints, setReviewPoints] = useState<Record<number, number>>({})
 
   // Fetch students from API (only students enrolled in mentor's courses)
   const { data: studentsData, isLoading, error } = useQuery({
@@ -75,6 +80,15 @@ export default function MyStudentsPage() {
     try {
       const projects = await courseAdminApi.getStudentProjects(student.id, student.course_id)
       setStudentProjects(projects)
+      // initialize review inputs from existing data
+      const fbMap: Record<number, string> = {}
+      const ptsMap: Record<number, number> = {}
+      projects.forEach((p) => {
+        fbMap[p.submission_id] = p.reviewer_feedback || ""
+        ptsMap[p.submission_id] = p.points_earned ?? 0
+      })
+      setReviewFeedback(fbMap)
+      setReviewPoints(ptsMap)
     } catch (error) {
       console.error("Error fetching student projects:", error)
       setStudentProjects([])
@@ -553,88 +567,243 @@ export default function MyStudentsPage() {
                   <p className="text-sm text-gray-400 mt-1">This student hasn&apos;t submitted any projects for review</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {studentProjects.map((project) => (
-                    <div
-                      key={project.submission_id}
-                      className="border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold text-gray-900">{project.project_title}</h4>
-                            {getStatusBadge(project.status)}
-                            {getDeadlineBadge(project.deadline_status)}
-                          </div>
-                          <p className="text-sm text-gray-500 mb-2">
-                            <span className="font-medium">Module:</span> {project.module_title}
-                          </p>
-                          {project.description && (
-                            <p className="text-sm text-gray-600 mb-3">{project.description}</p>
-                          )}
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              Submitted: {formatDate(project.submitted_at)}
-                            </span>
-                            {project.reviewed_at && (
-                              <span className="flex items-center gap-1">
-                                <CheckCircle className="w-3 h-3" />
-                                Reviewed: {formatDate(project.reviewed_at)}
-                              </span>
-                            )}
-                            <span className="flex items-center gap-1 font-medium text-blue-600">
-                              {project.points_earned} points
-                            </span>
-                          </div>
-                          {project.reviewer_feedback && (
-                            <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                              <p className="text-xs font-medium text-gray-700 mb-1">Feedback:</p>
-                              <p className="text-sm text-gray-600">{project.reviewer_feedback}</p>
+                <div className="space-y-6">
+                  {(() => {
+                    const submitted = studentProjects.filter((p) => p.status === "submitted")
+                    const reviewed = studentProjects.filter((p) => p.status !== "submitted")
+                    return (
+                      <>
+                        {submitted.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-700 mb-3">Submitted</h4>
+                            <div className="space-y-4">
+                              {submitted.map((project) => (
+                                <div
+                                  key={project.submission_id}
+                                  className="border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors"
+                                >
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <h4 className="font-semibold text-gray-900">{project.project_title}</h4>
+                                        {getStatusBadge(project.status)}
+                                        {getDeadlineBadge(project.deadline_status)}
+                                      </div>
+                                      <p className="text-sm text-gray-500 mb-2">
+                                        <span className="font-medium">Module:</span> {project.module_title}
+                                      </p>
+                                      {project.description && (
+                                        <div className="mb-3">
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => setExpandedProjectId(expandedProjectId === project.submission_id ? null : project.submission_id)}
+                                          >
+                                            {expandedProjectId === project.submission_id ? "Hide description" : "Show description"}
+                                          </Button>
+                                          {expandedProjectId === project.submission_id && (
+                                            <div className="mt-3 prose max-w-none prose-sm">
+                                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{project.description}</ReactMarkdown>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                                        <span className="flex items-center gap-1">
+                                          <Clock className="w-3 h-3" />
+                                          Submitted: {formatDate(project.submitted_at)}
+                                        </span>
+                                        {project.reviewed_at && (
+                                          <span className="flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Reviewed: {formatDate(project.reviewed_at)}
+                                          </span>
+                                        )}
+                                        <span className="flex items-center gap-1 font-medium text-blue-600">
+                                          {project.points_earned} points
+                                        </span>
+                                      </div>
+                                      {project.reviewer_feedback && (
+                                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                                          <p className="text-xs font-medium text-gray-700 mb-1">Feedback:</p>
+                                          <p className="text-sm text-gray-600">{project.reviewer_feedback}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col gap-2 shrink-0">
+                                      <a
+                                        href={project.solution_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                                      >
+                                        <ExternalLink className="w-4 h-4" />
+                                        View Submission
+                                      </a>
+
+                                      <div className="mt-3 w-64">
+                                        <label className="text-xs text-gray-500">Reviewer Feedback</label>
+                                        <textarea
+                                          value={reviewFeedback[project.submission_id] || ""}
+                                          onChange={(e) => setReviewFeedback({ ...reviewFeedback, [project.submission_id]: e.target.value })}
+                                          rows={3}
+                                          className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                          placeholder="Add feedback for the student..."
+                                        />
+                                        <div className="mt-2 flex items-center gap-2">
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            value={reviewPoints[project.submission_id] ?? project.points_earned ?? 0}
+                                            onChange={(e) => setReviewPoints({ ...reviewPoints, [project.submission_id]: Number(e.target.value) })}
+                                            className="w-24 px-2 py-2 border border-gray-200 rounded-md text-sm"
+                                            aria-label="Points"
+                                          />
+                                          <Button
+                                            size="sm"
+                                            className="bg-green-600 hover:bg-green-700"
+                                            onClick={async () => {
+                                              const fb = reviewFeedback[project.submission_id] || ""
+                                              try {
+                                                const res = await courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb)
+                                                setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: fb, reviewed_at: res.reviewed_at } : p))
+                                              } catch (err) {
+                                                console.error("Approve error:", err)
+                                                alert("Failed to approve submission. Please try again.")
+                                              }
+                                            }}
+                                          >
+                                            <CheckCircle className="w-4 h-4 mr-1" />
+                                            Approve
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-red-600 border-red-200 hover:bg-red-50"
+                                            onClick={async () => {
+                                              const fb = reviewFeedback[project.submission_id] || ""
+                                              if (!fb.trim()) {
+                                                alert("Please provide feedback when requesting a revision.")
+                                                return
+                                              }
+                                              try {
+                                                const res = await courseAdminApi.rejectProjectSubmission(Number(project.submission_id), fb)
+                                                setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: res.reviewer_feedback, reviewed_at: res.reviewed_at } : p))
+                                              } catch (err) {
+                                                console.error("Reject error:", err)
+                                                alert("Failed to request revision. Please try again.")
+                                              }
+                                            }}
+                                          >
+                                            <XCircle className="w-4 h-4 mr-1" />
+                                            Request Revision
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col gap-2 shrink-0">
-                          <a
-                            href={project.solution_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                            View Code
-                          </a>
-                          {project.status === "submitted" && (
-                            <>
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700"
-                                onClick={() => {
-                                  // TODO: Implement approve API call
-                                  alert(`Approving project: ${project.project_title}`)
-                                }}
-                              >
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-red-600 border-red-200 hover:bg-red-50"
-                                onClick={() => {
-                                  // TODO: Implement reject API call
-                                  alert(`Requesting revision for: ${project.project_title}`)
-                                }}
-                              >
-                                <XCircle className="w-4 h-4 mr-1" />
-                                Request Revision
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                          </div>
+                        )}
+
+                        {reviewed.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-700 mb-3">Reviewed</h4>
+                            <div className="space-y-4">
+                              {reviewed.map((project) => (
+                                <div key={project.submission_id} className="border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <h4 className="font-semibold text-gray-900">{project.project_title}</h4>
+                                        {getStatusBadge(project.status)}
+                                        {getDeadlineBadge(project.deadline_status)}
+                                      </div>
+                                      <p className="text-sm text-gray-500 mb-2">
+                                        <span className="font-medium">Module:</span> {project.module_title}
+                                      </p>
+                                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                                        <span className="flex items-center gap-1">
+                                          <Clock className="w-3 h-3" />
+                                          Submitted: {formatDate(project.submitted_at)}
+                                        </span>
+                                        {project.reviewed_at && (
+                                          <span className="flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Reviewed: {formatDate(project.reviewed_at)}
+                                          </span>
+                                        )}
+                                        <span className="flex items-center gap-1 font-medium text-blue-600">
+                                          {project.points_earned} points
+                                        </span>
+                                      </div>
+                                      {project.reviewer_feedback && (
+                                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                                          <p className="text-xs font-medium text-gray-700 mb-1">Feedback:</p>
+                                          <p className="text-sm text-gray-600">{project.reviewer_feedback}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col gap-2 shrink-0">
+                                      <a href={project.solution_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+                                        <ExternalLink className="w-4 h-4" />
+                                        View Submission
+                                      </a>
+                                      <div className="mt-3 w-64">
+                                        <Button size="sm" variant="outline" onClick={() => setExpandedProjectId(expandedProjectId === project.submission_id ? null : project.submission_id)}>
+                                          {expandedProjectId === project.submission_id ? "Close" : "Edit Review"}
+                                        </Button>
+                                        {expandedProjectId === project.submission_id && (
+                                          <div className="mt-3">
+                                            <textarea
+                                              value={reviewFeedback[project.submission_id] || ""}
+                                              onChange={(e) => setReviewFeedback({ ...reviewFeedback, [project.submission_id]: e.target.value })}
+                                              rows={4}
+                                              className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            />
+                                            <div className="mt-2 flex gap-2">
+                                              <Button
+                                                size="sm"
+                                                className="bg-blue-600 hover:bg-blue-700"
+                                                onClick={async () => {
+                                                  const fb = reviewFeedback[project.submission_id] || ""
+                                                  try {
+                                                    // use same endpoints to update review
+                                                    if (project.status === "approved") {
+                                                      const res = await courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb)
+                                                      setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, reviewer_feedback: res.reviewer_feedback ?? fb, reviewed_at: res.reviewed_at } : p))
+                                                    } else {
+                                                      const res = await courseAdminApi.rejectProjectSubmission(Number(project.submission_id), fb)
+                                                      setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, reviewer_feedback: res.reviewer_feedback, reviewed_at: res.reviewed_at, status: res.status, is_approved: res.is_approved } : p))
+                                                    }
+                                                    setExpandedProjectId(null)
+                                                  } catch (err) {
+                                                    console.error("Save review error:", err)
+                                                    alert("Failed to save review. Please try again.")
+                                                  }
+                                                }}
+                                              >
+                                                Save Review
+                                              </Button>
+                                              <Button size="sm" variant="outline" onClick={() => setExpandedProjectId(null)}>
+                                                Cancel
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
                 </div>
               )}
             </div>

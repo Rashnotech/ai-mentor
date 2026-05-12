@@ -1805,6 +1805,24 @@ export const courseAdminApi = {
     await apiClient.delete(`/courses/${courseId}`)
   },
 
+  /**
+   * Approve a project submission (mentor/admin)
+   */
+  approveProjectSubmission: async (submissionId: number, feedback?: string): Promise<any> => {
+    const url = `/reviews/projects/${submissionId}/approve${feedback ? `?feedback=${encodeURIComponent(feedback)}` : ""}`
+    const response = await apiClient.post(url)
+    return response.data
+  },
+
+  /**
+   * Reject a project submission with feedback (mentor/admin)
+   */
+  rejectProjectSubmission: async (submissionId: number, feedback: string): Promise<any> => {
+    const url = `/reviews/projects/${submissionId}/reject?feedback=${encodeURIComponent(feedback)}`
+    const response = await apiClient.post(url)
+    return response.data
+  },
+
   // Learning Paths
   listLearningPaths: async (courseId: number): Promise<LearningPathResponse[]> => {
     const response = await apiClient.get<LearningPathResponse[]>(`/courses/${courseId}/paths`)
