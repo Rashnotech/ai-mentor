@@ -1937,10 +1937,14 @@ export const courseAdminApi = {
 
   // Get student's project submissions for a specific course (for mentor review)
   getStudentProjects: async (studentId: string, courseId: number): Promise<StudentProjectSubmission[]> => {
-    const response = await apiClient.get<StudentProjectSubmission[]>(
+    const response = await apiClient.get<any>(
       `/courses/students/${studentId}/projects?course_id=${courseId}`
     )
-    return response.data
+    const data = response.data
+    // Backend may return either an array of submissions or an object { projects: [], total_count: ... }
+    if (Array.isArray(data)) return data as StudentProjectSubmission[]
+    if (data && Array.isArray(data.projects)) return data.projects as StudentProjectSubmission[]
+    return []
   },
 }
 

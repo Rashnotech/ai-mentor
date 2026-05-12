@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { courseAdminApi, MentorStudentInfo, StudentProjectSubmission } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import {
@@ -29,7 +29,6 @@ import {
 
 export default function MyStudentsPage() {
   const { user } = useAuth()
-  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState("")
   const [courseFilter, setCourseFilter] = useState("all")
   const [selectedStudent, setSelectedStudent] = useState<MentorStudentInfo | null>(null)
@@ -72,6 +71,7 @@ export default function MyStudentsPage() {
     setSelectedStudent(student)
     setIsLoadingProjects(true)
     setShowProjectsModal(true)
+    setStudentProjects([])
     try {
       const projects = await courseAdminApi.getStudentProjects(student.id, student.course_id)
       setStudentProjects(projects)
@@ -134,26 +134,26 @@ export default function MyStudentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">My Students</h2>
-          <p className="text-gray-500 text-sm">View and manage students enrolled in your courses</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">My Students</h2>
+          <p className="text-sm text-gray-500">View and manage students enrolled in your courses</p>
         </div>
-        <div className="flex gap-2">
-          <div className="relative">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search by name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-64 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-200 py-2 pr-4 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-64"
             />
           </div>
           <select
             value={courseFilter}
             onChange={(e) => setCourseFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-auto"
           >
             <option value="all">All Courses</option>
             {courses.map((course) => (
@@ -166,7 +166,7 @@ export default function MyStudentsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardContent className="p-4 text-center">
             <Users className="w-8 h-8 text-blue-600 mx-auto mb-2" />
@@ -221,7 +221,70 @@ export default function MyStudentsPage() {
               <p className="text-red-500">Error loading students. Please try again.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="space-y-4">
+              <div className="space-y-3 sm:hidden">
+                {students.map((student) => (
+                  <div key={student.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-purple-600 text-lg font-semibold text-white">
+                        {student.name?.charAt(0) || "?"}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-900">{student.name || "Unknown"}</p>
+                        <p className="truncate text-xs text-gray-500">{student.email}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {getSkillLevelBadge(student.skill_level)}
+                          <Badge variant="outline" className="border-gray-200 text-gray-600">
+                            {student.course_title}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-gray-600">
+                      <div className="rounded-xl bg-gray-50 p-3">
+                        <p className="text-xs uppercase tracking-wide text-gray-400">Enrolled</p>
+                        <p className="mt-1 font-medium text-gray-900">{formatDate(student.enrolled_at)}</p>
+                      </div>
+                      <div className="rounded-xl bg-gray-50 p-3">
+                        <p className="text-xs uppercase tracking-wide text-gray-400">Last Active</p>
+                        <p className="mt-1 font-medium text-gray-900">{formatDate(student.last_active_at)}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewStudent(student)}
+                        title="View Details"
+                        className="w-full"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenMessage(student)}
+                        title="Send Message"
+                        className="w-full"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        onClick={() => handleViewProjects(student)}
+                        title="View Projects"
+                      >
+                        <FolderOpen className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-gray-200 hidden sm:block">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
@@ -238,7 +301,7 @@ export default function MyStudentsPage() {
                     <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                          <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
                             {student.name?.charAt(0) || "?"}
                           </div>
                           <div>
@@ -292,6 +355,7 @@ export default function MyStudentsPage() {
                 </tbody>
               </table>
             </div>
+            </div>
           )}
           {!isLoading && !error && students.length === 0 && (
             <div className="text-center py-12">
@@ -305,12 +369,12 @@ export default function MyStudentsPage() {
 
       {/* View Student Modal */}
       {showStudentModal && selectedStudent && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+          <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white sm:max-h-[90vh] sm:max-w-3xl sm:rounded-2xl">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                  <div className="w-16 h-16 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
                     {selectedStudent.name?.charAt(0) || "?"}
                   </div>
                   <div>
@@ -361,8 +425,8 @@ export default function MyStudentsPage() {
               )}
             </div>
 
-            <div className="p-6 border-t border-gray-100 flex justify-between">
-              <div className="flex gap-2">
+            <div className="flex flex-col gap-3 border-t border-gray-100 p-6 sm:flex-row sm:justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Button 
                   variant="outline"
                   onClick={() => {
@@ -384,7 +448,7 @@ export default function MyStudentsPage() {
                   View Projects
                 </Button>
               </div>
-              <Button variant="ghost" onClick={() => setShowStudentModal(false)}>
+              <Button variant="ghost" onClick={() => setShowStudentModal(false)} className="w-full sm:w-auto">
                 Close
               </Button>
             </div>
@@ -394,12 +458,12 @@ export default function MyStudentsPage() {
 
       {/* Send Message Modal */}
       {showMessageModal && selectedStudent && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+          <div className="w-full max-w-lg rounded-t-3xl bg-white sm:rounded-2xl">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
                     {selectedStudent.name?.charAt(0) || "?"}
                   </div>
                   <div>
@@ -438,7 +502,7 @@ export default function MyStudentsPage() {
                 </button>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
+            <div className="flex flex-col gap-3 border-t border-gray-100 p-6 sm:flex-row sm:justify-end">
               <Button variant="outline" onClick={() => setShowMessageModal(false)}>
                 Cancel
               </Button>
@@ -446,6 +510,7 @@ export default function MyStudentsPage() {
                 className="bg-blue-600 hover:bg-blue-700"
                 onClick={handleSendMessage}
                 disabled={!messageText.trim()}
+                type="button"
               >
                 <Send className="w-4 h-4 mr-2" />
                 Send Message
@@ -457,12 +522,12 @@ export default function MyStudentsPage() {
 
       {/* View Projects Modal */}
       {showProjectsModal && selectedStudent && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+          <div className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white sm:max-h-[90vh] sm:max-w-4xl sm:rounded-2xl">
             <div className="p-6 border-b border-gray-100 shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
                     {selectedStudent.name?.charAt(0) || "?"}
                   </div>
                   <div>
@@ -573,7 +638,7 @@ export default function MyStudentsPage() {
                 </div>
               )}
             </div>
-            <div className="p-6 border-t border-gray-100 flex justify-end shrink-0">
+            <div className="flex justify-end shrink-0 border-t border-gray-100 p-6">
               <Button variant="outline" onClick={() => setShowProjectsModal(false)}>
                 Close
               </Button>

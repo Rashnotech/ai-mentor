@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from auth.dependencies import get_current_user, get_db_session
 from domains.courses.services.course_service import CourseService
+from domains.courses.services.enrollment_service import EnrollmentService
 from domains.courses.models.course import Course, LearningPath, Module, Lesson, Project
 from domains.courses.models.assessment import AssessmentQuestion
 from domains.courses.schemas.course_schema import (
@@ -32,6 +33,7 @@ from domains.courses.schemas.course_schema import (
     AssessmentQuestionCreateRequest,
     AssessmentQuestionUpdateRequest,
     AssessmentQuestionResponse,
+    StudentProjectsListResponse,
 )
 from domains.users.models.user import User, UserRole
 from core.errors import AppError
@@ -443,6 +445,70 @@ async def get_mentor_students(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error getting mentor students",
+        )
+
+
+@router.get(
+    "/students/{student_id}/projects",
+    response_model=StudentProjectsListResponse,
+    summary="Get a student's project submissions",
+    description="Get project submissions for a specific student enrolled in a mentor's courses",
+)
+async def get_student_projects_for_mentor(
+    student_id: str,
+    current_user: User = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db_session),
+    course_id: Optional[int] = Query(None, description="Optional course filter for the student's projects"),
+):
+    try:
+        if current_user.get("role") not in [UserRole.ADMIN, UserRole.MENTOR]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only mentors and admins can access student projects",
+            )
+
+        if current_user.get("role") == UserRole.MENTOR:
+            if course_id is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="course_id is required for mentor project access",
+                )
+
+            mentor_courses_stmt = select(Course.course_id).where(Course.created_by == str(current_user.get("user_id")))
+            mentor_courses_result = await db_session.execute(mentor_courses_stmt)
+            mentor_course_ids = {row[0] for row in mentor_courses_result.all()}
+
+            if course_id not in mentor_course_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Mentors can only view projects from their own courses",
+                )
+
+        service = EnrollmentService(db_session)
+        projects = await service.get_student_projects(student_id)
+
+        if course_id is not None:
+            filtered_projects = [project for project in projects["projects"] if project["course_id"] == course_id]
+            projects = {
+                "projects": filtered_projects,
+                "total_count": len(filtered_projects),
+                "completed_count": sum(1 for project in filtered_projects if project["status"] == "approved"),
+                "in_progress_count": sum(
+                    1 for project in filtered_projects if project["status"] in {"submitted", "in_progress"}
+                ),
+            }
+
+        return projects
+
+    except HTTPException:
+        raise
+    except AppError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.error(f"Error getting student projects for mentor: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching student projects",
         )
 
 
