@@ -2000,7 +2000,7 @@ export interface StudentProjectSubmission {
   project_title: string
   module_id: number
   module_title: string
-  solution_url: string
+  submission_url: string
   description: string | null
   status: "submitted" | "approved" | "rejected"
   is_approved: boolean

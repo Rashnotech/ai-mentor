@@ -44,7 +44,7 @@ async def approve_project(
     - Updated submission with approval status and finalized points
     """
     try:
-        if current_user.role not in [UserRole.ADMIN, UserRole.MENTOR]:
+        if current_user.get("role") not in [UserRole.ADMIN, UserRole.MENTOR]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only mentors and admins can approve submissions",
@@ -63,7 +63,7 @@ async def approve_project(
             "is_approved": submission.is_approved,
             "points_earned": submission.points_earned,
             "deadline_status": submission.deadline_status.value,
-            "approved_by": current_user.email,
+            "approved_by": current_user.get("email"),
             "reviewed_at": submission.reviewed_at.isoformat(),
         }
 
@@ -107,7 +107,7 @@ async def reject_project(
     - Updated submission with rejection status and feedback
     """
     try:
-        if current_user.role not in [UserRole.ADMIN, UserRole.MENTOR]:
+        if current_user.get("role") not in [UserRole.ADMIN, UserRole.MENTOR]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only mentors and admins can reject submissions",
@@ -132,7 +132,7 @@ async def reject_project(
             "is_approved": submission.is_approved,
             "points_earned": submission.points_earned,
             "reviewer_feedback": submission.reviewer_feedback,
-            "rejected_by": current_user.email,
+            "rejected_by": current_user.get("email"),
             "reviewed_at": submission.reviewed_at.isoformat(),
         }
 

@@ -87,12 +87,12 @@ export default function MyStudentsPage() {
       const ptsMap: Record<number, number> = {}
       const statusMap: Record<number, "approved" | "needs_revision" | "rejected"> = {}
       projects.forEach((p) => {
-        fbMap[p.submission_id] = p.reviewer_feedback || ""
-        ptsMap[p.submission_id] = p.points_earned ?? 0
+        fbMap[p.project_id] = p.reviewer_feedback || ""
+        ptsMap[p.project_id] = p.points_earned ?? 0
         // Map backend status to review status selector values
-        if (p.status === "approved") statusMap[p.submission_id] = "approved"
-        else if (p.status === "rejected") statusMap[p.submission_id] = "rejected"
-        else statusMap[p.submission_id] = "needs_revision" // default for submitted
+        if (p.status === "approved") statusMap[p.project_id] = "approved"
+        else if (p.status === "rejected") statusMap[p.project_id] = "rejected"
+        else statusMap[p.project_id] = "needs_revision" // default for submitted
       })
       setReviewFeedback(fbMap)
       setReviewPoints(ptsMap)
@@ -578,49 +578,44 @@ export default function MyStudentsPage() {
                 </div>
               ) : (
                 <div className="space-y-4 p-4 sm:p-6">
-                  {(() => {
-                    const submittedProjects = studentProjects.filter((p) => p.status === "submitted")
-                    const reviewedProjects = studentProjects.filter((p) => p.status !== "submitted")
-
-                    return (
-                      <>
-                        {submittedProjects.length > 0 ? (
-                          <div>
-                            <h4 className="text-sm font-semibold text-gray-700 mb-3 px-1">Pending Review ({submittedProjects.length})</h4>
-                            <div className="space-y-4">
-                              {submittedProjects.map((project) => (
-                                <div key={project.submission_id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                          {/* Project Card Header */}
-                          <div className="px-4 py-4 sm:px-6 sm:py-5 border-b border-gray-100">
-                            <div className="flex flex-col gap-3">
+                  {studentProjects
+                    .filter((p) => p.status === "submitted")
+                    .map((project) => (
+                      <div key={project.project_id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                        {/* Project Card Header */}
+                        <div className="px-4 py-4 sm:px-6 sm:py-5 border-b border-gray-100">
+                          <div className="flex flex-col gap-3">
+                            <div>
                               <h4 className="text-base sm:text-lg font-semibold text-gray-900 leading-tight">{project.project_title}</h4>
-                              <div className="flex flex-wrap gap-2">
-                                {getStatusBadge(project.status)}
-                                {getDeadlineBadge(project.deadline_status)}
-                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {getStatusBadge(project.status)}
+                              {getDeadlineBadge(project.deadline_status)}
                             </div>
                           </div>
+                        </div>
 
-                          {/* Project Details */}
-                          <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-3 border-b border-gray-100 bg-gray-50">
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 text-sm">
-                              <div>
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Module</p>
-                                <p className="text-gray-900 font-medium text-sm">{project.module_title}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Submitted</p>
-                                <p className="text-gray-900 font-medium text-sm">{formatDate(project.submitted_at)}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Points</p>
-                                <p className="text-lg font-bold text-blue-600">{project.points_earned}</p>
-                              </div>
+                        {/* Project Details */}
+                        <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-3 border-b border-gray-100 bg-gray-50">
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 text-sm">
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Module</p>
+                              <p className="text-gray-900 font-medium">{project.module_title}</p>
                             </div>
-                            
-                            {/* Submission Link */}
-                            {project.solution_url ? (
-                              <a href={project.solution_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Submitted</p>
+                              <p className="text-gray-900 font-medium">{formatDate(project.submitted_at)}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Points</p>
+                              <p className="text-lg font-bold text-blue-600">{project.points_earned}</p>
+                            </div>
+                          </div>
+                          
+                          {/* Submission Link */}
+                          <div>
+                            {project.submission_url ? (
+                              <a href={project.submission_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition-colors cursor-pointer">
                                 <ExternalLink className="w-4 h-4" />
                                 Open Submission
                               </a>
@@ -631,86 +626,61 @@ export default function MyStudentsPage() {
                               </button>
                             )}
                           </div>
+                        </div>
 
-                          {/* Project Description */}
-                          {project.description && (
-                            <div className="px-4 py-4 sm:px-6 sm:py-5 border-b border-gray-100 bg-white">
-                              <button onClick={() => setExpandedProjectId(expandedProjectId === project.submission_id ? null : project.submission_id)} className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
-                                <span>{expandedProjectId === project.submission_id ? "−" : "+"} Project Description</span>
-                              </button>
-                              {expandedProjectId === project.submission_id && (
-                                <div className="mt-3 prose prose-sm max-w-none text-gray-700 bg-gray-50 -mx-4 -mb-4 p-4 sm:-mx-6 sm:-mb-5 sm:p-6 rounded-b-lg">
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{project.description}</ReactMarkdown>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                        {/* Project Description */}
+                        {project.description && (
+                          <div className="px-4 py-4 sm:px-6 sm:py-5 border-b border-gray-100 bg-white">
+                            <button onClick={() => setExpandedProjectId(expandedProjectId === project.project_id ? null : project.project_id)} className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
+                              <span>{expandedProjectId === project.project_id ? "−" : "+"} Project Description</span>
+                            </button>
+                            {expandedProjectId === project.project_id && (
+                              <div className="mt-4 prose prose-sm max-w-none text-gray-700 bg-gray-50 -mx-4 -mb-4 p-4 sm:-mx-6 sm:-mb-5 sm:p-6">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{project.description}</ReactMarkdown>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
-                          {/* Mentor Review Section - Compact */}
-                          <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-3 bg-white">
-                            {/* Status Dropdown */}
-                            <div>
-                              <label className="block text-xs font-semibold text-gray-900 mb-1.5">Status</label>
-                              <select 
-                                value={reviewStatus[project.submission_id] || "needs_revision"} 
-                                onChange={(e) => setReviewStatus({ ...reviewStatus, [project.submission_id]: e.target.value as "approved" | "needs_revision" | "rejected" })} 
-                                className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                              >
-                                <option value="needs_revision">Needs Revision</option>
-                                <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
-                              </select>
-                            </div>
+                        {/* Mentor Review Section */}
+                        <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-4 bg-white">
+                          <div>
+                            <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Review Status</label>
+                            <select value={reviewStatus[project.project_id] || "needs_revision"} onChange={(e) => setReviewStatus({ ...reviewStatus, [project.project_id]: e.target.value as "approved" | "needs_revision" | "rejected" })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                              <option value="needs_revision">Needs Revision</option>
+                              <option value="approved">Approved</option>
+                              <option value="rejected">Rejected</option>
+                            </select>
+                          </div>
 
-                            {/* Feedback Textarea - Compact */}
-                            <div>
-                              <label className="block text-xs font-semibold text-gray-900 mb-1.5">Feedback</label>
-                              <textarea 
-                                value={reviewFeedback[project.submission_id] || ""} 
-                                onChange={(e) => setReviewFeedback({ ...reviewFeedback, [project.submission_id]: e.target.value })} 
-                                placeholder="Constructive feedback..." 
-                                rows={3}
-                                maxLength={2000}
-                                className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" 
-                              />
-                              <p className="text-xs text-gray-500 mt-1">{reviewFeedback[project.submission_id]?.length || 0}/2000</p>
-                            </div>
+                          <div>
+                            <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Feedback</label>
+                            <textarea value={reviewFeedback[project.project_id] || ""} onChange={(e) => setReviewFeedback({ ...reviewFeedback, [project.project_id]: e.target.value })} placeholder="Provide constructive feedback for the student..." rows={4} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                            <p className="text-xs text-gray-500 mt-1">{reviewFeedback[project.project_id]?.length || 0}/2000 characters</p>
+                          </div>
 
-                            {/* Submit Button - Full Width */}
-                            <Button 
-                              size="sm" 
-                              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium" 
-                              onClick={async () => {
-                                const submissionId = project.submission_id
-                                const status = reviewStatus[submissionId] || "needs_revision"
-                                const fb = reviewFeedback[submissionId] || ""
-                                
-                                if (!submissionId || isNaN(submissionId)) {
-                                  console.error("Invalid submission ID:", submissionId)
-                                  alert("Error: Invalid submission ID")
-                                  return
+                          {/* Review Actions */}
+                          <div className="flex gap-3 pt-2">
+                            <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={async () => {
+                              const status = reviewStatus[project.project_id] || "needs_revision"
+                              const fb = reviewFeedback[project.project_id] || ""
+                              setSubmittingReviewId(project.project_id)
+                              try {
+                                if (status === "approved") {
+                                  const res = await courseAdminApi.approveProjectSubmission(Number(project.project_id), fb)
+                                  setStudentProjects((prev) => prev.map((p) => p.project_id === project.project_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: fb, reviewed_at: res.reviewed_at } : p))
+                                } else {
+                                  const res = await courseAdminApi.rejectProjectSubmission(Number(project.project_id), fb)
+                                  setStudentProjects((prev) => prev.map((p) => p.project_id === project.project_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: res.reviewer_feedback, reviewed_at: res.reviewed_at } : p))
                                 }
-
-                                setSubmittingReviewId(submissionId)
-                                try {
-                                  if (status === "approved") {
-                                    const res = await courseAdminApi.approveProjectSubmission(submissionId, fb)
-                                    setStudentProjects((prev) => prev.map((p) => p.submission_id === submissionId ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: fb, reviewed_at: res.reviewed_at } : p))
-                                  } else {
-                                    const res = await courseAdminApi.rejectProjectSubmission(submissionId, fb)
-                                    setStudentProjects((prev) => prev.map((p) => p.submission_id === submissionId ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: res.reviewer_feedback, reviewed_at: res.reviewed_at } : p))
-                                  }
-                                } catch (err: any) {
-                                  console.error("Review error:", err)
-                                  const errorMsg = err?.response?.data?.detail || err?.message || "Failed to submit review"
-                                  alert(errorMsg)
-                                } finally {
-                                  setSubmittingReviewId(null)
-                                }
-                              }} 
-                              disabled={submittingReviewId === project.submission_id}
-                            >
-                              {submittingReviewId === project.submission_id ? (
+                              } catch (err) {
+                                console.error("Review error:", err)
+                                alert("Failed to submit review. Please try again.")
+                              } finally {
+                                setSubmittingReviewId(null)
+                              }
+                            }} disabled={submittingReviewId === project.project_id}>
+                              {submittingReviewId === project.project_id ? (
                                 <>
                                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                   Submitting...
@@ -724,50 +694,8 @@ export default function MyStudentsPage() {
                             </Button>
                           </div>
                         </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : null}
-
-                        {reviewedProjects.length > 0 && (
-                          <div className={submittedProjects.length > 0 ? "mt-6" : ""}>
-                            <h4 className="text-sm font-semibold text-gray-700 mb-3 px-1">Reviewed ({reviewedProjects.length})</h4>
-                            <div className="space-y-3">
-                              {reviewedProjects.map((project) => (
-                                <div key={project.submission_id} className="bg-white rounded-xl border border-gray-200 p-3 sm:p-4">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0 flex-1">
-                                      <h5 className="text-sm font-semibold text-gray-900">{project.project_title}</h5>
-                                      <p className="text-xs text-gray-500 mt-1">{project.module_title}</p>
-                                      <div className="flex flex-wrap gap-2 mt-2">
-                                        {getStatusBadge(project.status)}
-                                      </div>
-                                    </div>
-                                    <div className="shrink-0 text-right">
-                                      <p className="text-xs text-gray-500">Points</p>
-                                      <p className="text-lg font-bold text-blue-600">{project.points_earned}</p>
-                                    </div>
-                                  </div>
-                                  {project.reviewer_feedback && (
-                                    <p className="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded">{project.reviewer_feedback}</p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {submittedProjects.length === 0 && reviewedProjects.length === 0 && (
-                          <div className="flex items-center justify-center py-12 text-center">
-                            <div>
-                              <FolderOpen className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-                              <p className="text-gray-600 font-medium">No projects to review</p>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )
-                  })()}
+                      </div>
+                    ))}
                 </div>
               )}
             </div>
