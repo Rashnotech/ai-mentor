@@ -251,7 +251,7 @@ export default function OnboardingPage() {
       updateUser({ onboarding_completed: true })
       
       toast.success("Onboarding complete!", {
-        description: "Welcome to LearnTech!",
+        description: "Welcome to Rashnotech!",
       })
       router.push("/dashboard")
     },
