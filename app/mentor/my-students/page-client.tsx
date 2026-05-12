@@ -631,15 +631,22 @@ export default function MyStudentsPage() {
                                       )}
                                     </div>
                                     <div className="flex flex-col gap-2 shrink-0">
-                                      <a
-                                        href={project.solution_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-                                      >
-                                        <ExternalLink className="w-4 h-4" />
-                                        View Submission
-                                      </a>
+                                      {project.solution_url ? (
+                                        <a
+                                          href={project.solution_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                                        >
+                                          <ExternalLink className="w-4 h-4" />
+                                          View Submission
+                                        </a>
+                                      ) : (
+                                        <button disabled className="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed">
+                                          <ExternalLink className="w-4 h-4" />
+                                          No Submission
+                                        </button>
+                                      )}
 
                                       <div className="mt-3 w-64">
                                         <label className="text-xs text-gray-500">Reviewer Feedback</label>
@@ -747,10 +754,17 @@ export default function MyStudentsPage() {
                                       )}
                                     </div>
                                     <div className="flex flex-col gap-2 shrink-0">
-                                      <a href={project.solution_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
-                                        <ExternalLink className="w-4 h-4" />
-                                        View Submission
-                                      </a>
+                                      {project.solution_url ? (
+                                        <a href={project.solution_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+                                          <ExternalLink className="w-4 h-4" />
+                                          View Submission
+                                        </a>
+                                      ) : (
+                                        <button disabled className="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed">
+                                          <ExternalLink className="w-4 h-4" />
+                                          No Submission
+                                        </button>
+                                      )}
                                       <div className="mt-3 w-64">
                                         <Button size="sm" variant="outline" onClick={() => setExpandedProjectId(expandedProjectId === project.submission_id ? null : project.submission_id)}>
                                           {expandedProjectId === project.submission_id ? "Close" : "Edit Review"}
