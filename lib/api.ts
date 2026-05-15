@@ -1809,7 +1809,7 @@ export const courseAdminApi = {
    * Approve a project submission (mentor/admin)
    */
   approveProjectSubmission: async (submissionId: number, feedback?: string): Promise<any> => {
-    const url = `/reviews/projects/${submissionId}/approve${feedback ? `?feedback=${encodeURIComponent(feedback)}` : ""}`
+    const url = `/reviews/submissions/${submissionId}/approve${feedback ? `?feedback=${encodeURIComponent(feedback)}` : ""}`
     const response = await apiClient.post(url)
     return response.data
   },
@@ -1818,7 +1818,7 @@ export const courseAdminApi = {
    * Reject a project submission with feedback (mentor/admin)
    */
   rejectProjectSubmission: async (submissionId: number, feedback: string): Promise<any> => {
-    const url = `/reviews/projects/${submissionId}/reject?feedback=${encodeURIComponent(feedback)}`
+    const url = `/reviews/submissions/${submissionId}/reject?feedback=${encodeURIComponent(feedback)}`
     const response = await apiClient.post(url)
     return response.data
   },

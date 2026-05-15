@@ -835,6 +835,7 @@ class EnrollmentService:
                     status = "not_started"
 
                 projects_data.append({
+                    "submission_id": submission.submission_id if submission else None,
                     "project_id": project.project_id,
                     "title": project.title,
                     "description": project.description or "",

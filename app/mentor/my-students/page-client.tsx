@@ -28,6 +28,7 @@ import {
   XCircle,
   Loader2,
 } from "lucide-react"
+import { toast } from "sonner"
 
 export default function MyStudentsPage() {
   const { user } = useAuth()
@@ -87,12 +88,12 @@ export default function MyStudentsPage() {
       const ptsMap: Record<number, number> = {}
       const statusMap: Record<number, "approved" | "needs_revision" | "rejected"> = {}
       projects.forEach((p) => {
-        fbMap[p.project_id] = p.reviewer_feedback || ""
-        ptsMap[p.project_id] = p.points_earned ?? 0
+        fbMap[p.submission_id] = p.reviewer_feedback || ""
+        ptsMap[p.submission_id] = p.points_earned ?? 0
         // Map backend status to review status selector values
-        if (p.status === "approved") statusMap[p.project_id] = "approved"
-        else if (p.status === "rejected") statusMap[p.project_id] = "rejected"
-        else statusMap[p.project_id] = "needs_revision" // default for submitted
+        if (p.status === "approved") statusMap[p.submission_id] = "approved"
+        else if (p.status === "rejected") statusMap[p.submission_id] = "rejected"
+        else statusMap[p.submission_id] = "needs_revision" // default for submitted
       })
       setReviewFeedback(fbMap)
       setReviewPoints(ptsMap)
@@ -579,9 +580,9 @@ export default function MyStudentsPage() {
               ) : (
                 <div className="space-y-4 p-4 sm:p-6">
                   {studentProjects
-                    .filter((p) => p.status === "submitted")
+                    .filter((p) => p.status === "submitted" || p.status === "rejected" || p.status === "approved")
                     .map((project) => (
-                      <div key={project.project_id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                      <div key={project.submission_id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
                         {/* Project Card Header */}
                         <div className="px-4 py-4 sm:px-6 sm:py-5 border-b border-gray-100">
                           <div className="flex flex-col gap-3">
@@ -631,10 +632,10 @@ export default function MyStudentsPage() {
                         {/* Project Description */}
                         {project.description && (
                           <div className="px-4 py-4 sm:px-6 sm:py-5 border-b border-gray-100 bg-white">
-                            <button onClick={() => setExpandedProjectId(expandedProjectId === project.project_id ? null : project.project_id)} className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
-                              <span>{expandedProjectId === project.project_id ? "−" : "+"} Project Description</span>
+                            <button onClick={() => setExpandedProjectId(expandedProjectId === project.submission_id ? null : project.submission_id)} className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
+                              <span>{expandedProjectId === project.submission_id ? "−" : "+"} Project Description</span>
                             </button>
-                            {expandedProjectId === project.project_id && (
+                            {expandedProjectId === project.submission_id && (
                               <div className="mt-4 prose prose-sm max-w-none text-gray-700 bg-gray-50 -mx-4 -mb-4 p-4 sm:-mx-6 sm:-mb-5 sm:p-6">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{project.description}</ReactMarkdown>
                               </div>
@@ -642,58 +643,78 @@ export default function MyStudentsPage() {
                           </div>
                         )}
 
-                        {/* Mentor Review Section */}
-                        <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-4 bg-white">
-                          <div>
-                            <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Review Status</label>
-                            <select value={reviewStatus[project.project_id] || "needs_revision"} onChange={(e) => setReviewStatus({ ...reviewStatus, [project.project_id]: e.target.value as "approved" | "needs_revision" | "rejected" })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                              <option value="needs_revision">Needs Revision</option>
-                              <option value="approved">Approved</option>
-                              <option value="rejected">Rejected</option>
-                            </select>
+                        {/* Approval Status or Review Section */}
+                        {project.status === "approved" ? (
+                          <div className="px-4 py-4 sm:px-6 sm:py-5 bg-green-50 border-t border-green-100">
+                            <div className="flex items-start gap-3">
+                              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-green-900">Project Approved</p>
+                                <p className="text-xs text-green-700 mt-1">This project was approved on {formatDate(project.reviewed_at)}</p>
+                                {project.reviewer_feedback && (
+                                  <div className="mt-3 p-3 bg-white rounded-lg border border-green-100">
+                                    <p className="text-xs font-medium text-gray-600 mb-1">Your Feedback:</p>
+                                    <p className="text-sm text-gray-700">{project.reviewer_feedback}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
+                        ) : (
+                          <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-4 bg-white">
+                            <div>
+                              <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Review Status</label>
+                              <select value={reviewStatus[project.submission_id] || "needs_revision"} onChange={(e) => setReviewStatus({ ...reviewStatus, [project.submission_id]: e.target.value as "approved" | "needs_revision" | "rejected" })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                                <option value="needs_revision">Needs Revision</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                              </select>
+                            </div>
 
-                          <div>
-                            <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Feedback</label>
-                            <textarea value={reviewFeedback[project.project_id] || ""} onChange={(e) => setReviewFeedback({ ...reviewFeedback, [project.project_id]: e.target.value })} placeholder="Provide constructive feedback for the student..." rows={4} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-                            <p className="text-xs text-gray-500 mt-1">{reviewFeedback[project.project_id]?.length || 0}/2000 characters</p>
-                          </div>
+                            <div>
+                              <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Feedback</label>
+                              <textarea value={reviewFeedback[project.submission_id] || ""} onChange={(e) => setReviewFeedback({ ...reviewFeedback, [project.submission_id]: e.target.value })} placeholder="Provide constructive feedback for the student..." rows={4} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                              <p className="text-xs text-gray-500 mt-1">{reviewFeedback[project.submission_id]?.length || 0}/2000 characters</p>
+                            </div>
 
-                          {/* Review Actions */}
-                          <div className="flex gap-3 pt-2">
-                            <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={async () => {
-                              const status = reviewStatus[project.project_id] || "needs_revision"
-                              const fb = reviewFeedback[project.project_id] || ""
-                              setSubmittingReviewId(project.project_id)
-                              try {
-                                if (status === "approved") {
-                                  const res = await courseAdminApi.approveProjectSubmission(Number(project.project_id), fb)
-                                  setStudentProjects((prev) => prev.map((p) => p.project_id === project.project_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: fb, reviewed_at: res.reviewed_at } : p))
-                                } else {
-                                  const res = await courseAdminApi.rejectProjectSubmission(Number(project.project_id), fb)
-                                  setStudentProjects((prev) => prev.map((p) => p.project_id === project.project_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: res.reviewer_feedback, reviewed_at: res.reviewed_at } : p))
+                            {/* Review Actions */}
+                            <div className="flex gap-3 pt-2">
+                              <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={async () => {
+                                const status = reviewStatus[project.submission_id] || "needs_revision"
+                                const fb = reviewFeedback[project.submission_id] || ""
+                                setSubmittingReviewId(project.submission_id)
+                                try {
+                                  if (status === "approved") {
+                                    const res = await courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb)
+                                    setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: fb, reviewed_at: res.reviewed_at } : p))
+                                    toast.success("Project approved successfully!")
+                                  } else {
+                                    const res = await courseAdminApi.rejectProjectSubmission(Number(project.submission_id), fb)
+                                    setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: res.reviewer_feedback, reviewed_at: res.reviewed_at } : p))
+                                    toast.error("Project rejected.")
+                                  }
+                                } catch (err) {
+                                  console.error("Review error:", err)
+                                  toast.error("Failed to submit review. Please try again.")
+                                } finally {
+                                  setSubmittingReviewId(null)
                                 }
-                              } catch (err) {
-                                console.error("Review error:", err)
-                                alert("Failed to submit review. Please try again.")
-                              } finally {
-                                setSubmittingReviewId(null)
-                              }
-                            }} disabled={submittingReviewId === project.project_id}>
-                              {submittingReviewId === project.project_id ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                  Submitting...
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle className="w-4 h-4 mr-2" />
-                                  Submit Review
-                                </>
-                              )}
-                            </Button>
+                              }} disabled={submittingReviewId === project.submission_id}>
+                                {submittingReviewId === project.submission_id ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Submitting...
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Submit Review
+                                  </>
+                                )}
+                              </Button>
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     ))}
                 </div>

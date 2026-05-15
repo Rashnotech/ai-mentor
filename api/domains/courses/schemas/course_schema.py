@@ -673,7 +673,8 @@ class StudentCoursesListResponse(BaseModel):
 # Student Project Schemas
 class StudentProjectResponse(BaseModel):
     """Response schema for a project in the student's enrolled course."""
-
+    
+    submission_id: Optional[int] = Field(None, description="Submission ID if student has submitted")
     project_id: int = Field(description="Project ID")
     title: str = Field(description="Project title")
     description: str = Field(description="Project description")

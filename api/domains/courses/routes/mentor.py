@@ -17,7 +17,7 @@ router = APIRouter(prefix="/reviews", tags=["mentor-reviews"])
 
 
 @router.post(
-    "/projects/{submission_id}/approve",
+    "/submissions/{submission_id}/approve",
     status_code=status.HTTP_200_OK,
     summary="Approve project submission",
     description="Approve a student's project submission (mentor/admin only)",
@@ -49,6 +49,7 @@ async def approve_project(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only mentors and admins can approve submissions",
             )
+        
 
         service = ProgressService(db_session)
         submission = await service.approve_project_submission(
@@ -80,7 +81,7 @@ async def approve_project(
 
 
 @router.post(
-    "/projects/{submission_id}/reject",
+    "/submissions/{submission_id}/reject",
     status_code=status.HTTP_200_OK,
     summary="Reject project submission",
     description="Reject a student's project submission with feedback (mentor/admin only)",

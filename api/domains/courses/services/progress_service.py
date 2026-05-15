@@ -323,7 +323,7 @@ class ProgressService:
             AppError: If submission not found
         """
         try:
-            submission = await self._get_project_submission(submission_id)
+            submission = await self._get_project_submission_by_id(submission_id)
             if not submission:
                 raise AppError(
                     status_code=404,
@@ -377,7 +377,7 @@ class ProgressService:
             AppError: If submission not found
         """
         try:
-            submission = await self._get_project_submission(submission_id)
+            submission = await self._get_project_submission_by_id(submission_id)
             if not submission:
                 raise AppError(
                     status_code=404,
@@ -618,8 +618,16 @@ class ProgressService:
         result = await self.db_session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def _get_project_submission(self, submission_id: int) -> Optional[ProjectSubmission]:
-        """Get project submission by ID."""
+    async def _get_project_submission(self, project_id: int) -> Optional[ProjectSubmission]:
+        """Get the most recent project submission for a project ID."""
+        stmt = select(ProjectSubmission).where(
+            ProjectSubmission.project_id == project_id
+        ).order_by(ProjectSubmission.submitted_at.desc())
+        result = await self.db_session.execute(stmt)
+        return result.scalars().first()
+
+    async def _get_project_submission_by_id(self, submission_id: int) -> Optional[ProjectSubmission]:
+        """Get project submission by submission ID."""
         stmt = select(ProjectSubmission).where(ProjectSubmission.submission_id == submission_id)
         result = await self.db_session.execute(stmt)
         return result.scalar_one_or_none()
