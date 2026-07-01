@@ -87,7 +87,7 @@ const techLogos = [
   }
 ]
 
-export default function LandingPage() {
+export default function LandingPage({ initialCourses = [] }: { initialCourses?: CourseListResponse[] }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Fetch courses from the public API
@@ -95,6 +95,7 @@ export default function LandingPage() {
     queryKey: ["public", "courses"],
     queryFn: () => publicCourseApi.listCourses({ limit: 6 }),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    initialData: initialCourses,
   })
 
   // Helper to get difficulty level label

@@ -7,4 +7,5 @@ graphQL/.venv
 node_modules
 package-lock.json
 dist
+*.tsbuildinfo
 api/.env

@@ -28,6 +28,8 @@ from domains.courses.models.course import Course, LearningPath
 from domains.courses.models.progress import UserCourseEnrollment
 from domains.payments.models import EnrollmentStatus, Payment, PaymentStatus
 from domains.payments.schemas import CheckoutOrderRequest
+from domains.users.models.onboarding import UserProfile
+from core.constant import LearningMode
 from gateways.nomba_service import NombaService
 
 logger = logging.getLogger(__name__)
@@ -717,7 +719,12 @@ class PaymentService:
     ) -> tuple:
         """Resolve the learning path and its price for a course."""
         if path_id:
-            stmt = select(LearningPath).where(LearningPath.path_id == path_id)
+            stmt = select(LearningPath).where(
+                and_(
+                    LearningPath.path_id == path_id,
+                    LearningPath.course_id == course_id,
+                )
+            )
         else:
             # Get default path
             stmt = select(LearningPath).where(
@@ -728,6 +735,13 @@ class PaymentService:
             )
         result = await self.db.execute(stmt)
         path = result.scalar_one_or_none()
+
+        if path_id and not path:
+            raise AppError(
+                status_code=404,
+                detail="Selected learning path was not found for this course",
+                error_code="LEARNING_PATH_NOT_FOUND",
+            )
 
         if not path:
             # Fallback: any path for this course
@@ -836,23 +850,60 @@ class PaymentService:
     async def _activate_enrollment(
         self, payment: Payment, enrollment: UserCourseEnrollment
     ) -> None:
-        """Mark payment as successful and activate enrollment."""
-        # Prevent duplicate activations
-        if payment.status == PaymentStatus.SUCCESSFUL:
-            return
-
-        payment.status = PaymentStatus.SUCCESSFUL
-        payment.verified_at = datetime.now(timezone.utc)
+        """Mark payment successful, activate enrollment, and finish eligible onboarding."""
+        activated_at = datetime.now(timezone.utc)
+        if payment.status != PaymentStatus.SUCCESSFUL:
+            payment.status = PaymentStatus.SUCCESSFUL
+            payment.verified_at = activated_at
 
         enrollment.enrollment_status = EnrollmentStatus.ACTIVE
         enrollment.is_active = True
-        enrollment.enrolled_at = datetime.now(timezone.utc)
+        enrollment.enrolled_at = activated_at
+
+        onboarding_completed = await self._complete_self_paced_onboarding(
+            user_id=enrollment.user_id,
+            course_id=enrollment.course_id,
+            completed_at=activated_at,
+        )
 
         logger.info(
-            "Enrollment activated: enrollment=%s payment_ref=%s",
+            "Enrollment activated: enrollment=%s payment_ref=%s onboarding_completed=%s",
             enrollment.enrollment_id,
             payment.reference,
+            onboarding_completed,
         )
+
+    async def _complete_self_paced_onboarding(
+        self,
+        user_id: str,
+        course_id: int,
+        completed_at: Optional[datetime] = None,
+    ) -> bool:
+        """Persist onboarding completion after payment activates the selected course."""
+        profile_result = await self.db.execute(
+            select(UserProfile).where(UserProfile.user_id == user_id)
+        )
+        profile = profile_result.scalar_one_or_none()
+
+        if not profile or profile.onboarding_completed:
+            return False
+        if profile.learning_mode != LearningMode.SELF_PACED or not profile.primary_goal:
+            return False
+
+        try:
+            selected_course_id = int(profile.selected_course_id)
+        except (TypeError, ValueError):
+            return False
+
+        if selected_course_id != course_id:
+            return False
+
+        now = completed_at or datetime.now(timezone.utc)
+        profile.onboarding_completed = True
+        profile.onboarding_completed_at = now
+        profile.updated_at = now
+        self.db.add(profile)
+        return True
 
     def _build_verification_response(
         self,

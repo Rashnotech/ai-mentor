@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "app/layout.tsx",
+    "app/page.tsx",
+    "app/page-client.tsx",
+    "app/courses/page.tsx",
+    "app/courses/page-client.tsx",
+    "app/courses/[id]/page.tsx",
+    "app/courses/[id]/page-client.tsx",
+    "app/payment/callback/page-client.tsx",
+    "app/robots.ts",
+    "app/sitemap.ts",
+    "app/manifest.ts",
+    "app/llms.txt/route.ts",
+    "components/json-ld.tsx",
+    "lib/site.ts",
+    "lib/seo-metadata.ts",
+    "lib/auth-context.tsx"
+  ],
+  "exclude": ["node_modules", "app/courses/[id]/learn/remove.tsx"]
+}

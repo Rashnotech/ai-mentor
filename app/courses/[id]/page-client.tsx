@@ -36,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export default function CourseDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+export default function CourseDetailsPage({ params, initialCourse }: { params: Promise<{ id: string }>; initialCourse?: CourseListResponse | null }) {
   const { id: slug } = use(params)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -58,6 +58,7 @@ export default function CourseDetailsPage({ params }: { params: Promise<{ id: st
     queryKey: ["public-course", slug],
     queryFn: () => publicCourseApi.getCourseBySlug(slug),
     enabled: !!slug,
+    initialData: initialCourse || undefined,
   })
 
   // Fetch curriculum by slug
@@ -741,6 +742,7 @@ export default function CourseDetailsPage({ params }: { params: Promise<{ id: st
           onClose={() => setShowPaymentModal(false)}
           onSuccess={handlePaymentSuccess}
           courseId={course.course_id}
+          pathId={selectedPath?.path_id}
           courseTitle={course.title}
           courseDescription={course.description}
           price={selectedPathPrice}

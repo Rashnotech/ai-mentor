@@ -39,6 +39,7 @@ const PUBLIC_ROUTES = [
 // Onboarding routes - require auth but don't check onboarding status
 const ONBOARDING_ROUTES = [
   "/onboarding",
+  "/payment/callback",
 ]
 
 // Role-based route restrictions

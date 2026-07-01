@@ -149,6 +149,12 @@ async def login(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
             )
+
+        # Login responses must carry the durable onboarding state. Without this,
+        # a completed student can be redirected back to onboarding after logout.
+        user_with_onboarding = await user_service.find_by_id(user["id"])
+        if user_with_onboarding:
+            user = user_with_onboarding
         
         # Update last login
         background_tasks.add_task(
@@ -175,7 +181,8 @@ async def login(
                 "email": user["email"],
                 "full_name": user["full_name"],
                 "role": user["role"],
-                "is_verified": user["is_verified"]
+                "is_verified": user["is_verified"],
+                "onboarding_completed": user.get("onboarding_completed", False),
             }
         }
     except HTTPException:

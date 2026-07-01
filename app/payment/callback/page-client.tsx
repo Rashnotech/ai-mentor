@@ -13,10 +13,12 @@ import {
 import { Button } from "@/components/ui/button"
 import { paymentApi, PaymentVerificationResponse } from "@/lib/api"
 import { toast } from "sonner"
+import { useAuth } from "@/lib/auth-context"
 
 function PaymentCallbackContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { refreshUser } = useAuth()
   const reference = searchParams.get("reference")
 
   const [status, setStatus] = useState<"verifying" | "success" | "failed" | "error">("verifying")
@@ -26,11 +28,12 @@ function PaymentCallbackContent() {
 
   const verifyMutation = useMutation({
     mutationFn: (ref: string) => paymentApi.verifyPayment(ref),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setVerificationData(data)
       setEnrollmentId(data.enrollment_id)
 
       if (data.payment_status === "successful") {
+        await refreshUser()
         setStatus("success")
         toast.success("Payment verified successfully!")
       } else if (data.payment_status === "failed") {

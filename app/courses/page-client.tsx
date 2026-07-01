@@ -42,7 +42,7 @@ const getLevelColor = (level: string) => {
   }
 }
 
-export default function CoursesPage() {
+export default function CoursesPage({ initialCourses = [] }: { initialCourses?: CourseListResponse[] }) {
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
@@ -53,6 +53,7 @@ export default function CoursesPage() {
   const { data: courses = [], isLoading: coursesLoading } = useQuery<CourseListResponse[]>({
     queryKey: ["public-courses"],
     queryFn: () => publicCourseApi.listCourses(),
+    initialData: initialCourses,
   })
 
   const filteredPathOptions = useMemo(() => {
