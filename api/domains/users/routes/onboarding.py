@@ -11,6 +11,7 @@ from domains.users.schemas.onboarding_schema import (
     OnboardingStepRequest,
     OnboardingProfileResponse,
     CompleteOnboardingRequest,
+    CompleteOnboardingResponse,
 )
 from domains.users.models.user import User
 from core.errors import AppError
@@ -195,7 +196,7 @@ async def update_onboarding(
 
 @router.post(
     "/complete",
-    response_model=OnboardingProfileResponse,
+    response_model=CompleteOnboardingResponse,
     status_code=status.HTTP_200_OK,
     summary="Complete onboarding",
     description="Mark onboarding as complete after all steps are finished",
@@ -226,7 +227,7 @@ async def complete_onboarding(
         service = OnboardingService(db_session)
         profile = await service.complete_onboarding(current_user.get("user_id"))
 
-        return OnboardingProfileResponse(
+        profile_response = OnboardingProfileResponse(
             user_id=profile.user_id,
             onboarding_completed=profile.onboarding_completed,
             onboarding_completed_at=profile.onboarding_completed_at.isoformat()
@@ -241,6 +242,17 @@ async def complete_onboarding(
             preferred_language=profile.preferred_language,
             timezone=profile.timezone,
             notification_preferences=profile.notification_preferences or {},
+        )
+        return CompleteOnboardingResponse(
+            success=True,
+            message="Onboarding completed successfully",
+            user={
+                "id": profile.user_id,
+                "email": current_user.get("email", ""),
+                "role": current_user.get("role", "student"),
+                "onboarding_completed": profile.onboarding_completed,
+            },
+            profile=profile_response,
         )
     except HTTPException:
         raise

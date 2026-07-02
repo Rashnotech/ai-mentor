@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { CheckCircle2, ChevronRight, BookOpen, Rocket, Briefcase, Trophy, Code2, Brain, Check, Users, Sparkles, Database, Globe, Smartphone, Loader2 } from "lucide-react"
 import { onboardingApi, publicCourseApi, getApiErrorMessage, type UserGoal, type CourseListResponse } from "@/lib/api"
+import { useAuth } from "@/lib/auth-context"
 import { useUserStore } from "@/lib/stores/user-store"
 import { PaymentModal } from "@/components/payment-modal"
 
@@ -145,6 +146,8 @@ function ModeBadge({ mode }: { mode: string | null }) {
 export default function OnboardingPage() {
   const COURSES_PER_PAGE = 6
   const router = useRouter()
+  const queryClient = useQueryClient()
+  const { refreshUser } = useAuth()
   const updateUser = useUserStore((state) => state.updateUser)
   const [step, setStep] = useState(1)
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null)
@@ -246,14 +249,16 @@ export default function OnboardingPage() {
   // Mutation for completing onboarding
   const completeOnboardingMutation = useMutation({
     mutationFn: onboardingApi.complete,
-    onSuccess: () => {
-      // Update Zustand store with onboarding status
-      updateUser({ onboarding_completed: true })
-      
+    onSuccess: async (result) => {
+      // The completion response is durable server state. Apply it immediately,
+      // then replace the full auth user from /auth/me before navigation.
+      updateUser({ onboarding_completed: result.user.onboarding_completed })
+      await refreshUser()
+      await queryClient.invalidateQueries({ queryKey: ["onboarding"] })
       toast.success("Onboarding complete!", {
         description: "Welcome to Rashnotech!",
       })
-      router.push("/dashboard")
+      router.replace("/dashboard")
     },
     onError: (error) => {
       toast.error("Failed to complete onboarding", {
@@ -307,7 +312,11 @@ export default function OnboardingPage() {
   const handleNext = async () => {
     // Save goal to backend when moving from step 1
     if (step === 1 && selectedGoal) {
-      updateGoalMutation.mutate(selectedGoal)
+      try {
+        await updateGoalMutation.mutateAsync(selectedGoal)
+      } catch {
+        return
+      }
     }
     
     // Self-paced mode: after course selection, persist selection and trigger payment if needed.

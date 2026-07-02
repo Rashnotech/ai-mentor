@@ -106,10 +106,58 @@ class OnboardingService:
         initially_present = profile is not None
         if not profile:
             profile = await self.create_user_profile(user_id)
+        profile = await self.reconcile_completed_profile(profile)
         logger.info(
             "Onboarding profile ensured user=%s initially_present=%s",
             user_id,
             initially_present,
+        )
+        return profile
+
+    async def reconcile_completed_profile(self, profile: UserProfile) -> UserProfile:
+        """Backfill a legacy completion flag only when durable enrollment proves completion."""
+        if profile.onboarding_completed:
+            return profile
+        if not profile.learning_mode or not profile.primary_goal or not profile.selected_course_id:
+            return profile
+
+        selected_id = self._parse_course_id(profile.selected_course_id)
+        if selected_id is None:
+            return profile
+
+        evidence = None
+        if profile.learning_mode == LearningMode.SELF_PACED:
+            evidence_stmt = select(UserCourseEnrollment).where(
+                UserCourseEnrollment.user_id == profile.user_id,
+                UserCourseEnrollment.course_id == selected_id,
+                UserCourseEnrollment.enrollment_status == EnrollmentStatus.ACTIVE,
+                UserCourseEnrollment.is_active == True,
+            ).limit(1)
+            evidence_result = await self.db_session.execute(evidence_stmt)
+            evidence = evidence_result.scalar_one_or_none()
+        elif profile.learning_mode == LearningMode.BOOTCAMP:
+            evidence_stmt = select(BootcampEnrollment).where(
+                BootcampEnrollment.user_id == profile.user_id,
+                BootcampEnrollment.bootcamp_id == selected_id,
+            ).limit(1)
+            evidence_result = await self.db_session.execute(evidence_stmt)
+            evidence = evidence_result.scalar_one_or_none()
+
+        if not evidence:
+            return profile
+
+        completed_at = datetime.now(tz.utc)
+        profile.onboarding_completed = True
+        profile.onboarding_completed_at = profile.onboarding_completed_at or completed_at
+        profile.updated_at = completed_at
+        self.db_session.add(profile)
+        await self.db_session.commit()
+        await self.db_session.refresh(profile)
+        logger.info(
+            "Legacy onboarding completion reconciled user=%s mode=%s selected_id=%s",
+            profile.user_id,
+            profile.learning_mode.value,
+            selected_id,
         )
         return profile
 

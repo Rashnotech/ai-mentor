@@ -119,7 +119,13 @@ export default function LoginClient() {
         } else if (data.user.role === "mentor") {
           router.push("/mentor")
         } else {
-          router.push("/dashboard")
+          const redirect = sessionStorage.getItem("auth_redirect")
+          if (redirect) {
+            sessionStorage.removeItem("auth_redirect")
+            router.push(redirect)
+          } else {
+            router.push("/dashboard")
+          }
         }
       }, 500)
     },

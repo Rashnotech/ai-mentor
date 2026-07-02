@@ -19,7 +19,8 @@
     "components/json-ld.tsx",
     "lib/site.ts",
     "lib/seo-metadata.ts",
-    "lib/auth-context.tsx"
+    "lib/auth-context.tsx",
+    "lib/stores/user-store.ts"
   ],
   "exclude": ["node_modules", "app/courses/[id]/learn/remove.tsx"]
 }

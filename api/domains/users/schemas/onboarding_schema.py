@@ -65,3 +65,21 @@ class CompleteOnboardingRequest(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CompletedOnboardingUserResponse(BaseModel):
+    """Authenticated user fields required by frontend route guards."""
+
+    id: str
+    email: str
+    role: str
+    onboarding_completed: bool
+
+
+class CompleteOnboardingResponse(BaseModel):
+    """Completion acknowledgement with refreshed user and profile state."""
+
+    success: bool
+    message: str
+    user: CompletedOnboardingUserResponse
+    profile: OnboardingProfileResponse

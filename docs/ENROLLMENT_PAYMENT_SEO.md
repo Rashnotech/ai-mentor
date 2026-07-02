@@ -9,6 +9,14 @@
 - Payment initiation prices only a learning path owned by the requested course.
 - Public course pages expose server-rendered data, canonical metadata, Course JSON-LD, a sitemap, and crawler rules.
 
+## Onboarding completion data flow
+
+`onboarding_completed` is the single field used by the database model, API schemas, `/auth/me`, TypeScript API types, Zustand, route guards, and onboarding pages. `/onboarding/update` commits each onboarding step for the authenticated `user_id`; `/onboarding/complete` validates the saved steps, sets the flag and timestamp, and commits before returning the updated profile.
+
+The frontend awaits each required update before completion. After `/onboarding/complete`, it applies the returned durable status, refreshes `/auth/me`, invalidates onboarding queries, and replaces the route with `/dashboard`. `AuthProvider` refreshes persisted users before making its first redirect decision and sends completed students away from every `/onboarding` route.
+
+Legacy profiles are backfilled at authentication time only when an active selected-course enrollment or an existing selected bootcamp enrollment proves that onboarding was completed. Partial profiles and pending self-paced payments remain incomplete.
+
 ## Evidence
 
 `PaymentService._activate_enrollment` logs `enrollment`, `payment_ref`, and `onboarding_completed`. This lets operations distinguish gateway success, enrollment activation, and onboarding completion without logging sensitive payment data.
@@ -31,4 +39,5 @@ npm run typecheck:gate
 npm run test:gate
 npm run eval
 api\.venv\Scripts\python.exe -m unittest api.tests.test_enrollment_payment_consistency
+api\.venv\Scripts\python.exe -m unittest api.tests.test_onboarding_profile_lifecycle
 ```

@@ -490,8 +490,8 @@ export const onboardingApi = {
   /**
    * Complete the onboarding process
    */
-  complete: async (): Promise<OnboardingProfileResponse> => {
-    const response = await apiClient.post("/onboarding/complete", { confirm: true })
+  complete: async (): Promise<CompleteOnboardingResponse> => {
+    const response = await apiClient.post<CompleteOnboardingResponse>("/onboarding/complete", { confirm: true })
     return response.data
   },
 }
@@ -522,7 +522,7 @@ export interface UserResponse {
   linkedin_username?: string | null
   last_login?: string | null
   created_at?: string
-  onboarding_completed?: boolean
+  onboarding_completed: boolean
 }
 
 export interface LoginResponse {
@@ -589,6 +589,18 @@ export interface OnboardingProfileResponse {
   preferred_language: string
   timezone: string
   notification_preferences: Record<string, unknown>
+}
+
+export interface CompleteOnboardingResponse {
+  success: boolean
+  message: string
+  user: {
+    id: string
+    email: string
+    role: string
+    onboarding_completed: boolean
+  }
+  profile: OnboardingProfileResponse
 }
 
 // Response types

@@ -9,11 +9,22 @@ from pydantic import BaseModel, Field, EmailStr
 from auth.dependencies import get_rate_limiter, get_token_service, get_user_service, get_current_user
 from domains.tokens.services.token_service import TokenService
 from domains.users.services.user_service import UserService, UserRole
+from domains.users.services.onboarding_service import OnboardingService
 from extension.security_utils import RateLimiter
 
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth")
+
+
+async def _sync_student_onboarding(user: dict, user_service: UserService) -> dict:
+    """Return auth user data with durable, reconciled onboarding status."""
+    if user.get("role") != "student":
+        return user
+
+    profile = await OnboardingService(user_service.session).start_onboarding(user["id"])
+    user["onboarding_completed"] = bool(profile.onboarding_completed)
+    return user
 
 
 # Request/Response Models
@@ -155,6 +166,7 @@ async def login(
         user_with_onboarding = await user_service.find_by_id(user["id"])
         if user_with_onboarding:
             user = user_with_onboarding
+        user = await _sync_student_onboarding(user, user_service)
         
         # Update last login
         background_tasks.add_task(
@@ -799,6 +811,8 @@ async def get_current_user_info(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
+
+        user = await _sync_student_onboarding(user, user_service)
         
         return {"user": user}
     except HTTPException:
@@ -913,6 +927,8 @@ async def update_current_user_profile(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
+
+        updated_user = await _sync_student_onboarding(updated_user, user_service)
         
         logger.info(f"Profile updated for user {current_user.get('email')}")
         

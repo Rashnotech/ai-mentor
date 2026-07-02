@@ -30,7 +30,7 @@ export interface UserProfile extends User {
   streak_days?: number
   courses_in_progress?: number
   projects_completed?: number
-  onboarding_completed?: boolean
+  onboarding_completed: boolean
 }
 
 interface UserState {

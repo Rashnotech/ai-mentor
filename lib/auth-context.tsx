@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { 
   clearAuthData,
@@ -56,6 +56,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
+  const hasSyncedCurrentUser = useRef(false)
   const router = useRouter()
   const pathname = usePathname()
   
@@ -104,7 +105,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // race conditions during Next.js route transitions where the reactive `user`
         // from the hook may not yet reflect a setUser() call made moments before
         // router.push()).
-        const currentUser = useUserStore.getState().user
+        let currentUser = useUserStore.getState().user
         const hasValidAuth = checkIsAuthenticated()
         
         // Check if current route is public (defined outside conditionals)
@@ -120,7 +121,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
           pathname === route || pathname.startsWith(`${route}/`)
         )
         
+        if (currentUser && !hasSyncedCurrentUser.current && !isOAuthCallback) {
+          hasSyncedCurrentUser.current = true
+          await refreshUser()
+          currentUser = useUserStore.getState().user
+        }
+
         if (currentUser) {
+          // Completed students cannot manually re-enter onboarding.
+          if (
+            pathname.startsWith("/onboarding") &&
+            currentUser.role === "student" &&
+            currentUser.onboarding_completed === true
+          ) {
+            router.replace("/dashboard")
+            return
+          }
+
           // Check if user needs to complete onboarding (only for students)
           const needsOnboarding = !isPublicRoute && 
             !isOnboardingRoute && 
@@ -158,6 +175,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           //   • Token-based sessions where sessionStorage was cleared but
           //     a valid localStorage refresh token still exists
           if (!isPublicRoute && !isOAuthCallback) {
+            hasSyncedCurrentUser.current = true
             await refreshUser()
             
             // Re-read from store after refresh attempt
@@ -197,6 +215,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Always clear local auth data and user store
       clearAuthData()
       clearUser()
+      hasSyncedCurrentUser.current = false
       router.replace("/login")
     }
   }
