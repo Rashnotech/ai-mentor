@@ -23,6 +23,7 @@ import { toast } from "sonner"
 import { useUserStore } from "@/lib/stores/user-store"
 import { useAuth } from "@/lib/auth-context"
 import RubberDuckChat from "./_components/rubber-duck-chat"
+import { LearningSurveyModal } from "@/components/learning-survey-modal"
 
 // --- Mock Data ---
 const NOTIFICATIONS = [
@@ -274,6 +275,7 @@ export default function DashboardLayoutClient({
 
       {/* Rubber Duck AI Chat */}
       <RubberDuckChat />
+      <LearningSurveyModal />
     </ProtectedRoute>
   )
 }

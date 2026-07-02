@@ -24,6 +24,7 @@ import {
   Receipt,
   Loader2,
   Briefcase,
+  MessageCircleHeart,
 } from "lucide-react"
 
 const NAV_ITEMS = [
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { id: "community", label: "Community", icon: MessagesSquare, href: "/admin/community" },
   { id: "transactions", label: "Transactions", icon: Receipt, href: "/admin/transactions" },
   { id: "analytics", label: "Analytics", icon: BarChart3, href: "/admin/analytics" },
+  { id: "surveys", label: "Learning Surveys", icon: MessageCircleHeart, href: "/admin/surveys" },
   { id: "settings", label: "Settings", icon: Settings, href: "/admin/settings" },
 ]
 

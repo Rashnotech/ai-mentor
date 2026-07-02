@@ -9,8 +9,8 @@
     "start": "next start",
     "export": "next export",
     "typecheck:gate": "tsc --noEmit -p tsconfig.gate.json",
-    "test:gate": "node --experimental-strip-types --test tests/site-discovery.test.ts && node .agents/skills/enrollment-payment-consistency/scripts/check-contract.mjs && node tests/profile-lifecycle-contract.mjs && node tests/onboarding-completion-contract.mjs",
-    "eval": "node --experimental-strip-types evals/public-discovery-eval.ts && node evals/profile-lifecycle-eval.mjs && node evals/onboarding-completion-eval.mjs"
+    "test:gate": "node --experimental-strip-types --test tests/site-discovery.test.ts && node .agents/skills/enrollment-payment-consistency/scripts/check-contract.mjs && node tests/profile-lifecycle-contract.mjs && node tests/onboarding-completion-contract.mjs && node tests/learning-survey-contract.mjs",
+    "eval": "node --experimental-strip-types evals/public-discovery-eval.ts && node evals/profile-lifecycle-eval.mjs && node evals/onboarding-completion-eval.mjs && node evals/learning-survey-eval.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

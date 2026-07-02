@@ -20,7 +20,12 @@
     "lib/site.ts",
     "lib/seo-metadata.ts",
     "lib/auth-context.tsx",
-    "lib/stores/user-store.ts"
+    "lib/stores/user-store.ts",
+    "components/learning-survey-modal.tsx",
+    "app/dashboard/layout-client.tsx",
+    "app/admin/layout-client.tsx",
+    "app/admin/surveys/page.tsx",
+    "app/admin/surveys/page-client.tsx"
   ],
   "exclude": ["node_modules", "app/courses/[id]/learn/remove.tsx"]
 }

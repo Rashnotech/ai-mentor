@@ -3160,3 +3160,158 @@ export const transactionAdminApi = {
     return response.data
   },
 }
+
+// Learning survey contracts
+export type SurveyQuestionType = "single_choice" | "multiple_choice" | "rating" | "short_text" | "long_text"
+
+export interface SurveyQuestion {
+  id: number
+  question_key: string
+  question_text: string
+  question_type: SurveyQuestionType
+  options: string[]
+  is_required: boolean
+  order: number
+}
+
+export interface EligibleSurvey {
+  id: number
+  title: string
+  description: string | null
+  type: string
+  cycle_key: string
+  questions: SurveyQuestion[]
+  context: {
+    enrollment_id: number
+    course_id: number
+    path_id: number | null
+    module_id: number | null
+    reason: string
+  }
+}
+
+export interface SurveyTemplate {
+  id: number
+  slug: string
+  title: string
+  description: string | null
+  survey_type: string
+  trigger_type: string
+  is_active: boolean
+  priority: number
+  questions: SurveyQuestion[]
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminSurveyResponseItem {
+  id: number
+  survey_id: number
+  survey_title: string
+  survey_type: string
+  user_id: string
+  student_name: string
+  student_email: string
+  course_id: number | null
+  course_title: string | null
+  path_id: number | null
+  enrollment_id: number | null
+  module_id: number | null
+  module_title: string | null
+  responses: Record<string, unknown>
+  needs_support: boolean
+  submitted_at: string
+}
+
+export interface SurveyAnalytics {
+  total_responses: number
+  active_surveys: number
+  average_learning_rating: number | null
+  satisfaction_breakdown: Record<string, number>
+  difficulty_breakdown: Record<string, number>
+  common_issues: Array<{ issue: string; count: number }>
+  support_requests: number
+  courses_with_most_complaints: Array<{ course_id: number; course_title: string; complaints: number }>
+  modules_with_most_complaints: Array<{ module_id: number; module_title: string; complaints: number }>
+  monthly_satisfaction: Array<{ month: string; average: number; responses: number }>
+}
+
+export interface SurveyAdminFilters {
+  course_id?: number
+  path_id?: number
+  month?: string
+  survey_type?: string
+  needs_support?: boolean
+  limit?: number
+  offset?: number
+}
+
+export const surveyApi = {
+  getEligible: async (): Promise<EligibleSurvey | null> => {
+    const response = await apiClient.get<{ survey: EligibleSurvey | null }>("/surveys/eligible")
+    return response.data.survey
+  },
+  submit: async (surveyId: number, cycleKey: string, responses: Record<string, unknown>) => {
+    const response = await apiClient.post(`/surveys/${surveyId}/responses`, { cycle_key: cycleKey, responses })
+    return response.data as { success: boolean; message: string; response_id: number; completed_at: string }
+  },
+  dismiss: async (surveyId: number, dismissalStatus: "dismissed" | "skipped") => {
+    const response = await apiClient.post(`/surveys/${surveyId}/dismiss`, { status: dismissalStatus })
+    return response.data as { success: boolean; status: string; next_eligible_at: string }
+  },
+}
+
+export const surveyAdminApi = {
+  listSurveys: async (): Promise<SurveyTemplate[]> => {
+    const response = await apiClient.get<SurveyTemplate[]>("/admin/surveys")
+    return response.data
+  },
+  createSurvey: async (payload: {
+    slug: string
+    title: string
+    description?: string
+    survey_type: string
+    trigger_type: string
+    is_active: boolean
+    priority: number
+    questions: Array<{
+      question_key: string
+      question_text: string
+      question_type: SurveyQuestionType
+      options: string[]
+      is_required: boolean
+      order: number
+    }>
+  }): Promise<SurveyTemplate> => {
+    const response = await apiClient.post<SurveyTemplate>("/admin/surveys", payload)
+    return response.data
+  },
+  updateSurvey: async (surveyId: number, payload: Partial<Pick<SurveyTemplate, "title" | "description" | "survey_type" | "trigger_type" | "is_active" | "priority">>): Promise<SurveyTemplate> => {
+    const response = await apiClient.patch<SurveyTemplate>(`/admin/surveys/${surveyId}`, payload)
+    return response.data
+  },
+  addQuestion: async (surveyId: number, payload: Omit<SurveyQuestion, "id">): Promise<SurveyQuestion> => {
+    const response = await apiClient.post<SurveyQuestion>(`/admin/surveys/${surveyId}/questions`, payload)
+    return response.data
+  },
+  updateQuestion: async (questionId: number, payload: Partial<Omit<SurveyQuestion, "id" | "question_key">>): Promise<SurveyQuestion> => {
+    const response = await apiClient.patch<SurveyQuestion>(`/admin/surveys/questions/${questionId}`, payload)
+    return response.data
+  },
+  deleteQuestion: async (questionId: number): Promise<void> => {
+    await apiClient.delete(`/admin/surveys/questions/${questionId}`)
+  },
+  listResponses: async (filters: SurveyAdminFilters = {}): Promise<{
+    responses: AdminSurveyResponseItem[]
+    total: number
+    limit: number
+    offset: number
+  }> => {
+    const response = await apiClient.get("/admin/surveys/responses", { params: filters })
+    return response.data
+  },
+  getAnalytics: async (filters: Omit<SurveyAdminFilters, "needs_support" | "limit" | "offset"> = {}): Promise<SurveyAnalytics> => {
+    const response = await apiClient.get<SurveyAnalytics>("/admin/surveys/analytics", { params: filters })
+    return response.data
+  },
+}
