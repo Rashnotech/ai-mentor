@@ -81,7 +81,7 @@ async def start_onboarding(
     response_model=OnboardingProfileResponse,
     status_code=status.HTTP_200_OK,
     summary="Get current onboarding profile",
-    description="Retrieve the user's current onboarding profile and progress",
+    description="Retrieve the user's onboarding profile, initializing it when missing",
 )
 async def get_onboarding_profile(
     current_user: User = Depends(get_current_user),
@@ -95,13 +95,8 @@ async def get_onboarding_profile(
     """
     try:
         service = OnboardingService(db_session)
-        profile = await service.get_user_profile(current_user.get("user_id"))
-
-        if not profile:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User profile not found",
-            )
+        # Self-heal legacy students and login races that do not yet have a row.
+        profile = await service.start_onboarding(current_user.get("user_id"))
 
         return OnboardingProfileResponse(
             user_id=profile.user_id,

@@ -6,6 +6,7 @@ from typing import Optional
 from datetime import datetime, timezone as tz
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
 from domains.users.models.onboarding import UserProfile
 from domains.bootcamps.models import Bootcamp, BootcampEnrollment, BootcampStatus, EnrollmentPaymentStatus
 from domains.courses.models.course import LearningPath
@@ -69,6 +70,19 @@ class OnboardingService:
             await self.db_session.commit()
             logger.info(f"User profile created for {user_id}")
             return profile
+        except IntegrityError:
+            # Two login/callback requests can initialize the same profile at
+            # once. The primary key makes one insert win; return that row.
+            await self.db_session.rollback()
+            profile = await self.get_user_profile(user_id)
+            if profile:
+                logger.info("User profile initialization raced for user=%s; existing row reused", user_id)
+                return profile
+            raise AppError(
+                status_code=500,
+                detail="Error creating user profile",
+                error_code="PROFILE_CREATE_ERROR",
+            )
         except Exception as e:
             await self.db_session.rollback()
             logger.error(f"Error creating user profile for {user_id}: {str(e)}")
@@ -89,8 +103,14 @@ class OnboardingService:
             UserProfile
         """
         profile = await self.get_user_profile(user_id)
+        initially_present = profile is not None
         if not profile:
             profile = await self.create_user_profile(user_id)
+        logger.info(
+            "Onboarding profile ensured user=%s initially_present=%s",
+            user_id,
+            initially_present,
+        )
         return profile
 
     async def update_onboarding_step(
@@ -125,16 +145,10 @@ class OnboardingService:
             Updated UserProfile
 
         Raises:
-            AppError: If user profile not found or update fails
+            AppError: If profile initialization or update fails
         """
         try:
-            profile = await self.get_user_profile(user_id)
-            if not profile:
-                raise AppError(
-                    status_code=404,
-                    detail="User profile not found",
-                    error_code="PROFILE_NOT_FOUND",
-                )
+            profile = await self.start_onboarding(user_id)
 
             # Update provided fields
             if skill_level:
@@ -205,16 +219,10 @@ class OnboardingService:
             Updated UserProfile
 
         Raises:
-            AppError: If user profile not found or update fails
+            AppError: If profile initialization or completion fails
         """
         try:
-            profile = await self.get_user_profile(user_id)
-            if not profile:
-                raise AppError(
-                    status_code=404,
-                    detail="User profile not found",
-                    error_code="PROFILE_NOT_FOUND",
-                )
+            profile = await self.start_onboarding(user_id)
 
             # Validate required fields for onboarding completion
             # Learning mode and primary goal are the minimum required

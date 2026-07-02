@@ -79,19 +79,10 @@ export default function LoginClient() {
       // Step 3: Check onboarding status for non-admin/mentor users
       let onboardingCompleted = true
       if (loginResponse.user.role !== "admin" && loginResponse.user.role !== "mentor") {
-        // First check if it's in the login response (from /auth/me enhancement)
-        if (loginResponse.user.onboarding_completed !== undefined) {
-          onboardingCompleted = loginResponse.user.onboarding_completed
-        } else {
-          // Fall back to calling onboarding API
-          try {
-            const profile = await onboardingApi.start()
-            onboardingCompleted = profile.onboarding_completed
-          } catch (error) {
-            console.error("Failed to check onboarding status:", error)
-            // Default to completed if check fails to avoid blocking user
-          }
-        }
+        // Always initialize the durable profile. The login response reports
+        // false for both incomplete and legacy missing profiles.
+        const profile = await onboardingApi.start()
+        onboardingCompleted = profile.onboarding_completed
       }
       
       // Step 4: Store user in Zustand store with onboarding status

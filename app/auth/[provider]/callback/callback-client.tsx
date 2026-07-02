@@ -82,26 +82,8 @@ function OAuthProviderCallbackContent() {
           state,
         )
 
-        let onboardingCompleted = true
-        if (
-          response.user.role !== "admin" &&
-          response.user.role !== "mentor"
-        ) {
-          if (response.is_new_user) {
-            onboardingCompleted = false
-          } else {
-            try {
-              const profile = await onboardingApi.start()
-              onboardingCompleted = profile.onboarding_completed
-            } catch {
-              // Default to completed if check fails
-            }
-          }
-        }
-
-        // Store tokens as Bearer tokens (same as email/password login) so all
-        // subsequent API calls use the Authorization header. This works across
-        // cross-domain deployments where SameSite=Lax cookies are not sent.
+        // Store Bearer tokens before onboarding initialization so this works
+        // when cross-domain OAuth cookies are unavailable.
         const authData: AuthData = {
           tokens: {
             access_token: response.access_token,
@@ -116,6 +98,20 @@ function OAuthProviderCallbackContent() {
           },
         }
         storeAuthData(authData)
+
+        let onboardingCompleted = true
+        if (
+          response.user.role !== "admin" &&
+          response.user.role !== "mentor"
+        ) {
+          try {
+            const profile = await onboardingApi.start()
+            onboardingCompleted = profile.onboarding_completed
+          } catch (profileError) {
+            console.error("Failed to initialize onboarding profile:", profileError)
+            onboardingCompleted = false
+          }
+        }
 
         setUser({
           id: response.user.id,
