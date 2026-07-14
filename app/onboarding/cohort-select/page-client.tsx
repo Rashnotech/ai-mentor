@@ -148,11 +148,11 @@ function CourseCard({ course, isSelected, onSelect }: CourseCardProps) {
     <button
       onClick={onSelect}
       disabled={isDisabled}
-      className={`relative w-full p-5 rounded-xl border-2 text-left transition-all duration-200 ${
+      className={`relative flex h-full min-h-[300px] w-full flex-col rounded-xl border-2 p-5 text-left transition-all duration-200 ${
         isDisabled 
           ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
           : isSelected
-            ? "border-blue-600 bg-blue-50 ring-2 ring-blue-600 ring-offset-2"
+            ? "border-blue-600 bg-blue-50 shadow-md shadow-blue-100"
             : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-md"
       }`}
     >
@@ -173,42 +173,42 @@ function CourseCard({ course, isSelected, onSelect }: CourseCardProps) {
 
       {/* Header */}
       <div className="flex items-start gap-4 mb-3">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+        <div className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center ${
           isSelected ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"
         }`}>
           <CourseIcon icon={course.icon} className="w-6 h-6" />
         </div>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className={`font-semibold ${isSelected ? "text-blue-900" : "text-gray-900"}`}>
+            <h3 className={`line-clamp-2 font-semibold leading-snug ${isSelected ? "text-blue-900" : "text-gray-900"}`}>
               {course.title}
             </h3>
             {isSelected && !isDisabled && (
-              <CheckCircle2 className="w-5 h-5 text-blue-600" />
+              <CheckCircle2 className="w-5 h-5 shrink-0 text-blue-600" />
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${levelColors[course.level]}`}>
               {course.level}
             </span>
-            <span className="text-sm text-gray-500">{course.duration} • {course.modules} modules</span>
+            <span className="truncate text-sm text-gray-500">{course.duration} • {course.modules} modules</span>
           </div>
         </div>
       </div>
 
       {/* Description */}
-      <p className={`text-sm mb-3 ${isSelected ? "text-blue-700" : "text-gray-600"}`}>
+      <p className={`mb-3 min-h-[3.75rem] text-sm leading-5 line-clamp-3 ${isSelected ? "text-blue-700" : "text-gray-600"}`}>
         {course.description}
       </p>
 
       {/* Skills */}
-      <div className="flex flex-wrap gap-1.5 mb-4">
+      <div className="mb-4 flex max-h-[3.5rem] flex-wrap gap-1.5 overflow-hidden">
         {course.skills.map((skill) => (
           <span 
             key={skill}
             className={`px-2 py-0.5 text-xs rounded-full ${
               isSelected ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"
-            }`}
+            } max-w-full truncate`}
           >
             {skill}
           </span>
@@ -216,7 +216,7 @@ function CourseCard({ course, isSelected, onSelect }: CourseCardProps) {
       </div>
 
       {/* Details */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="mt-auto grid grid-cols-2 gap-3 mb-4">
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Calendar className="w-4 h-4 text-gray-400" />
           <span>Starts {formatDate(startDate)}</span>
@@ -378,7 +378,7 @@ export default function CohortSelectPage() {
           ) : (
             <>
               {/* Course Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <div className="grid grid-cols-1 items-stretch gap-4 mb-8 md:grid-cols-2">
                 {courses.map((course) => (
                   <CourseCard
                     key={course.id}

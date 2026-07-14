@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -8,15 +8,9 @@ import {
   CheckCircle2, 
   Users, 
   Sparkles, 
-  Calendar, 
-  Clock, 
-  Brain, 
-  Target,
   AlertTriangle,
   ChevronRight,
   ArrowLeft,
-  Zap,
-  Route,
   Loader2
 } from "lucide-react"
 import { onboardingApi, getApiErrorMessage } from "@/lib/api"
@@ -114,7 +108,7 @@ function ModeCard({ mode, isSelected, onSelect }: ModeCardProps) {
       onClick={onSelect}
       className={`relative w-full p-6 rounded-xl border-2 text-left transition-all duration-200 hover:shadow-lg ${
         isSelected
-          ? "border-blue-600 bg-blue-50 ring-2 ring-blue-600 ring-offset-2"
+          ? "border-blue-600 bg-blue-50 shadow-md shadow-blue-100"
           : "border-gray-200 bg-white hover:border-blue-300"
       }`}
     >
@@ -202,9 +196,6 @@ function WarningBanner({ warnings, modeName }: { warnings: string[]; modeName: s
 export default function ModeSelectionPage() {
   const router = useRouter()
   const [selectedMode, setSelectedMode] = useState<LearningMode | null>(null)
-  const [showConfirmation, setShowConfirmation] = useState(false)
-
-  const selectedModeConfig = MODES.find(m => m.id === selectedMode)
 
   // Check onboarding profile status - profile was created on login
   const { isLoading: isChecking, isError: checkError } = useQuery({
@@ -245,25 +236,15 @@ export default function ModeSelectionPage() {
 
   const handleModeSelect = (mode: LearningMode) => {
     setSelectedMode(mode)
-    setShowConfirmation(false)
   }
 
   const handleContinue = () => {
-    if (!selectedMode) return
-    setShowConfirmation(true)
-  }
-
-  const handleConfirm = async () => {
     if (!selectedMode) return
     updateModeMutation.mutate(selectedMode)
   }
 
   const handleBack = () => {
-    if (showConfirmation) {
-      setShowConfirmation(false)
-    } else {
-      router.push("/dashboard")
-    }
+    router.push("/dashboard")
   }
 
   // Show loading state while checking profile
@@ -322,7 +303,7 @@ export default function ModeSelectionPage() {
       <div className="w-full h-1 bg-gray-200">
         <div 
           className="h-full bg-blue-600 transition-all duration-500" 
-          style={{ width: showConfirmation ? "60%" : "50%" }} 
+          style={{ width: "50%" }}
         />
       </div>
 
@@ -339,9 +320,7 @@ export default function ModeSelectionPage() {
             Back
           </button>
 
-          {!showConfirmation ? (
-            /* MODE SELECTION STATE */
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Title */}
               <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -350,7 +329,7 @@ export default function ModeSelectionPage() {
                 <p className="text-gray-500 max-w-xl mx-auto">
                   Choose your learning style. This affects how content is delivered and paced.
                   <span className="block mt-1 text-sm font-medium text-amber-600">
-                    ⚠️ This choice cannot be changed later
+                    This choice cannot be changed later
                   </span>
                 </p>
               </div>
@@ -371,95 +350,12 @@ export default function ModeSelectionPage() {
               <div className="flex justify-center mt-8">
                 <button
                   onClick={handleContinue}
-                  disabled={!selectedMode}
+                  disabled={!selectedMode || updateModeMutation.isPending}
                   className={`flex items-center gap-2 px-8 py-3 rounded-lg font-semibold transition-all ${
                     selectedMode
                       ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20"
                       : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}
-                >
-                  Continue
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* CONFIRMATION STATE */
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
-              {/* Title */}
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-100 flex items-center justify-center">
-                  {selectedMode === "bootcamp" ? (
-                    <Users className="w-8 h-8 text-blue-600" />
-                  ) : (
-                    <Sparkles className="w-8 h-8 text-blue-600" />
-                  )}
-                </div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  Confirm: {selectedModeConfig?.title}
-                </h1>
-                <p className="text-gray-500">
-                  Please review before confirming. This choice is permanent.
-                </p>
-              </div>
-
-              {/* Summary Card */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                <h3 className="font-semibold text-gray-900 mb-2">You're choosing:</h3>
-                <p className="text-gray-600 mb-4">{selectedModeConfig?.description}</p>
-                
-                <div className="flex flex-wrap gap-2">
-                  {selectedModeConfig?.features.filter(f => f.available).map(feature => (
-                    <span 
-                      key={feature.id}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 text-sm rounded-full"
-                    >
-                      <CheckCircle2 className="w-3 h-3" />
-                      {feature.text}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Warning Banner */}
-              {selectedModeConfig && (
-                <div className="mb-6">
-                  <WarningBanner 
-                    warnings={selectedModeConfig.warnings} 
-                    modeName={selectedModeConfig.title} 
-                  />
-                </div>
-              )}
-
-              {/* Permanent Choice Notice */}
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-8">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-red-900 mb-1">
-                      This choice is permanent
-                    </h4>
-                    <p className="text-sm text-red-700">
-                      Once confirmed, you cannot switch between Bootcamp and Self-Paced modes.
-                      Your learning path structure will be locked to this mode.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button
-                  onClick={() => setShowConfirmation(false)}
-                  disabled={updateModeMutation.isPending}
-                  className="px-6 py-3 rounded-lg font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  Go Back & Change
-                </button>
-                <button
-                  onClick={handleConfirm}
-                  disabled={updateModeMutation.isPending}
-                  className="flex items-center justify-center gap-2 px-8 py-3 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {updateModeMutation.isPending ? (
                     <>
@@ -468,14 +364,13 @@ export default function ModeSelectionPage() {
                     </>
                   ) : (
                     <>
-                      Confirm {selectedModeConfig?.title}
-                      <Zap className="w-4 h-4" />
+                      Continue
+                      <ChevronRight className="w-4 h-4" />
                     </>
                   )}
                 </button>
               </div>
             </div>
-          )}
         </div>
       </main>
 

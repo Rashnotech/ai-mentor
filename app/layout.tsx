@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter, JetBrains_Mono } from "next/font/google"
+import { JetBrains_Mono, Urbanist } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/client-auth-provider"
 import { Analytics } from "@vercel/analytics/next"
@@ -8,7 +8,7 @@ import { JsonLd } from "@/components/json-ld"
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site"
 
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
+const urbanist = Urbanist({ subsets: ["latin"], variable: "--font-urbanist", display: "swap" })
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" })
 
 export const metadata: Metadata = {
@@ -45,7 +45,15 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
   },
   icons: {
-    icon: '/mylogo.png',
+    icon: [
+      { url: "/mylogo.png", sizes: "619x619", type: "image/png" },
+    ],
+    shortcut: [
+      { url: "/mylogo.png", sizes: "619x619", type: "image/png" },
+    ],
+    apple: [
+      { url: "/mylogo.png", sizes: "619x619", type: "image/png" },
+    ],
   },
 }
 
@@ -56,7 +64,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-gray-50`}>
+      <body className={`${urbanist.variable} ${jetbrainsMono.variable} font-sans antialiased bg-gray-50`}>
         <JsonLd data={{
           "@context": "https://schema.org",
           "@graph": [

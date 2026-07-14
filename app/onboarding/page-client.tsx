@@ -425,7 +425,7 @@ export default function OnboardingPage() {
                       onClick={() => setSelectedGoal(goal.id)}
                       className={`p-6 rounded-xl border text-left transition-all duration-200 group hover:border-blue-300 hover:shadow-md ${
                         selectedGoal === goal.id
-                          ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600"
+                          ? "border-blue-600 bg-blue-50 shadow-md shadow-blue-100"
                           : "border-gray-200 bg-white"
                       }`}
                     >
@@ -509,7 +509,7 @@ export default function OnboardingPage() {
                   No courses match your search. Try a different keyword.
                 </div>
               ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <div className="grid grid-cols-1 items-stretch gap-4 mb-8 md:grid-cols-2">
                 {paginatedCourses.map((course) => {
                   const isSelected = selectedPathId === course.pathId
                   const levelColors = {
@@ -522,36 +522,36 @@ export default function OnboardingPage() {
                     <button
                       key={course.id}
                       onClick={() => handleSelectCourse(course.courseId, course.pathId)}
-                      className={`relative p-5 rounded-xl border-2 text-left transition-all duration-200 ${
+                      className={`relative flex h-full min-h-[220px] flex-col rounded-xl border-2 p-5 text-left transition-all duration-200 ${
                         isSelected
-                          ? "border-purple-600 bg-purple-50 ring-2 ring-purple-600 ring-offset-2"
+                          ? "border-purple-600 bg-purple-50 shadow-md shadow-purple-100"
                           : "border-gray-200 bg-white hover:border-purple-300 hover:shadow-md"
                       }`}
                     >
                       {/* Header */}
                       <div className="flex items-start gap-4 mb-3">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        <div className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center ${
                           isSelected ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-600"
                         }`}>
                           <CourseIcon icon={course.icon} className="w-6 h-6" />
                         </div>
-                        <div className="flex-1">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className={`font-semibold ${isSelected ? "text-purple-900" : "text-gray-900"}`}>
+                            <h3 className={`line-clamp-2 font-semibold leading-snug ${isSelected ? "text-purple-900" : "text-gray-900"}`}>
                               {course.title}
                             </h3>
                             {isSelected && (
-                              <CheckCircle2 className="w-5 h-5 text-purple-600" />
+                              <CheckCircle2 className="w-5 h-5 shrink-0 text-purple-600" />
                             )}
                           </div>
-                          <p className={`text-xs font-medium ${isSelected ? "text-purple-700" : "text-gray-500"}`}>
+                          <p className={`line-clamp-1 text-xs font-medium ${isSelected ? "text-purple-700" : "text-gray-500"}`}>
                             Path: {course.pathTitle}
                           </p>
                         </div>
                       </div>
 
                       {/* Description */}
-                      <p className={`text-sm ${isSelected ? "text-purple-700" : "text-gray-600"}`}>
+                      <p className={`min-h-[3.75rem] text-sm leading-5 line-clamp-3 ${isSelected ? "text-purple-700" : "text-gray-600"}`}>
                         {course.description}
                       </p>
                     </button>

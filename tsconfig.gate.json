@@ -9,6 +9,9 @@
     "app/courses/[id]/page.tsx",
     "app/courses/[id]/page-client.tsx",
     "app/payment/callback/page-client.tsx",
+    "app/onboarding/page-client.tsx",
+    "app/onboarding/mode-selection/page-client.tsx",
+    "app/onboarding/cohort-select/page-client.tsx",
     "app/login/login-client.tsx",
     "app/auth/[provider]/callback/callback-client.tsx",
     "app/auth/callback/callback-client.tsx",
@@ -25,7 +28,8 @@
     "app/dashboard/layout-client.tsx",
     "app/admin/layout-client.tsx",
     "app/admin/surveys/page.tsx",
-    "app/admin/surveys/page-client.tsx"
+    "app/admin/surveys/page-client.tsx",
+    "app/internship/_components/internship-header.tsx"
   ],
   "exclude": ["node_modules", "app/courses/[id]/learn/remove.tsx"]
 }

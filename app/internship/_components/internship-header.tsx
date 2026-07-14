@@ -8,8 +8,8 @@ export default function InternshipHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-[#1a1f2e]/95 backdrop-blur-md border-b border-white/5">
-        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+    <nav className="fixed inset-x-0 top-0 z-50 w-full bg-[#1a1f2e]/95 backdrop-blur-md border-b border-white/5">
+        <div className="h-16 w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
               <div className="bg-blue-600 p-1 rounded-lg">

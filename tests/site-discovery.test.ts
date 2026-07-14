@@ -1,6 +1,10 @@
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 import test from "node:test"
 import { courseJsonLd, courseListJsonLd, courseUrl } from "../lib/site.ts"
+
+const layoutSource = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8")
+const manifestSource = readFileSync(new URL("../app/manifest.ts", import.meta.url), "utf8")
 
 const course = {
   course_id: 7,
@@ -30,4 +34,14 @@ test("course schema includes provider, duration, level, and offer", () => {
   assert.equal(schema.educationalLevel, "INTERMEDIATE")
   assert.equal(schema.offers?.price, 25000)
   assert.equal(schema.offers?.priceCurrency, "NGN")
+})
+
+test("site exposes a crawlable square favicon for search results", () => {
+  assert.match(layoutSource, /icon:\s*\[/)
+  assert.match(layoutSource, /url: "\/mylogo\.png", sizes: "619x619", type: "image\/png"/)
+  assert.match(layoutSource, /shortcut:\s*\[/)
+  assert.match(layoutSource, /apple:\s*\[/)
+  assert.match(layoutSource, /logo: `\$\{SITE_URL\}\/mylogo\.png`/)
+  assert.match(manifestSource, /src: "\/mylogo\.png", sizes: "619x619", type: "image\/png", purpose: "any"/)
+  assert.match(manifestSource, /purpose: "maskable"/)
 })

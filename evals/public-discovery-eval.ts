@@ -19,8 +19,9 @@ const fixture = {
 const checks: Array<[string, boolean]> = []
 const record = (name: string, condition: boolean) => checks.push([name, condition])
 
-const [layout, robots, sitemap, llms, coursePage, paymentService] = await Promise.all([
+const [layout, manifest, robots, sitemap, llms, coursePage, paymentService] = await Promise.all([
   read("app/layout.tsx"),
+  read("app/manifest.ts"),
   read("app/robots.ts"),
   read("app/sitemap.ts"),
   read("app/llms.txt/route.ts"),
@@ -32,6 +33,8 @@ const detailSchema = courseJsonLd(fixture)
 
 record("canonical metadata", layout.includes("alternates: { canonical:"))
 record("open graph metadata", layout.includes("openGraph:"))
+record("search favicon metadata", layout.includes('url: "/mylogo.png", sizes: "619x619", type: "image/png"') && layout.includes("shortcut:") && layout.includes("apple:"))
+record("manifest exposes square brand icon", manifest.includes('src: "/mylogo.png", sizes: "619x619", type: "image/png", purpose: "any"') && manifest.includes('purpose: "maskable"'))
 record("crawler policy", robots.includes("sitemap:") && robots.includes("/dashboard/"))
 record("dynamic course sitemap", sitemap.includes("courseUrl(course.slug)"))
 record("LLM-readable public index", llms.includes("## Courses") && llms.includes("Public course pages"))
