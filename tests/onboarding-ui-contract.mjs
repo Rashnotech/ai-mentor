@@ -6,7 +6,8 @@ const source = {
   modeSelection: await readFile("app/onboarding/mode-selection/page-client.tsx", "utf8"),
   cohortSelection: await readFile("app/onboarding/cohort-select/page-client.tsx", "utf8"),
   layout: await readFile("app/layout.tsx", "utf8"),
-  globals: await readFile("styles/globals.css", "utf8"),
+  appGlobals: await readFile("app/globals.css", "utf8"),
+  legacyGlobals: await readFile("styles/globals.css", "utf8"),
   internshipHeader: await readFile("app/internship/_components/internship-header.tsx", "utf8"),
   tsconfigGate: await readFile("tsconfig.gate.json", "utf8"),
 }
@@ -33,12 +34,17 @@ assert.match(source.cohortSelection, /truncate text-sm text-gray-500/)
 assert.match(source.onboarding, /grid grid-cols-1 items-stretch/)
 assert.match(source.cohortSelection, /grid grid-cols-1 items-stretch/)
 
-assert.match(source.layout, /Urbanist/)
+assert.match(source.layout, /family=Urbanist:ital,wght@0,100\.\.900;1,100\.\.900&display=swap/)
 assert.doesNotMatch(source.layout, /Inter/)
 assert.doesNotMatch(source.layout, /Work_Sans/)
-assert.match(source.layout, /variable: "--font-urbanist"/)
-assert.match(source.layout, /urbanist\.variable/)
-assert.match(source.globals, /--font-sans: var\(--font-urbanist\), system-ui, sans-serif;/)
+assert.doesNotMatch(source.layout, /next\/font\/google/)
+assert.match(source.layout, /import "\.\/globals\.css"/)
+assert.match(source.layout, /rel="preconnect" href="https:\/\/fonts\.googleapis\.com"/)
+assert.match(source.layout, /rel="preconnect" href="https:\/\/fonts\.gstatic\.com" crossOrigin=""/)
+assert.match(source.appGlobals, /--font-sans: "Urbanist", system-ui, sans-serif;/)
+assert.match(source.appGlobals, /--font-mono: ui-monospace/)
+assert.doesNotMatch(source.appGlobals, /--font-sans: var\(--font-sans\);/)
+assert.match(source.legacyGlobals, /--font-sans: "Urbanist", system-ui, sans-serif;/)
 
 assert.doesNotMatch(source.modeSelection, /showConfirmation|setShowConfirmation|handleConfirm|Confirm:|You're choosing:/)
 assert.match(source.modeSelection, /updateModeMutation\.mutate\(selectedMode\)/)
@@ -57,4 +63,4 @@ for (const path of [
   assert.match(source.tsconfigGate, new RegExp(path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
 }
 
-console.log("Onboarding UI contract: PASS (33/33)")
+console.log("Onboarding UI contract: PASS (35/35)")

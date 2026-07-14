@@ -6,7 +6,8 @@ const files = {
   modeSelection: await readFile("app/onboarding/mode-selection/page-client.tsx", "utf8"),
   cohortSelection: await readFile("app/onboarding/cohort-select/page-client.tsx", "utf8"),
   layout: await readFile("app/layout.tsx", "utf8"),
-  globals: await readFile("styles/globals.css", "utf8"),
+  appGlobals: await readFile("app/globals.css", "utf8"),
+  legacyGlobals: await readFile("styles/globals.css", "utf8"),
   internshipHeader: await readFile("app/internship/_components/internship-header.tsx", "utf8"),
 }
 
@@ -21,7 +22,10 @@ const checks = [
   ["long course names are constrained", files.onboarding.includes("line-clamp-2 font-semibold") && files.cohortSelection.includes("line-clamp-2 font-semibold")],
   ["long path metadata is constrained", files.onboarding.includes("line-clamp-1 text-xs") && files.cohortSelection.includes("truncate text-sm text-gray-500")],
   ["course grids keep cards equal height per row", files.onboarding.includes("grid grid-cols-1 items-stretch") && files.cohortSelection.includes("grid grid-cols-1 items-stretch")],
-  ["app UI font is Urbanist instead of Inter or Work Sans", files.layout.includes("Urbanist") && !files.layout.includes("Inter") && !files.layout.includes("Work_Sans") && files.globals.includes("--font-sans: var(--font-urbanist), system-ui, sans-serif;")],
+  ["app UI font uses the Urbanist stylesheet link", files.layout.includes("family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap") && files.layout.includes('rel="preconnect" href="https://fonts.googleapis.com"') && files.layout.includes('rel="preconnect" href="https://fonts.gstatic.com" crossOrigin=""')],
+  ["app UI font avoids Next server font fetching", !files.layout.includes("next/font/google") && !files.layout.includes("Work_Sans") && !files.layout.includes("Inter")],
+  ["loaded globals wire font-sans to Urbanist", files.appGlobals.includes('--font-sans: "Urbanist", system-ui, sans-serif;') && !files.appGlobals.includes("--font-sans: var(--font-sans);")],
+  ["mono font token avoids self-reference", files.appGlobals.includes("--font-mono: ui-monospace")],
   ["mode selection skips redundant confirmation step", !/showConfirmation|setShowConfirmation|handleConfirm|Confirm:|You're choosing:/.test(files.modeSelection) && files.modeSelection.includes("updateModeMutation.mutate(selectedMode)")],
   ["mode selection prevents duplicate pending submits", files.modeSelection.includes("disabled={!selectedMode || updateModeMutation.isPending}")],
   ["internship header spans both screen edges", files.internshipHeader.includes("fixed inset-x-0 top-0") && files.internshipHeader.includes("h-16 w-full px-4 sm:px-6 lg:px-8") && !files.internshipHeader.includes("container mx-auto")],

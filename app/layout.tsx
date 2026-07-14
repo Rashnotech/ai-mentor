@@ -1,15 +1,11 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { JetBrains_Mono, Urbanist } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/client-auth-provider"
 import { Analytics } from "@vercel/analytics/next"
 import { JsonLd } from "@/components/json-ld"
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site"
 
-
-const urbanist = Urbanist({ subsets: ["latin"], variable: "--font-urbanist", display: "swap" })
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" })
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -64,7 +60,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${urbanist.variable} ${jetbrainsMono.variable} font-sans antialiased bg-gray-50`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-sans antialiased bg-gray-50">
         <JsonLd data={{
           "@context": "https://schema.org",
           "@graph": [
