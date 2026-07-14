@@ -27,7 +27,7 @@ The mentor section now follows the reference expert-strip layout instead of card
 - light section background
 - large centered headline
 - four horizontal mentor items on desktop
-- large circular portrait treatment
+- smaller circular portrait treatment
 - name, role, and blue topic link under each mentor
 
 The mentor section lists:

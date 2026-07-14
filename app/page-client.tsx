@@ -467,20 +467,20 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       </section>
 
       {/* Mentors Section */}
-      <section className="bg-[#f6f8ff] py-20 md:py-28">
+      <section className="bg-[#f6f8ff] py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-6">
-          <h2 className="mx-auto mb-16 max-w-5xl text-center text-4xl font-bold leading-tight tracking-tight text-[#071c2d] md:text-5xl lg:text-6xl">
+          <h2 className="mx-auto mb-12 max-w-4xl text-center text-3xl font-bold leading-tight tracking-tight text-[#071c2d] md:text-4xl lg:text-5xl">
             Learn from experts at Rashnotech
           </h2>
 
-          <div className="flex flex-col items-center justify-between gap-14 lg:flex-row lg:items-start lg:gap-8">
+          <div className="flex flex-col items-center justify-between gap-10 lg:flex-row lg:items-start lg:gap-6">
             {mentors.map((mentor) => (
               <article
                 key={mentor.name}
-                className="flex w-full max-w-[280px] flex-col items-center text-center"
+                className="flex w-full max-w-[240px] flex-col items-center text-center"
               >
-                <div className={`mb-5 rounded-full bg-gradient-to-br ${mentor.accent} p-2 shadow-[0_18px_45px_rgba(6,182,212,0.24)]`}>
-                  <div className="flex h-44 w-44 items-center justify-center rounded-full bg-[#0b2235] text-4xl font-extrabold text-white ring-8 ring-white md:h-52 md:w-52">
+                <div className={`mb-4 rounded-full bg-gradient-to-br ${mentor.accent} p-1.5 shadow-[0_18px_45px_rgba(6,182,212,0.22)]`}>
+                  <div className="flex h-36 w-36 items-center justify-center rounded-full bg-[#0b2235] text-3xl font-extrabold text-white ring-[6px] ring-white md:h-44 md:w-44">
                     {mentor.name
                       .split(" ")
                       .filter((part) => !["Mr.", "Mr", "Dr.", "Dr"].includes(part))
@@ -490,11 +490,11 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                       .toUpperCase()}
                   </div>
                 </div>
-                <h3 className="text-xl font-semibold text-[#071c2d] md:text-2xl">{mentor.name}</h3>
-                <p className="mt-3 text-2xl font-bold text-[#071c2d]">{mentor.role}</p>
-                <p className="mt-3 inline-flex items-center gap-2 text-lg font-bold text-blue-600">
+                <h3 className="text-lg font-semibold text-[#071c2d] md:text-xl">{mentor.name}</h3>
+                <p className="mt-2 text-xl font-bold text-[#071c2d]">{mentor.role}</p>
+                <p className="mt-2 inline-flex items-center gap-2 text-base font-bold text-blue-600">
                   {mentor.topic}
-                  <ArrowRight className="h-5 w-5" />
+                  <ArrowRight className="h-4 w-4" />
                 </p>
               </article>
             ))}
