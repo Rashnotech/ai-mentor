@@ -496,6 +496,13 @@ export const onboardingApi = {
   },
 }
 
+export const contactApi = {
+  submit: async (data: ContactSubmissionPayload): Promise<ContactSubmissionResponse> => {
+    const response = await apiClient.post<ContactSubmissionResponse>("/contact", data)
+    return response.data
+  },
+}
+
 // Payload types
 export interface SignupPayload {
   email: string
@@ -620,6 +627,21 @@ export interface AuthResponse {
 export interface MessageResponse {
   message: string
   status: string
+}
+
+export interface ContactSubmissionPayload {
+  first_name: string
+  last_name: string
+  email: string
+  phone?: string
+  interest: string
+  learner_type: string
+  message: string
+}
+
+export interface ContactSubmissionResponse {
+  success: boolean
+  message: string
 }
 // ============================================================================
 // COURSE MANAGEMENT TYPES

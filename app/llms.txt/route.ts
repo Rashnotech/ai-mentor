@@ -16,7 +16,7 @@ export async function GET() {
     "",
     `- [Course catalog](${SITE_URL}/courses): Public list of available courses and learning paths.`,
     `- [Internships](${SITE_URL}/internship): Internship application and learning opportunities.`,
-    `- [Contact](${SITE_URL}/contact): Contact Rashnotech for course guidance, internships, partnerships, and learner support.`,
+    `- [Contact](${SITE_URL}/contact): Contact Rashnotech for course guidance, internships, consulting, business services, partnerships, and learner support.`,
     "",
     "## Courses",
     "",

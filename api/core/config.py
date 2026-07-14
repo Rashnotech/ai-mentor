@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     DATABASE_NAME: str = getenv("DB_NAME", "ai-mentor")
     ENVIRONMENT: str = getenv("ENV", "development")
     MAIL_FROM: str = getenv("MAIL_FROM", "support@rashnotech.tech")
+    CONTACT_TO_EMAIL: str = getenv("CONTACT_TO_EMAIL", "rashnotech@gmail.com")
 
     API_V1_STR: str = "/api/v1"
     JWT_SECRET_KEY: str = getenv("SECRET_KEY", "your-secret-key-change-in-production")

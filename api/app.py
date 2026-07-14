@@ -18,6 +18,7 @@ from domains.ai.routes.rubber_duck import router as rubber_duck_router
 from domains.internships.routes import router as internships_router
 from domains.internships.routes import admin_router as internships_admin_router
 from domains.surveys.routes import router as surveys_router
+from domains.contact.routes import router as contact_router
 from domains.surveys.service import SurveyService
 from domains.progress.models.progress import UserProgress, PathAdjustment  # noqa: F401
 from domains.courses.jobs.scheduler import setup_scheduled_jobs, start_scheduler, stop_scheduler
@@ -89,6 +90,7 @@ app.include_router(rubber_duck_router, prefix=settings.API_V1_STR)
 app.include_router(internships_router, prefix=settings.API_V1_STR)
 app.include_router(internships_admin_router, prefix=settings.API_V1_STR)
 app.include_router(surveys_router, prefix=settings.API_V1_STR)
+app.include_router(contact_router, prefix=settings.API_V1_STR)
 
 
 if __name__ == "__main__":
