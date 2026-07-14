@@ -65,8 +65,21 @@ for (const removedReviewer of [
 }
 
 assert.match(page, /const mentors = \[/)
-assert.match(page, /Meet your mentors/)
+assert.match(page, /Learn from experts at Rashnotech/)
 assert.match(page, /mentors\.map/)
+assert.match(page, /className="bg-\[#f6f8ff\] py-20 md:py-28"/)
+assert.match(page, /flex flex-col items-center justify-between gap-14 lg:flex-row lg:items-start lg:gap-8/)
+assert.match(page, /rounded-full bg-gradient-to-br \$\{mentor\.accent\} p-2/)
+assert.match(page, /h-44 w-44 .* md:h-52 md:w-52/)
+
+const mentorsSectionStart = page.indexOf("{/* Mentors Section */}")
+const aiSectionStart = page.indexOf("{/* AI-Powered Interactive Learning Section */}")
+assert.notEqual(mentorsSectionStart, -1)
+assert.notEqual(aiSectionStart, -1)
+const mentorsSection = page.slice(mentorsSectionStart, aiSectionStart)
+assert.doesNotMatch(mentorsSection, /grid/)
+assert.doesNotMatch(mentorsSection, /rounded-2xl/)
+assert.doesNotMatch(mentorsSection, /Meet your mentors/)
 
 for (const [mentor, role] of [
   ["Mr. Abdulrasheed Aliyu", "CEO/Founder"],
@@ -76,6 +89,15 @@ for (const [mentor, role] of [
 ]) {
   assert.match(page, new RegExp(mentor.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
   assert.match(page, new RegExp(role.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+}
+
+for (const topic of [
+  "Leadership and product strategy",
+  "Modern software engineering",
+  "Cybersecurity and digital safety",
+  "Visual design and branding",
+]) {
+  assert.match(page, new RegExp(topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
 }
 
 console.log("Homepage content contract: PASS")

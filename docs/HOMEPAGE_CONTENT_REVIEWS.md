@@ -22,12 +22,20 @@ The former "More Opportunity. More Impact." block is now "Why choose Rashnotech"
 
 Callistus Ikwuazom was removed from the student review cards and appears only in the mentor roster.
 
-The new mentor section lists:
+The mentor section now follows the reference expert-strip layout instead of card grid layout:
 
-- Mr. Abdulrasheed Aliyu, CEO/Founder
-- Mr. Ini Ebong, Software Engineer
-- Dr. Callistus Ikwuazom, Cybersecurity
-- Mr Badru Aliyu, Graphic Designer
+- light section background
+- large centered headline
+- four horizontal mentor items on desktop
+- large circular portrait treatment
+- name, role, and blue topic link under each mentor
+
+The mentor section lists:
+
+- Mr. Abdulrasheed Aliyu, CEO/Founder, Leadership and product strategy
+- Mr. Ini Ebong, Software Engineer, Modern software engineering
+- Dr. Callistus Ikwuazom, Cybersecurity, Cybersecurity and digital safety
+- Mr Badru Aliyu, Graphic Designer, Visual design and branding
 
 ## Verification
 

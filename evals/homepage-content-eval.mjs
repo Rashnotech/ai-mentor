@@ -8,6 +8,11 @@ const mentorsStart = page.indexOf("const mentors = [")
 const reviewsBlock = reviewsStart >= 0 && mentorsStart > reviewsStart
   ? page.slice(reviewsStart, mentorsStart)
   : ""
+const mentorsSectionStart = page.indexOf("{/* Mentors Section */}")
+const aiSectionStart = page.indexOf("{/* AI-Powered Interactive Learning Section */}")
+const mentorsSection = mentorsSectionStart >= 0 && aiSectionStart > mentorsSectionStart
+  ? page.slice(mentorsSectionStart, aiSectionStart)
+  : ""
 
 const checks = [
   ["footer includes the requested technical programmes", ["Python Programming", "Web Development", "Software Engineering", "AI Engineering"].every((label) => page.includes(label))],
@@ -21,8 +26,11 @@ const checks = [
   ["reviews show short preview plus more link", page.includes("line-clamp-3") && page.includes("Read more") && page.includes("See more reviews")],
   ["reviews show five-star context", page.includes('aria-label="5 star review"') && page.includes("Star key={star}")],
   ["only four requested reviews are represented", ["Ndubuisi Mercy", "Molly", "Emmanuel Samuel Oluwayinka", "Karl Azoms"].every((name) => reviewsBlock.includes(name)) && !["Callistus Ikwuazom", "Prudent Favour Edwin", "Francisca Ezeaku", "Iyeduala Victoria", "Joseph Mathew Taye", "AbdulKamal W"].some((name) => reviewsBlock.includes(name))],
-  ["mentor section is present", page.includes("const mentors = [") && page.includes("Meet your mentors") && page.includes("mentors.map")],
+  ["mentor section follows the reference layout", page.includes("const mentors = [") && page.includes("Learn from experts at Rashnotech") && page.includes("mentors.map") && page.includes('className="bg-[#f6f8ff] py-20 md:py-28"')],
+  ["mentor section uses flex row instead of grid cards", mentorsSection.includes("flex flex-col items-center justify-between gap-14 lg:flex-row lg:items-start lg:gap-8") && !mentorsSection.includes("grid") && !mentorsSection.includes("rounded-2xl") && !mentorsSection.includes("Meet your mentors")],
+  ["mentor portraits use large circular treatment", mentorsSection.includes("rounded-full bg-gradient-to-br ${mentor.accent} p-2") && mentorsSection.includes("h-44 w-44") && mentorsSection.includes("md:h-52 md:w-52")],
   ["mentor roster is represented", ["Mr. Abdulrasheed Aliyu", "CEO/Founder", "Mr. Ini Ebong", "Software Engineer", "Dr. Callistus Ikwuazom", "Cybersecurity", "Mr Badru Aliyu", "Graphic Designer"].every((label) => page.includes(label))],
+  ["mentor topics are represented", ["Leadership and product strategy", "Modern software engineering", "Cybersecurity and digital safety", "Visual design and branding"].every((label) => page.includes(label))],
   ["section has a conversion action", page.includes("Start learning with Rashnotech")],
 ]
 

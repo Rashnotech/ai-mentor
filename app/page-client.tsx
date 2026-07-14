@@ -111,18 +111,26 @@ const mentors = [
   {
     name: "Mr. Abdulrasheed Aliyu",
     role: "CEO/Founder",
+    topic: "Leadership and product strategy",
+    accent: "from-blue-500 via-cyan-400 to-sky-300",
   },
   {
     name: "Mr. Ini Ebong",
     role: "Software Engineer",
+    topic: "Modern software engineering",
+    accent: "from-indigo-500 via-blue-400 to-cyan-300",
   },
   {
     name: "Dr. Callistus Ikwuazom",
     role: "Cybersecurity",
+    topic: "Cybersecurity and digital safety",
+    accent: "from-cyan-500 via-blue-400 to-indigo-300",
   },
   {
     name: "Mr Badru Aliyu",
     role: "Graphic Designer",
+    topic: "Visual design and branding",
+    accent: "from-sky-500 via-cyan-400 to-blue-300",
   },
 ]
 
@@ -459,34 +467,35 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       </section>
 
       {/* Mentors Section */}
-      <section className="border-t border-white/10 bg-[#071c2d] py-20">
-        <div className="container mx-auto px-6">
-          <div className="mx-auto mb-12 max-w-2xl text-center">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.25em] text-blue-200">
-              Learn from practitioners
-            </p>
-            <h2 className="text-3xl font-bold text-white md:text-4xl">
-              Meet your mentors
-            </h2>
-          </div>
+      <section className="bg-[#f6f8ff] py-20 md:py-28">
+        <div className="mx-auto max-w-7xl px-6">
+          <h2 className="mx-auto mb-16 max-w-5xl text-center text-4xl font-bold leading-tight tracking-tight text-[#071c2d] md:text-5xl lg:text-6xl">
+            Learn from experts at Rashnotech
+          </h2>
 
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="flex flex-col items-center justify-between gap-14 lg:flex-row lg:items-start lg:gap-8">
             {mentors.map((mentor) => (
               <article
                 key={mentor.name}
-                className="rounded-2xl border border-white/10 bg-[#142235] p-6 text-center shadow-[0_20px_50px_rgba(0,0,0,0.22)]"
+                className="flex w-full max-w-[280px] flex-col items-center text-center"
               >
-                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 text-lg font-bold text-white">
-                  {mentor.name
-                    .split(" ")
-                    .filter((part) => !["Mr.", "Mr", "Dr.", "Dr"].includes(part))
-                    .slice(0, 2)
-                    .map((part) => part[0])
-                    .join("")
-                    .toUpperCase()}
+                <div className={`mb-5 rounded-full bg-gradient-to-br ${mentor.accent} p-2 shadow-[0_18px_45px_rgba(6,182,212,0.24)]`}>
+                  <div className="flex h-44 w-44 items-center justify-center rounded-full bg-[#0b2235] text-4xl font-extrabold text-white ring-8 ring-white md:h-52 md:w-52">
+                    {mentor.name
+                      .split(" ")
+                      .filter((part) => !["Mr.", "Mr", "Dr.", "Dr"].includes(part))
+                      .slice(0, 2)
+                      .map((part) => part[0])
+                      .join("")
+                      .toUpperCase()}
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold text-white">{mentor.name}</h3>
-                <p className="mt-2 text-sm font-semibold text-blue-100/80">{mentor.role}</p>
+                <h3 className="text-xl font-semibold text-[#071c2d] md:text-2xl">{mentor.name}</h3>
+                <p className="mt-3 text-2xl font-bold text-[#071c2d]">{mentor.role}</p>
+                <p className="mt-3 inline-flex items-center gap-2 text-lg font-bold text-blue-600">
+                  {mentor.topic}
+                  <ArrowRight className="h-5 w-5" />
+                </p>
               </article>
             ))}
           </div>
