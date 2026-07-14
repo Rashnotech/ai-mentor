@@ -23,11 +23,12 @@ const checks = [
   ["all internship pages use the shared stepper", allPages.every((source) => source.includes("InternshipStepper"))],
   ["old who-can-apply card removed", !files.landing.includes("Who can apply") && !files.landing.includes("studentTypes")],
   ["old verification-process side card removed", !files.landing.includes("Verification process") && !files.landing.includes("verificationDocs")],
-  ["profile form follows account-details template", files.createProfile.includes("Account details") && files.createProfile.includes("h-[72px]")],
+  ["profile form follows compact account-details template", files.createProfile.includes("Account details") && files.createProfile.includes("h-[58px]")],
   ["form controls use gray template blocks", [files.createProfile, files.verification, files.chooseTrack].every((source) => source.includes("bg-[#7b8794]"))],
   ["internship progression remains intact", files.landing.includes("/internship/create-profile") && files.createProfile.includes("/internship/verification") && files.verification.includes("/internship/choose-track") && files.chooseTrack.includes("/internship/get-acceptance")],
   ["final acceptance messaging remains intact", files.acceptance.includes("Application submitted") && files.acceptance.includes("Go to Dashboard")],
-  ["completed steps use template green", files.stepper.includes("bg-emerald-400")],
+  ["step tracker fits mobile without horizontal scrolling", files.stepper.includes("grid grid-cols-4") && !files.stepper.includes("overflow-x-auto") && !files.stepper.includes("min-w-max")],
+  ["internship accents use blue instead of green", files.stepper.includes("bg-blue-500") && !files.stepper.includes("emerald") && allPages.every((source) => !source.includes("emerald"))],
 ]
 
 const passed = checks.filter(([, ok]) => ok).length

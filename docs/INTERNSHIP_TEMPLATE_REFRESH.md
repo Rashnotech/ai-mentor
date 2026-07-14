@@ -7,7 +7,10 @@ The internship application flow now follows the dark account/payment template st
 - deep navy page background: `bg-[#071c2d]`
 - slate form/card panels: `bg-[#24354c]`
 - gray input blocks: `bg-[#7b8794]`
+- blue action and selected-state accents
+- compact input, card, heading, and button sizing
 - shared horizontal internship stepper across all public internship steps
+- mobile stepper uses four fitted columns and does not create a horizontal scrollbar
 - no right-side landing information cards for `Who can apply` or `Verification process`
 
 ## Pages changed

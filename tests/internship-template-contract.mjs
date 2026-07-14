@@ -30,7 +30,7 @@ assert.doesNotMatch(files.landing, /studentTypes/, "old student type side-card d
 assert.doesNotMatch(files.landing, /verificationDocs/, "old verification side-card data should be removed")
 
 assert.match(files.createProfile, /Account details/, "profile form should use the account-details template heading")
-assert.match(files.createProfile, /h-\[72px\]/, "profile inputs should use the taller template input structure")
+assert.match(files.createProfile, /h-\[58px\]/, "profile inputs should use a compact template input structure")
 assert.match(files.createProfile, /bg-\[#7b8794\]/, "profile inputs should use gray template input blocks")
 assert.match(files.createProfile, /First Name/, "profile form should keep first-name field")
 assert.match(files.createProfile, /Phone Number/, "profile form should keep phone-number field")
@@ -39,6 +39,13 @@ assert.match(files.verification, /Student verification/, "verification step shou
 assert.match(files.verification, /bg-\[#7b8794\]/, "verification inputs should use gray template input blocks")
 assert.match(files.chooseTrack, /Course search/, "track page should keep course search")
 assert.match(files.acceptance, /Application submitted/, "acceptance page should keep final-state messaging")
-assert.match(files.stepper, /bg-emerald-400/, "stepper should show completed steps with template green")
+assert.match(files.stepper, /grid grid-cols-4/, "stepper should fit four steps without horizontal scrolling")
+assert.doesNotMatch(files.stepper, /overflow-x-auto/, "stepper should not create a mobile horizontal scrollbar")
+assert.doesNotMatch(files.stepper, /min-w-max/, "stepper should not force a wider mobile layout")
+assert.match(files.stepper, /bg-blue-500/, "stepper should show completed steps with blue")
+assert.doesNotMatch(files.stepper, /emerald/, "stepper should not use green accents")
+for (const source of internshipPages) {
+  assert.doesNotMatch(source, /emerald/, "internship pages should not use green accents")
+}
 
 console.log("Internship template contract: PASS")

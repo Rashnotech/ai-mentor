@@ -36,7 +36,7 @@ const uploadSections = [
 ]
 
 const inputClass =
-  "h-[60px] w-full rounded-md border border-transparent bg-[#7b8794] px-5 text-base font-semibold text-white outline-none transition file:mr-4 file:rounded-md file:border-0 file:bg-white/90 file:px-4 file:py-2 file:text-sm file:font-bold file:text-[#071c2d] hover:file:bg-white focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/30"
+  "h-[52px] w-full rounded-md border border-transparent bg-[#7b8794] px-4 text-sm font-semibold text-white outline-none transition file:mr-4 file:rounded-md file:border-0 file:bg-white/90 file:px-4 file:py-1.5 file:text-sm file:font-bold file:text-[#071c2d] hover:file:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-300/30"
 
 export default function InternshipVerificationPage() {
   const router = useRouter()
@@ -89,32 +89,32 @@ export default function InternshipVerificationPage() {
     <div className="min-h-screen overflow-x-hidden bg-[#071c2d] px-4 py-6 text-white sm:px-6 md:px-10 md:py-10">
       <InternshipHeader />
 
-      <main className="mx-auto max-w-6xl pt-20 md:pt-24">
+      <main className="mx-auto max-w-6xl pt-20">
         <InternshipStepper steps={steps} />
 
-        <section className="rounded-lg bg-[#24354c] p-6 shadow-2xl shadow-black/20 ring-1 ring-white/5 md:p-9">
+        <section className="rounded-lg bg-[#24354c] p-5 shadow-2xl shadow-black/20 ring-1 ring-white/5 md:p-7">
           <div className="flex items-center gap-4">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-xl font-bold text-[#071c2d]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg font-bold text-[#071c2d]">
               2
             </span>
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Student verification</h1>
+            <h1 className="text-xl font-bold tracking-tight md:text-2xl">Student verification</h1>
           </div>
-          <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-100">
+          <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-100 md:text-base">
             Upload your documents for review. This keeps the process simple and lets us match your
             internship application to the right track.
           </p>
 
-          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+          <form className="mt-7 space-y-4" onSubmit={handleSubmit}>
             {uploadSections.map((item) => (
-              <div key={item.key} className="rounded-lg border border-white/10 bg-[#1d2c42] p-5">
-                <label htmlFor={item.key} className="block text-xl font-bold text-white">
+              <div key={item.key} className="rounded-lg border border-white/10 bg-[#1d2c42] p-4">
+                <label htmlFor={item.key} className="block text-base font-bold text-white">
                   {item.title}
                 </label>
                 <p className="mt-2 text-sm leading-6 text-slate-300">{item.description}</p>
 
                 {item.key === "id-card" && (
                   <div className="mt-5">
-                    <label htmlFor="idType" className="mb-3 block text-base font-bold text-white">
+                    <label htmlFor="idType" className="mb-2 block text-sm font-bold text-white">
                       ID type
                     </label>
                     <select
@@ -160,7 +160,7 @@ export default function InternshipVerificationPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-emerald-400 px-6 text-sm font-bold text-[#071c2d] transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
+                className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-blue-500 px-6 text-sm font-bold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
               >
                 {uploadProgress === "uploading"
                   ? "Uploading documents..."

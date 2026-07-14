@@ -32,7 +32,7 @@ const iconByTrack: Record<string, typeof Globe> = {
 }
 
 const inputClass =
-  "h-[52px] w-full rounded-md border border-transparent bg-[#7b8794] px-5 text-base font-semibold text-white outline-none transition placeholder:text-slate-300 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/30"
+  "h-11 w-full rounded-md border border-transparent bg-[#7b8794] px-4 text-sm font-semibold text-white outline-none transition placeholder:text-slate-300 focus:border-blue-300 focus:ring-2 focus:ring-blue-300/30"
 
 export default function InternshipChooseTrackPage() {
   const router = useRouter()
@@ -151,22 +151,22 @@ export default function InternshipChooseTrackPage() {
     <div className="min-h-screen overflow-x-hidden bg-[#071c2d] px-4 py-6 text-white sm:px-6 md:px-10 md:py-10">
       <InternshipHeader />
 
-      <main className="mx-auto max-w-6xl pt-20 md:pt-24">
+      <main className="mx-auto max-w-6xl pt-20">
         <InternshipStepper steps={steps} />
 
-        <section className="rounded-lg bg-[#24354c] p-6 shadow-2xl shadow-black/20 ring-1 ring-white/5 md:p-9">
+        <section className="rounded-lg bg-[#24354c] p-5 shadow-2xl shadow-black/20 ring-1 ring-white/5 md:p-7">
           <div className="flex items-center gap-4">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-xl font-bold text-[#071c2d]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg font-bold text-[#071c2d]">
               3
             </span>
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Choose learning track</h1>
+            <h1 className="text-xl font-bold tracking-tight md:text-2xl">Choose learning track</h1>
           </div>
-          <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-100">
+          <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-100 md:text-base">
             Pick one track for your internship focus. You can request a switch during mentor review.
           </p>
 
-          <div className="mt-8">
-            <p className="mb-4 text-xl font-bold text-white">Available tracks</p>
+          <div className="mt-7">
+            <p className="mb-3 text-base font-bold text-white">Available tracks</p>
 
             {tracksLoading && <p className="text-sm font-semibold text-slate-300">Loading tracks...</p>}
 
@@ -185,10 +185,10 @@ export default function InternshipChooseTrackPage() {
                       key={track.track_id}
                       type="button"
                       onClick={() => onTrackClick(track.track_id)}
-                      className={`rounded-lg border p-5 text-left transition-all duration-200 ${
+                      className={`rounded-lg border p-4 text-left transition-all duration-200 ${
                         isActive
-                          ? "border-emerald-300 bg-[#2b3e57] ring-2 ring-emerald-300/20"
-                          : "border-white/10 bg-[#1d2c42] hover:-translate-y-0.5 hover:border-emerald-300/70"
+                          ? "border-blue-300 bg-[#2b3e57] ring-2 ring-blue-300/20"
+                          : "border-white/10 bg-[#1d2c42] hover:-translate-y-0.5 hover:border-blue-300/70"
                       }`}
                       aria-pressed={isActive}
                     >
@@ -200,7 +200,7 @@ export default function InternshipChooseTrackPage() {
                           <p className="text-sm font-bold text-white">{track.track_name}</p>
                         </div>
 
-                        {isActive && <CheckCircle2 className="h-5 w-5 text-emerald-300" />}
+                        {isActive && <CheckCircle2 className="h-5 w-5 text-blue-300" />}
                       </div>
 
                       {track.description && (
@@ -213,9 +213,9 @@ export default function InternshipChooseTrackPage() {
             )}
           </div>
 
-          <div className="mt-8 rounded-lg border border-white/10 bg-[#1d2c42] p-5">
+          <div className="mt-7 rounded-lg border border-white/10 bg-[#1d2c42] p-4">
             <div className="mb-5">
-              <label htmlFor="courseSearch" className="mb-3 block text-xl font-bold text-white">
+              <label htmlFor="courseSearch" className="mb-2 block text-base font-bold text-white">
                 Course search
               </label>
               <input
@@ -247,8 +247,8 @@ export default function InternshipChooseTrackPage() {
                       onClick={() => setSelectedCourseId(course.course_id)}
                       className={`w-full rounded-lg border p-4 text-left transition ${
                         isSelected
-                          ? "border-emerald-300 bg-[#2b3e57]"
-                          : "border-white/10 bg-[#24354c] hover:border-emerald-300/70"
+                          ? "border-blue-300 bg-[#2b3e57]"
+                          : "border-white/10 bg-[#24354c] hover:border-blue-300/70"
                       }`}
                     >
                       <p className="text-sm font-bold text-white">{course.title}</p>
@@ -300,7 +300,7 @@ export default function InternshipChooseTrackPage() {
               type="button"
               onClick={handleContinue}
               disabled={isSubmitting || tracksLoading || !selectedTrack}
-              className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-emerald-400 px-6 text-sm font-bold text-[#071c2d] transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-blue-500 px-6 text-sm font-bold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
             >
               {isSubmitting ? "Submitting application..." : "Continue to acceptance"}
             </button>

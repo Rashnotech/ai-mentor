@@ -39,20 +39,20 @@ export default function InternshipPage() {
     <div className="min-h-screen overflow-x-hidden bg-[#071c2d] px-4 py-6 text-white sm:px-6 md:px-10 md:py-10">
       <InternshipHeader />
 
-      <main className="mx-auto max-w-6xl pt-20 md:pt-24">
+      <main className="mx-auto max-w-6xl pt-20">
         <InternshipStepper steps={steps} />
 
-        <section className="rounded-lg bg-[#24354c] p-6 shadow-2xl shadow-black/20 ring-1 ring-white/5 md:p-9">
+        <section className="rounded-lg bg-[#24354c] p-5 shadow-2xl shadow-black/20 ring-1 ring-white/5 md:p-7">
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <div className="max-w-3xl">
               <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-xl font-bold text-[#071c2d]">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg font-bold text-[#071c2d]">
                   1
                 </span>
-                <p className="text-2xl font-bold tracking-tight md:text-3xl">Internship application</p>
+                <p className="text-xl font-bold tracking-tight md:text-2xl">Internship application</p>
               </div>
 
-              <p className="mt-5 text-base font-semibold text-slate-100 md:text-lg">
+              <p className="mt-4 text-sm font-semibold text-slate-100 md:text-base">
                 Build real experience while you learn with Rashnotech.
               </p>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
@@ -63,29 +63,29 @@ export default function InternshipPage() {
 
             <Link
               href="/internship/create-profile"
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-400 px-6 text-sm font-bold text-[#071c2d] transition hover:bg-emerald-300 md:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-500 px-6 text-sm font-bold text-white transition hover:bg-blue-400 md:w-auto"
             >
               Start application
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-2">
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
             {steps.map((step) => {
               const isActive = step.status === "active"
 
               return (
                 <article
                   key={step.id}
-                  className={`rounded-lg border p-5 ${
+                  className={`rounded-lg border p-4 ${
                     isActive
-                      ? "border-emerald-300/60 bg-[#2b3e57]"
+                      ? "border-blue-300/60 bg-[#2b3e57]"
                       : "border-white/10 bg-[#1d2c42]"
                   }`}
                 >
                   <div className="flex items-start gap-4">
                     <span
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
                         isActive ? "bg-white text-[#071c2d]" : "bg-[#34455d] text-slate-300"
                       }`}
                     >

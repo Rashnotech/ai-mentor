@@ -48,9 +48,9 @@ const steps = [
 ]
 
 const inputClass =
-  "h-[72px] w-full rounded-md border border-transparent bg-[#7b8794] px-5 text-lg font-semibold text-white outline-none transition placeholder:text-slate-300 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/30 disabled:cursor-not-allowed disabled:opacity-70"
+  "h-[58px] w-full rounded-md border border-transparent bg-[#7b8794] px-4 text-base font-semibold text-white outline-none transition placeholder:text-slate-300 focus:border-blue-300 focus:ring-2 focus:ring-blue-300/30 disabled:cursor-not-allowed disabled:opacity-70"
 
-const labelClass = "mb-3 block text-xl font-bold text-white"
+const labelClass = "mb-2 block text-base font-bold text-white"
 
 export default function InternshipCreateProfilePage() {
   const router = useRouter()
@@ -146,23 +146,23 @@ export default function InternshipCreateProfilePage() {
     <div className="min-h-screen overflow-x-hidden bg-[#071c2d] px-4 py-6 text-white sm:px-6 md:px-10 md:py-10">
       <InternshipHeader />
 
-      <main className="mx-auto max-w-6xl pt-20 md:pt-24">
+      <main className="mx-auto max-w-6xl pt-20">
         <InternshipStepper steps={steps} />
 
-        <section className="rounded-lg bg-[#24354c] p-6 shadow-2xl shadow-black/20 ring-1 ring-white/5 md:p-9">
+        <section className="rounded-lg bg-[#24354c] p-5 shadow-2xl shadow-black/20 ring-1 ring-white/5 md:p-7">
           <div className="flex items-center gap-4">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-xl font-bold text-[#071c2d]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg font-bold text-[#071c2d]">
               1
             </span>
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Account details</h1>
+            <h1 className="text-xl font-bold tracking-tight md:text-2xl">Account details</h1>
           </div>
 
-          <p className="mt-4 text-base font-semibold text-slate-100 md:text-lg">
+          <p className="mt-3 text-sm font-semibold text-slate-100 md:text-base">
             Create your internship profile so we can review your application.
           </p>
 
-          <form className="mt-8 space-y-7" onSubmit={handleSubmit}>
-            <div className="grid gap-7 md:grid-cols-2">
+          <form className="mt-7 space-y-5" onSubmit={handleSubmit}>
+            <div className="grid gap-5 md:grid-cols-2">
               <div>
                 <label htmlFor="firstName" className={labelClass}>
                   First Name
@@ -194,7 +194,7 @@ export default function InternshipCreateProfilePage() {
               </div>
             </div>
 
-            <div className="grid gap-7 md:grid-cols-2">
+            <div className="grid gap-5 md:grid-cols-2">
               <div>
                 <label htmlFor="email" className={labelClass}>
                   Email
@@ -227,7 +227,7 @@ export default function InternshipCreateProfilePage() {
               </div>
             </div>
 
-            <div className="grid gap-7 md:grid-cols-2">
+            <div className="grid gap-5 md:grid-cols-2">
               <div>
                 <label htmlFor="country" className={labelClass}>
                   Country
@@ -277,7 +277,7 @@ export default function InternshipCreateProfilePage() {
               </div>
             </div>
 
-            <div className="grid gap-7 md:grid-cols-2">
+            <div className="grid gap-5 md:grid-cols-2">
               <div>
                 <label htmlFor="institution" className={labelClass}>
                   Institution
@@ -336,7 +336,7 @@ export default function InternshipCreateProfilePage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-emerald-400 px-6 text-sm font-bold text-[#071c2d] transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
+                className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-blue-500 px-6 text-sm font-bold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
               >
                 {isSubmitting ? "Creating profile..." : "Continue"}
               </button>
