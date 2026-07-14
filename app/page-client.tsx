@@ -102,32 +102,27 @@ const studentReviews = [
     quote: "The training program was truly exceptional. The quality of the material was outstanding, and the instructors provided insightful guidance, significantly enhancing my proficiency.",
   },
   {
-    name: "Callistus Ikwuazom",
-    quote: "I had an incredible experience with Rashnotech Solutions. Their courses are top-notch and designed for the modern tech learner.",
-  },
-  {
     name: "Karl Azoms",
     quote: "Rashnotech Solutions is hands down one of the best tech hubs I’ve encountered. Their commitment to empowering learners stands out.",
   },
+]
+
+const mentors = [
   {
-    name: "Prudent Favour Edwin",
-    quote: "I had an amazing experience with Rashnotech. The instructor is incredibly helpful, clear, and patient.",
+    name: "Mr. Abdulrasheed Aliyu",
+    role: "CEO/Founder",
   },
   {
-    name: "Francisca Ezeaku",
-    quote: "My experience with Rashnotech Solutions was exceptional, top notch, and incomparable with other experiences. Thank you Rashnotech for your wealth of wisdom.",
+    name: "Mr. Ini Ebong",
+    role: "Software Engineer",
   },
   {
-    name: "Iyeduala Victoria",
-    quote: "Sweet experience, I love every bit.",
+    name: "Dr. Callistus Ikwuazom",
+    role: "Cybersecurity",
   },
   {
-    name: "Joseph Mathew Taye",
-    quote: "Very conducive environment for learning with good instructor.",
-  },
-  {
-    name: "AbdulKamal W",
-    quote: "Good and ideal place to learn with excellent tutor.",
+    name: "Mr Badru Aliyu",
+    role: "Graphic Designer",
   },
 ]
 
@@ -390,31 +385,31 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       </section>
 
       {/* Student Reviews Section */}
-      <section className="py-20 bg-[#e8f4f8]">
+      <section className="py-20 bg-[#071c2d]">
         <div className="container mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-[#1a365d] mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-16">
             Why choose Rashnotech
           </h2>
 
-          <div className="columns-1 gap-6 space-y-6 md:columns-2 xl:columns-3">
-            {studentReviews.slice(0, 6).map((review, index) => (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {studentReviews.slice(0, 4).map((review, index) => (
               <article
                 key={review.name}
-                className="mb-6 break-inside-avoid rounded-xl border border-blue-100 bg-white p-6 shadow-sm"
+                className="rounded-2xl border border-white/10 bg-[#142235] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.22)]"
               >
                 <div className="mb-5 flex items-center gap-1 text-amber-300" aria-label="5 star review">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star key={star} className="h-4 w-4 fill-current" />
                   ))}
                 </div>
-                <p className="line-clamp-3 text-lg font-semibold leading-relaxed text-slate-900">
+                <p className="line-clamp-3 text-lg font-semibold leading-relaxed text-white">
                   &ldquo;{review.quote}&rdquo;
                 </p>
                 <Link
                   href="https://www.google.com/search?q=Rashnotech+Solutions+reviews"
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-4 inline-flex text-sm font-bold text-blue-700 hover:text-blue-900"
+                  className="mt-4 inline-flex text-sm font-bold text-blue-200 hover:text-white"
                 >
                   Read more
                 </Link>
@@ -429,12 +424,12 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                       .toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">{review.name}</p>
-                    <p className="text-sm text-slate-500">student</p>
+                    <p className="font-semibold text-white">{review.name}</p>
+                    <p className="text-sm text-blue-100/80">student</p>
                   </div>
                 </div>
                 {index === 0 && (
-                  <div className="mt-5 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                  <div className="mt-5 inline-flex rounded-full bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-100">
                     Verified student review
                   </div>
                 )}
@@ -454,11 +449,46 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
               href="https://www.google.com/search?q=Rashnotech+Solutions+reviews"
               target="_blank"
               rel="noreferrer"
-              className="ml-0 mt-4 inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-6 py-3 font-semibold text-blue-700 transition-all hover:border-blue-300 hover:bg-blue-50 sm:ml-3 sm:mt-0"
+              className="ml-0 mt-4 inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-6 py-3 font-semibold text-white transition-all hover:border-white/30 hover:bg-white/10 sm:ml-3 sm:mt-0"
             >
               See more reviews
               <ArrowRight className="h-4 w-4" />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Mentors Section */}
+      <section className="border-t border-white/10 bg-[#071c2d] py-20">
+        <div className="container mx-auto px-6">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.25em] text-blue-200">
+              Learn from practitioners
+            </p>
+            <h2 className="text-3xl font-bold text-white md:text-4xl">
+              Meet your mentors
+            </h2>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {mentors.map((mentor) => (
+              <article
+                key={mentor.name}
+                className="rounded-2xl border border-white/10 bg-[#142235] p-6 text-center shadow-[0_20px_50px_rgba(0,0,0,0.22)]"
+              >
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 text-lg font-bold text-white">
+                  {mentor.name
+                    .split(" ")
+                    .filter((part) => !["Mr.", "Mr", "Dr.", "Dr"].includes(part))
+                    .slice(0, 2)
+                    .map((part) => part[0])
+                    .join("")
+                    .toUpperCase()}
+                </div>
+                <h3 className="text-lg font-bold text-white">{mentor.name}</h3>
+                <p className="mt-2 text-sm font-semibold text-blue-100/80">{mentor.role}</p>
+              </article>
+            ))}
           </div>
         </div>
       </section>
