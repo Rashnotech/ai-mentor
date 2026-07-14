@@ -23,11 +23,8 @@ from domains.progress.models.progress import UserProgress, PathAdjustment  # noq
 from domains.courses.jobs.scheduler import setup_scheduled_jobs, start_scheduler, stop_scheduler
 from core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
-from db.base import Base
 from db.session import db_session
 from middleware.swagger_middleware import SwaggerAuthMiddleware
-from domains.courses.jobs.fix_python_quiz_answers_job import run_fix_python_quiz_answers_job
-import asyncio
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -96,5 +93,4 @@ app.include_router(surveys_router, prefix=settings.API_V1_STR)
 
 if __name__ == "__main__":
     import uvicorn
-    asyncio.run(run_fix_python_quiz_answers_job())
     uvicorn.run(app, host="0.0.0.0", port=8000)
