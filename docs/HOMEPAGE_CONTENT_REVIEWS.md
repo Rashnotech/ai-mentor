@@ -32,7 +32,7 @@ The mentor section now follows the reference expert-strip layout instead of card
 
 The mentor section lists:
 
-- Mr. Abdulrasheed Aliyu, CEO/Founder, Leadership and product strategy
+- Mr. Abdulrasheed Aliyu, CEO/Founder, Leadership and product strategy, uses `/funded.jpg`
 - Mr. Ini Ebong, Software Engineer, Modern software engineering
 - Dr. Callistus Ikwuazom, Cybersecurity, Cybersecurity and digital safety
 - Mr Badru Aliyu, Graphic Designer, Visual design and branding

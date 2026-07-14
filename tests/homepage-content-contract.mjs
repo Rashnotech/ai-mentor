@@ -65,13 +65,18 @@ for (const removedReviewer of [
 }
 
 assert.match(page, /const mentors = \[/)
-assert.match(page, /Learn from experts at Rashnotech/)
+assert.match(page, /Learn from experts/)
 assert.match(page, /mentors\.map/)
 assert.match(page, /className="bg-\[#f6f8ff\] py-16 md:py-24"/)
 assert.match(page, /flex flex-col items-center justify-between gap-10 lg:flex-row lg:items-start lg:gap-6/)
 assert.match(page, /rounded-full bg-gradient-to-br \$\{mentor\.accent\} p-1\.5/)
 assert.match(page, /h-36 w-36 .* md:h-44 md:w-44/)
 assert.doesNotMatch(page, /h-44 w-44 .* md:h-52 md:w-52/)
+assert.match(page, /image: "\/funded\.jpg"/)
+assert.match(page, /mentor\.image \?/)
+assert.match(page, /src=\{mentor\.image\}/)
+assert.match(page, /alt=\{`\$\{mentor\.name\}, \$\{mentor\.role\}`\}/)
+assert.match(page, /h-full w-full rounded-full object-cover/)
 
 const mentorsSectionStart = page.indexOf("{/* Mentors Section */}")
 const aiSectionStart = page.indexOf("{/* AI-Powered Interactive Learning Section */}")
@@ -81,6 +86,13 @@ const mentorsSection = page.slice(mentorsSectionStart, aiSectionStart)
 assert.doesNotMatch(mentorsSection, /grid/)
 assert.doesNotMatch(mentorsSection, /rounded-2xl/)
 assert.doesNotMatch(mentorsSection, /Meet your mentors/)
+
+const abdulrasheedStart = page.indexOf('name: "Mr. Abdulrasheed Aliyu"')
+const iniStart = page.indexOf('name: "Mr. Ini Ebong"')
+assert.notEqual(abdulrasheedStart, -1)
+assert.notEqual(iniStart, -1)
+const abdulrasheedBlock = page.slice(abdulrasheedStart, iniStart)
+assert.match(abdulrasheedBlock, /image: "\/funded\.jpg"/)
 
 for (const [mentor, role] of [
   ["Mr. Abdulrasheed Aliyu", "CEO/Founder"],

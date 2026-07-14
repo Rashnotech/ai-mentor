@@ -113,24 +113,28 @@ const mentors = [
     role: "CEO/Founder",
     topic: "Leadership and product strategy",
     accent: "from-blue-500 via-cyan-400 to-sky-300",
+    image: "/funded.jpg",
   },
   {
     name: "Mr. Ini Ebong",
     role: "Software Engineer",
     topic: "Modern software engineering",
     accent: "from-indigo-500 via-blue-400 to-cyan-300",
+    image: null,
   },
   {
     name: "Dr. Callistus Ikwuazom",
     role: "Cybersecurity",
     topic: "Cybersecurity and digital safety",
     accent: "from-cyan-500 via-blue-400 to-indigo-300",
+    image: null,
   },
   {
     name: "Mr Badru Aliyu",
     role: "Graphic Designer",
     topic: "Visual design and branding",
     accent: "from-sky-500 via-cyan-400 to-blue-300",
+    image: null,
   },
 ]
 
@@ -469,8 +473,8 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       {/* Mentors Section */}
       <section className="bg-[#f6f8ff] py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-6">
-          <h2 className="mx-auto mb-12 max-w-4xl text-center text-3xl font-bold leading-tight tracking-tight text-[#071c2d] md:text-4xl lg:text-5xl">
-            Learn from experts at Rashnotech
+          <h2 className="mx-auto mb-12 max-w-4xl text-center text-xl font-bold leading-tight tracking-tight text-[#071c2d] md:text-4xl lg:text-5xl">
+            Learn from experts
           </h2>
 
           <div className="flex flex-col items-center justify-between gap-10 lg:flex-row lg:items-start lg:gap-6">
@@ -480,14 +484,22 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                 className="flex w-full max-w-[240px] flex-col items-center text-center"
               >
                 <div className={`mb-4 rounded-full bg-gradient-to-br ${mentor.accent} p-1.5 shadow-[0_18px_45px_rgba(6,182,212,0.22)]`}>
-                  <div className="flex h-36 w-36 items-center justify-center rounded-full bg-[#0b2235] text-3xl font-extrabold text-white ring-[6px] ring-white md:h-44 md:w-44">
-                    {mentor.name
-                      .split(" ")
-                      .filter((part) => !["Mr.", "Mr", "Dr.", "Dr"].includes(part))
-                      .slice(0, 2)
-                      .map((part) => part[0])
-                      .join("")
-                      .toUpperCase()}
+                  <div className="flex h-36 w-36 items-center justify-center overflow-hidden rounded-full bg-[#0b2235] text-3xl font-extrabold text-white ring-[6px] ring-white md:h-44 md:w-44">
+                    {mentor.image ? (
+                      <img
+                        src={mentor.image}
+                        alt={`${mentor.name}, ${mentor.role}`}
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                    ) : (
+                      mentor.name
+                        .split(" ")
+                        .filter((part) => !["Mr.", "Mr", "Dr.", "Dr"].includes(part))
+                        .slice(0, 2)
+                        .map((part) => part[0])
+                        .join("")
+                        .toUpperCase()
+                    )}
                   </div>
                 </div>
                 <h3 className="text-lg font-semibold text-[#071c2d] md:text-xl">{mentor.name}</h3>
