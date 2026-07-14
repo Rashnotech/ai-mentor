@@ -24,12 +24,18 @@ for (const removed of [
 
 assert.match(page, /Why choose Rashnotech/)
 assert.match(page, /const studentReviews = \[/)
-assert.match(page, /studentReviews\.map/)
+assert.match(page, /studentReviews\.slice\(0, 6\)\.map/)
 assert.match(page, /bg-\[#e8f4f8\]/)
 assert.match(page, /columns-1 gap-6 space-y-6 md:columns-2 xl:columns-3/)
-assert.match(page, /Rashnotech Student/)
+assert.match(page, /border border-blue-100 bg-white/)
+assert.doesNotMatch(page, /bg-\[#142235\]/)
+assert.match(page, />student</)
+assert.doesNotMatch(page, /Rashnotech Student/)
+assert.match(page, /line-clamp-3/)
+assert.match(page, /Read more/)
+assert.match(page, /See more reviews/)
 assert.match(page, /aria-label="5 star review"/)
-assert.match(page, /Verified learner review/)
+assert.match(page, /Verified student review/)
 assert.match(page, /Start learning with Rashnotech/)
 
 for (const reviewer of [
@@ -47,4 +53,4 @@ for (const reviewer of [
   assert.match(page, new RegExp(reviewer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
 }
 
-console.log("Homepage content contract: PASS (28/28)")
+console.log("Homepage content contract: PASS")

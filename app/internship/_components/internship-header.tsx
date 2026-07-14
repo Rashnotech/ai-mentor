@@ -30,9 +30,9 @@ export default function InternshipHeader() {
               <a href="#" className="hover:text-white transition-colors">
                 Services
               </a>
-              <a href="#" className="hover:text-white transition-colors">
+              <Link href="/contact" className="hover:text-white transition-colors">
                 Contact Us
-              </a>
+              </Link>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -74,9 +74,9 @@ export default function InternshipHeader() {
               <a href="#" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 Services
               </a>
-              <a href="#" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+              <Link href="/contact" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 Contact Us
-              </a>
+              </Link>
               <div className="flex flex-col gap-3 pt-4 mt-2 border-t border-white/10">
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium text-gray-300 hover:text-white transition-colors text-center py-2">
                   Log in

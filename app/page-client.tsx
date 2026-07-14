@@ -179,9 +179,9 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
               <a href="#" className="hover:text-white transition-colors">
                 Services
               </a>
-              <a href="#" className="hover:text-white transition-colors">
+              <Link href="/contact" className="hover:text-white transition-colors">
                 Contact Us
-              </a>
+              </Link>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -223,9 +223,9 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
               <a href="#" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 Services
               </a>
-              <a href="#" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+              <Link href="/contact" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 Contact Us
-              </a>
+              </Link>
               <div className="flex flex-col gap-3 pt-4 mt-2 border-t border-white/10">
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium text-gray-300 hover:text-white transition-colors text-center py-2">
                   Log in
@@ -397,19 +397,27 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
           </h2>
 
           <div className="columns-1 gap-6 space-y-6 md:columns-2 xl:columns-3">
-            {studentReviews.map((review, index) => (
+            {studentReviews.slice(0, 6).map((review, index) => (
               <article
                 key={review.name}
-                className="mb-6 break-inside-avoid rounded-xl bg-[#142235] p-6 shadow-sm ring-1 ring-white/10"
+                className="mb-6 break-inside-avoid rounded-xl border border-blue-100 bg-white p-6 shadow-sm"
               >
                 <div className="mb-5 flex items-center gap-1 text-amber-300" aria-label="5 star review">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star key={star} className="h-4 w-4 fill-current" />
                   ))}
                 </div>
-                <p className="text-lg font-semibold leading-relaxed text-white">
-                  “{review.quote}”
+                <p className="line-clamp-3 text-lg font-semibold leading-relaxed text-slate-900">
+                  &ldquo;{review.quote}&rdquo;
                 </p>
+                <Link
+                  href="https://www.google.com/search?q=Rashnotech+Solutions+reviews"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 inline-flex text-sm font-bold text-blue-700 hover:text-blue-900"
+                >
+                  Read more
+                </Link>
                 <div className="mt-6 flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-sm font-bold text-white">
                     {review.name
@@ -421,13 +429,13 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                       .toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold text-white">{review.name}</p>
-                    <p className="text-sm text-blue-100">Rashnotech Student</p>
+                    <p className="font-semibold text-slate-900">{review.name}</p>
+                    <p className="text-sm text-slate-500">student</p>
                   </div>
                 </div>
                 {index === 0 && (
-                  <div className="mt-5 inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-blue-100">
-                    Verified learner review
+                  <div className="mt-5 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                    Verified student review
                   </div>
                 )}
               </article>
@@ -440,6 +448,15 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-all hover:bg-blue-500"
             >
               Start learning with Rashnotech
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="https://www.google.com/search?q=Rashnotech+Solutions+reviews"
+              target="_blank"
+              rel="noreferrer"
+              className="ml-0 mt-4 inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-6 py-3 font-semibold text-blue-700 transition-all hover:border-blue-300 hover:bg-blue-50 sm:ml-3 sm:mt-0"
+            >
+              See more reviews
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
