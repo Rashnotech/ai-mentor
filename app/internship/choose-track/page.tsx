@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import { Code2, Globe, Database, Brain, PenSquare, BarChart3, CheckCircle2 } from "lucide-react"
@@ -12,12 +11,13 @@ import {
   InternshipTrackCoursesResponse,
 } from "@/lib/api"
 import InternshipHeader from "../_components/internship-header"
+import InternshipStepper from "../_components/internship-stepper"
 
 const steps = [
-  { id: 1, label: "Create profile", status: "done" },
-  { id: 2, label: "Student verification", status: "done" },
-  { id: 3, label: "Choose track", status: "active" },
-  { id: 4, label: "Get acceptance", status: "locked" },
+  { id: 1, label: "Account", status: "done" as const },
+  { id: 2, label: "Verify", status: "done" as const },
+  { id: 3, label: "Track", status: "active" as const },
+  { id: 4, label: "Accept", status: "locked" as const },
 ]
 
 const PAGE_SIZE = 8
@@ -30,6 +30,9 @@ const iconByTrack: Record<string, typeof Globe> = {
   "product-design": PenSquare,
   "data-analytics": BarChart3,
 }
+
+const inputClass =
+  "h-[52px] w-full rounded-md border border-transparent bg-[#7b8794] px-5 text-base font-semibold text-white outline-none transition placeholder:text-slate-300 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/30"
 
 export default function InternshipChooseTrackPage() {
   const router = useRouter()
@@ -145,195 +148,165 @@ export default function InternshipChooseTrackPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_10%_10%,#dbeafe_0%,transparent_35%),radial-gradient(circle_at_90%_0%,#bfdbfe_0%,transparent_30%),linear-gradient(175deg,#f8fafc_0%,#eff6ff_65%,#dbeafe_100%)] px-4 py-6 sm:px-6 md:px-10 md:py-10">
+    <div className="min-h-screen overflow-x-hidden bg-[#071c2d] px-4 py-6 text-white sm:px-6 md:px-10 md:py-10">
       <InternshipHeader />
-      <div className="pointer-events-none absolute inset-0 opacity-35">
-        <div className="absolute left-0 top-10 h-52 w-52 rounded-full bg-blue-200/60 blur-3xl" />
-        <div className="absolute right-0 top-0 h-60 w-60 rounded-full bg-blue-200/60 blur-3xl" />
-      </div>
 
-      <div className="relative mx-auto max-w-6xl">
-        <div className="pt-20" />
+      <main className="mx-auto max-w-6xl pt-20 md:pt-24">
+        <InternshipStepper steps={steps} />
 
-        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-          <aside className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur md:p-6">
-            <ol className="space-y-0">
-              {steps.map((step, index) => (
-                <li key={step.id} className="relative flex items-start gap-4 pb-7 last:pb-0">
-                  {index < steps.length - 1 && (
-                    <span className="absolute left-5 top-10 h-8 w-px bg-gray-300" aria-hidden />
-                  )}
-                  <span
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-base font-semibold ${
-                      step.status === "active"
-                        ? "border-blue-600 bg-blue-600 text-white"
-                        : step.status === "done"
-                          ? "border-blue-600 bg-blue-50 text-blue-700"
-                          : "border-slate-300 bg-white text-slate-500"
-                    }`}
-                  >
-                    {step.id}
-                  </span>
-                  <span
-                    className={`pt-1 text-lg font-semibold ${
-                      step.status === "active" || step.status === "done"
-                        ? "text-slate-900"
-                        : "text-slate-500"
-                    }`}
-                  >
-                    {step.label}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </aside>
+        <section className="rounded-lg bg-[#24354c] p-6 shadow-2xl shadow-black/20 ring-1 ring-white/5 md:p-9">
+          <div className="flex items-center gap-4">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-xl font-bold text-[#071c2d]">
+              3
+            </span>
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Choose learning track</h1>
+          </div>
+          <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-100">
+            Pick one track for your internship focus. You can request a switch during mentor review.
+          </p>
 
-          <section className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-lg shadow-slate-200/70 backdrop-blur md:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Step 3 of 4</p>
-            <h1 className="mt-2 text-2xl font-bold text-slate-900 md:text-3xl">Choose Learning Track</h1>
-            <p className="mt-2 text-sm text-slate-600">
-              Pick one track for your internship focus. You can request a switch during mentor review.
-            </p>
+          <div className="mt-8">
+            <p className="mb-4 text-xl font-bold text-white">Available tracks</p>
 
-            <div className="mt-6">
-              <p className="mb-3 text-sm font-semibold text-slate-700">Available tracks</p>
+            {tracksLoading && <p className="text-sm font-semibold text-slate-300">Loading tracks...</p>}
 
-              {tracksLoading && <p className="text-sm text-gray-600">Loading tracks...</p>}
-
-              {!tracksLoading && tracks.length === 0 && (
-                <p className="text-sm text-gray-600">No internship tracks are available right now.</p>
-              )}
-
-              {!tracksLoading && tracks.length > 0 && (
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {tracks.map((track) => {
-                    const Icon = iconByTrack[track.track_id] ?? Code2
-                    const isActive = selectedTrack === track.track_id
-
-                    return (
-                      <button
-                        key={track.track_id}
-                        type="button"
-                        onClick={() => onTrackClick(track.track_id)}
-                        className={`rounded-2xl border p-4 text-left transition-all duration-200 ${
-                          isActive
-                            ? "border-cyan-500 bg-cyan-50 ring-2 ring-cyan-100"
-                            : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-blue-300"
-                        }`}
-                        aria-pressed={isActive}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <span className="rounded-md bg-gray-100 p-2 text-gray-700">
-                              <Icon className="h-4 w-4" />
-                            </span>
-                            <p className="text-sm font-semibold text-slate-900">{track.track_name}</p>
-                          </div>
-
-                          {isActive && <CheckCircle2 className="h-4 w-4 text-blue-600" />}
-                        </div>
-
-                        {track.description && (
-                          <p className="mt-2 line-clamp-2 text-xs text-slate-600">{track.description}</p>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <input
-                  value={search}
-                  onChange={(e) => {
-                    setOffset(0)
-                    setSearch(e.target.value)
-                  }}
-                  placeholder="Search courses"
-                  className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:w-64"
-                />
-              </div>
-
-              <div className="space-y-2">
-                {coursesLoading && <p className="text-sm text-gray-600">Loading courses...</p>}
-
-                {!coursesLoading && coursesPage?.courses.length === 0 && (
-                  <p className="text-sm text-gray-600">No courses found for this query.</p>
-                )}
-
-                {!coursesLoading &&
-                  coursesPage?.courses.map((course: InternshipTrackCourse) => {
-                    const isSelected = selectedCourseId === course.course_id
-                    return (
-                      <button
-                        key={course.course_id}
-                        type="button"
-                        onClick={() => setSelectedCourseId(course.course_id)}
-                        className={`w-full rounded-xl border p-3 text-left transition ${
-                          isSelected
-                            ? "border-cyan-500 bg-cyan-50"
-                            : "border-slate-200 bg-white hover:border-blue-300"
-                        }`}
-                      >
-                        <p className="text-sm font-semibold text-slate-900">{course.title}</p>
-                        {course.description && (
-                          <p className="mt-1 line-clamp-2 text-xs text-slate-600">{course.description}</p>
-                        )}
-                      </button>
-                    )
-                  })}
-              </div>
-
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-xs text-slate-500">
-                  Page {currentPage} of {totalPages}
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={!coursesPage || coursesPage.offset === 0 || coursesLoading}
-                    onClick={() => setOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
-                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    type="button"
-                    disabled={
-                      !coursesPage ||
-                      coursesLoading ||
-                      coursesPage.offset + coursesPage.limit >= coursesPage.total
-                    }
-                    onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
-                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {error && (
-              <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {error}
-              </p>
+            {!tracksLoading && tracks.length === 0 && (
+              <p className="text-sm font-semibold text-slate-300">No internship tracks are available right now.</p>
             )}
 
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={handleContinue}
-                disabled={isSubmitting || tracksLoading || !selectedTrack}
-                className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 md:w-auto"
-              >
-                {isSubmitting ? "Submitting application..." : "Continue to acceptance"}
-              </button>
+            {!tracksLoading && tracks.length > 0 && (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {tracks.map((track) => {
+                  const Icon = iconByTrack[track.track_id] ?? Code2
+                  const isActive = selectedTrack === track.track_id
+
+                  return (
+                    <button
+                      key={track.track_id}
+                      type="button"
+                      onClick={() => onTrackClick(track.track_id)}
+                      className={`rounded-lg border p-5 text-left transition-all duration-200 ${
+                        isActive
+                          ? "border-emerald-300 bg-[#2b3e57] ring-2 ring-emerald-300/20"
+                          : "border-white/10 bg-[#1d2c42] hover:-translate-y-0.5 hover:border-emerald-300/70"
+                      }`}
+                      aria-pressed={isActive}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="rounded-md bg-[#7b8794] p-2 text-white">
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <p className="text-sm font-bold text-white">{track.track_name}</p>
+                        </div>
+
+                        {isActive && <CheckCircle2 className="h-5 w-5 text-emerald-300" />}
+                      </div>
+
+                      {track.description && (
+                        <p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-300">{track.description}</p>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-8 rounded-lg border border-white/10 bg-[#1d2c42] p-5">
+            <div className="mb-5">
+              <label htmlFor="courseSearch" className="mb-3 block text-xl font-bold text-white">
+                Course search
+              </label>
+              <input
+                id="courseSearch"
+                value={search}
+                onChange={(e) => {
+                  setOffset(0)
+                  setSearch(e.target.value)
+                }}
+                placeholder="Search courses"
+                className={inputClass}
+              />
             </div>
-          </section>
-        </div>
-      </div>
+
+            <div className="space-y-3">
+              {coursesLoading && <p className="text-sm font-semibold text-slate-300">Loading courses...</p>}
+
+              {!coursesLoading && coursesPage?.courses.length === 0 && (
+                <p className="text-sm font-semibold text-slate-300">No courses found for this query.</p>
+              )}
+
+              {!coursesLoading &&
+                coursesPage?.courses.map((course: InternshipTrackCourse) => {
+                  const isSelected = selectedCourseId === course.course_id
+                  return (
+                    <button
+                      key={course.course_id}
+                      type="button"
+                      onClick={() => setSelectedCourseId(course.course_id)}
+                      className={`w-full rounded-lg border p-4 text-left transition ${
+                        isSelected
+                          ? "border-emerald-300 bg-[#2b3e57]"
+                          : "border-white/10 bg-[#24354c] hover:border-emerald-300/70"
+                      }`}
+                    >
+                      <p className="text-sm font-bold text-white">{course.title}</p>
+                      {course.description && (
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-300">{course.description}</p>
+                      )}
+                    </button>
+                  )
+                })}
+            </div>
+
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold text-slate-400">
+                Page {currentPage} of {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!coursesPage || coursesPage.offset === 0 || coursesLoading}
+                  onClick={() => setOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
+                  className="rounded-md bg-[#7b8794] px-3 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={
+                    !coursesPage ||
+                    coursesLoading ||
+                    coursesPage.offset + coursesPage.limit >= coursesPage.total
+                  }
+                  onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
+                  className="rounded-md bg-[#7b8794] px-3 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <p className="mt-5 rounded-md border border-red-300/50 bg-red-500/15 px-4 py-3 text-sm font-semibold text-red-100">
+              {error}
+            </p>
+          )}
+
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={handleContinue}
+              disabled={isSubmitting || tracksLoading || !selectedTrack}
+              className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-emerald-400 px-6 text-sm font-bold text-[#071c2d] transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
+            >
+              {isSubmitting ? "Submitting application..." : "Continue to acceptance"}
+            </button>
+          </div>
+        </section>
+      </main>
     </div>
   )
 }

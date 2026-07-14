@@ -1,10 +1,10 @@
 "use client"
 
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { FormEvent, useEffect, useMemo, useState } from "react"
 import { getApiErrorMessage, internshipApi } from "@/lib/api"
 import InternshipHeader from "../_components/internship-header"
+import InternshipStepper from "../_components/internship-stepper"
 
 const getStatesFromApi = async () => {
   const response = await fetch("https://nga-states-lga.onrender.com/fetch")
@@ -41,11 +41,16 @@ const statesByCountry: Record<string, string[]> = {
 }
 
 const steps = [
-  { id: 1, label: "Create profile", active: true },
-  { id: 2, label: "Student verification", active: false },
-  { id: 3, label: "Choose track", active: false },
-  { id: 4, label: "Get acceptance", active: false },
+  { id: 1, label: "Account", status: "active" as const },
+  { id: 2, label: "Verify", status: "locked" as const },
+  { id: 3, label: "Track", status: "locked" as const },
+  { id: 4, label: "Accept", status: "locked" as const },
 ]
+
+const inputClass =
+  "h-[72px] w-full rounded-md border border-transparent bg-[#7b8794] px-5 text-lg font-semibold text-white outline-none transition placeholder:text-slate-300 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/30 disabled:cursor-not-allowed disabled:opacity-70"
+
+const labelClass = "mb-3 block text-xl font-bold text-white"
 
 export default function InternshipCreateProfilePage() {
   const router = useRouter()
@@ -138,181 +143,143 @@ export default function InternshipCreateProfilePage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_10%_10%,#dbeafe_0%,transparent_36%),radial-gradient(circle_at_95%_0%,#bfdbfe_0%,transparent_30%),linear-gradient(175deg,#f8fafc_0%,#eff6ff_65%,#dbeafe_100%)] px-4 py-6 sm:px-6 md:px-10 md:py-10">
+    <div className="min-h-screen overflow-x-hidden bg-[#071c2d] px-4 py-6 text-white sm:px-6 md:px-10 md:py-10">
       <InternshipHeader />
-      <div className="pointer-events-none absolute inset-0 opacity-35">
-        <div className="absolute left-0 top-12 h-52 w-52 rounded-full bg-blue-200/60 blur-3xl" />
-        <div className="absolute right-0 top-0 h-60 w-60 rounded-full bg-blue-200/60 blur-3xl" />
-      </div>
 
-      <div className="relative mx-auto max-w-6xl pt-20">
+      <main className="mx-auto max-w-6xl pt-20 md:pt-24">
+        <InternshipStepper steps={steps} />
 
-        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-          <aside className="overflow-x-auto rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur md:p-6">
-            <ol className="space-y-0">
-              {steps.map((step, index) => (
-                <li key={step.id} className="relative flex items-start gap-4 pb-7 last:pb-0">
-                  {index < steps.length - 1 && <span className="absolute left-5 top-10 h-8 w-px bg-gray-300" aria-hidden />}
-                  <span
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-base font-semibold ${
-                      step.active
-                        ? "border-blue-600 bg-blue-600 text-white"
-                        : "border-slate-300 bg-white text-slate-500"
-                    }`}
-                  >
-                    {step.id}
-                  </span>
-                  <span className={`pt-1 text-base font-semibold md:text-lg ${step.active ? "text-slate-900" : "text-slate-500"}`}>
-                    {step.label}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </aside>
+        <section className="rounded-lg bg-[#24354c] p-6 shadow-2xl shadow-black/20 ring-1 ring-white/5 md:p-9">
+          <div className="flex items-center gap-4">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-xl font-bold text-[#071c2d]">
+              1
+            </span>
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Account details</h1>
+          </div>
 
-          <section className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-lg shadow-slate-200/70 backdrop-blur md:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Step 1 of 4</p>
-            <h1 className="mt-2 text-2xl font-bold text-slate-900 md:text-3xl">Create Profile</h1>
+          <p className="mt-4 text-base font-semibold text-slate-100 md:text-lg">
+            Create your internship profile so we can review your application.
+          </p>
 
-            <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <form className="mt-8 space-y-7" onSubmit={handleSubmit}>
+            <div className="grid gap-7 md:grid-cols-2">
               <div>
-                <label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-900">
+                <label htmlFor="firstName" className={labelClass}>
+                  First Name
+                </label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  required
+                  value={formData.first_name}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, first_name: e.target.value }))}
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="lastName" className={labelClass}>
+                  Last Name
+                </label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  required
+                  value={formData.last_name}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, last_name: e.target.value }))}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-7 md:grid-cols-2">
+              <div>
+                <label htmlFor="email" className={labelClass}>
                   Email
                 </label>
                 <input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="name@example.com"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                  className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className={inputClass}
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label htmlFor="firstName" className="mb-2 block text-sm font-semibold text-slate-900">
-                    First name
-                  </label>
-                  <input
-                    id="firstName"
-                    name="firstName"
-                    type="text"
-                    placeholder="First name"
-                    required
-                    value={formData.first_name}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, first_name: e.target.value }))}
-                    className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="lastName" className="mb-2 block text-sm font-semibold text-slate-900">
-                    Last name
-                  </label>
-                  <input
-                    id="lastName"
-                    name="lastName"
-                    type="text"
-                    placeholder="Last name"
-                    required
-                    value={formData.last_name}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, last_name: e.target.value }))}
-                    className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </div>
-              </div>
-
               <div>
-                <label htmlFor="telephone" className="mb-2 block text-sm font-semibold text-slate-900">
-                  Telephone
+                <label htmlFor="telephone" className={labelClass}>
+                  Phone Number
                 </label>
                 <input
                   id="telephone"
                   name="telephone"
                   type="tel"
-                  placeholder="e.g. +234 801 234 5678"
+                  placeholder="+234"
                   required
                   value={formData.telephone}
                   onChange={(e) => setFormData((prev) => ({ ...prev, telephone: e.target.value }))}
-                  className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className={inputClass}
                 />
               </div>
+            </div>
 
+            <div className="grid gap-7 md:grid-cols-2">
               <div>
-                <label htmlFor="hearAboutUs" className="mb-2 block text-sm font-semibold text-slate-900">
-                  How did you hear about us <span className="font-normal text-slate-500">(optional)</span>
+                <label htmlFor="country" className={labelClass}>
+                  Country
                 </label>
                 <select
-                  id="hearAboutUs"
-                  name="hearAboutUs"
-                  value={formData.hear_about_us}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, hear_about_us: e.target.value }))}
-                  className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  id="country"
+                  name="country"
+                  value={selectedCountry}
+                  onChange={(e) => {
+                    const nextCountry = e.target.value
+                    setSelectedCountry(nextCountry)
+                    setFormData((prev) => ({ ...prev, country: nextCountry, state: "" }))
+                  }}
+                  className={inputClass}
                 >
-                  <option value="">Select</option>
-                  <option value="friend">Friend or colleague</option>
-                  <option value="social-media">Social media</option>
-                  <option value="school">School or lecturer</option>
-                  <option value="search">Google/Search engine</option>
-                  <option value="event">Event or community</option>
-                  <option value="other">Other</option>
+                  {countries.map((country) => (
+                    <option key={country} value={country}>
+                      {country}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label htmlFor="country" className="mb-2 block text-sm font-semibold text-slate-900">
-                    Country
-                  </label>
-                  <select
-                    id="country"
-                    name="country"
-                    value={selectedCountry}
-                    onChange={(e) => {
-                      const nextCountry = e.target.value
-                      setSelectedCountry(nextCountry)
-                      setFormData((prev) => ({ ...prev, country: nextCountry, state: "" }))
-                    }}
-                    className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  >
-                    {countries.map((country) => (
-                      <option key={country} value={country}>
-                        {country}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="state" className="mb-2 block text-sm font-semibold text-slate-900">
-                    State or Territory
-                  </label>
-                  <select
-                    id="state"
-                    name="state"
-                    required
-                    value={formData.state}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, state: e.target.value }))}
-                    key={selectedCountry}
-                    disabled={selectedCountry === "Nigeria" && isLoadingStates}
-                    className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  >
-                    <option value="" disabled>
-                      {selectedCountry === "Nigeria" && isLoadingStates ? "Loading states..." : "Select a state"}
-                    </option>
-                    {availableStates.map((state) => (
-                      <option key={state} value={state}>
-                        {state}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               <div>
-                <label htmlFor="institution" className="mb-2 block text-sm font-semibold text-slate-900">
+                <label htmlFor="state" className={labelClass}>
+                  State or Territory
+                </label>
+                <select
+                  id="state"
+                  name="state"
+                  required
+                  value={formData.state}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, state: e.target.value }))}
+                  key={selectedCountry}
+                  disabled={selectedCountry === "Nigeria" && isLoadingStates}
+                  className={inputClass}
+                >
+                  <option value="" disabled>
+                    {selectedCountry === "Nigeria" && isLoadingStates ? "Loading states..." : "Select a state"}
+                  </option>
+                  {availableStates.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid gap-7 md:grid-cols-2">
+              <div>
+                <label htmlFor="institution" className={labelClass}>
                   Institution
                 </label>
                 <select
@@ -326,7 +293,7 @@ export default function InternshipCreateProfilePage() {
                       institution_type: e.target.value as "" | "university" | "polytechnic" | "college",
                     }))
                   }
-                  className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className={inputClass}
                 >
                   <option value="" disabled>
                     Select institution type
@@ -337,25 +304,46 @@ export default function InternshipCreateProfilePage() {
                 </select>
               </div>
 
-              {error && (
-                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {error}
-                </p>
-              )}
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 md:w-auto"
+              <div>
+                <label htmlFor="hearAboutUs" className={labelClass}>
+                  How did you hear about us <span className="text-base font-medium text-slate-300">Optional</span>
+                </label>
+                <select
+                  id="hearAboutUs"
+                  name="hearAboutUs"
+                  value={formData.hear_about_us}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, hear_about_us: e.target.value }))}
+                  className={inputClass}
                 >
-                  {isSubmitting ? "Creating profile..." : "Continue"}
-                </button>
+                  <option value="">Select</option>
+                  <option value="friend">Friend or colleague</option>
+                  <option value="social-media">Social media</option>
+                  <option value="school">School or lecturer</option>
+                  <option value="search">Google/Search engine</option>
+                  <option value="event">Event or community</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
-            </form>
-          </section>
-        </div>
-      </div>
+            </div>
+
+            {error && (
+              <p className="rounded-md border border-red-300/50 bg-red-500/15 px-4 py-3 text-sm font-semibold text-red-100">
+                {error}
+              </p>
+            )}
+
+            <div className="pt-3">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-emerald-400 px-6 text-sm font-bold text-[#071c2d] transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
+              >
+                {isSubmitting ? "Creating profile..." : "Continue"}
+              </button>
+            </div>
+          </form>
+        </section>
+      </main>
     </div>
   )
 }
