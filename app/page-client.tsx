@@ -37,9 +37,10 @@ const footerLinks = {
     "Cybersecurity",
   ],
   more: [
-    "Content Creation",
-    "Freelancer Academy",
-    "Founder Academy",
+    "Python Programming",
+    "Web Development",
+    "Software Engineering",
+    "AI Engineering",
   ],
   about: [
     "Hubs",
@@ -85,6 +86,49 @@ const techLogos = [
     name: "Git",
     svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 49 21" width="40"><path fill="currentColor" fill-rule="evenodd" d="M28.9 6.73c-1.05 0-1.84.52-1.84 1.76 0 .94.52 1.59 1.8 1.59 1.07 0 1.8-.63 1.8-1.63 0-1.13-.66-1.72-1.75-1.72zm-2.1 8.79c-.26.3-.5.63-.5 1 0 .77.97 1 2.32 1 1.11 0 2.63-.07 2.63-1.1 0-.62-.73-.66-1.65-.72l-2.8-.18zm5.68-8.73c.35.44.72 1.05.72 1.93 0 2.12-1.68 3.37-4.1 3.37-.61 0-1.17-.08-1.52-.17l-.63 1.01 1.88.12c3.33.2 5.29.3 5.29 2.85 0 2.2-1.94 3.44-5.29 3.44-3.48 0-4.8-.88-4.8-2.4 0-.85.38-1.31 1.05-1.94a1.28 1.28 0 0 1-.84-1.27c0-.42.2-.8.55-1.16.35-.37.73-.73 1.2-1.15a3.05 3.05 0 0 1-1.66-2.87c0-2.2 1.46-3.71 4.4-3.71.83 0 1.33.07 1.78.19h3.75v1.62l-1.77.14zm5.08-3.37c-1.07 0-1.68-.64-1.68-1.73 0-1.1.61-1.69 1.68-1.69 1.09 0 1.7.6 1.7 1.69 0 1.1-.61 1.73-1.7 1.73zm-2.42 11.53v-1.52l.96-.13c.26-.04.3-.1.3-.39V7.27c0-.2-.06-.34-.24-.4l-1.01-.37.2-1.55h3.88v7.96c0 .31.02.35.3.39l.95.13v1.51h-5.33zm13.35-.77c-.85.4-2.1.77-3.22.77-2.36 0-3.24-.93-3.24-3.1V6.8c0-.11 0-.19-.16-.19h-1.39V4.9c1.74-.2 2.44-1.04 2.65-3.14h1.88v2.73c0 .14 0 .2.16.2h2.79V6.6H45v4.6c0 1.14.28 1.58 1.34 1.58.56 0 1.13-.14 1.6-.3l.54 1.69M20.08 9.2 11.14.38a1.33 1.33 0 0 0-1.86 0L7.42 2.21l2.36 2.33a1.58 1.58 0 0 1 1.6.37c.45.43.57 1.06.38 1.6l2.27 2.24a1.58 1.58 0 0 1 1.62.37 1.54 1.54 0 0 1 0 2.2 1.58 1.58 0 0 1-2.22 0 1.54 1.54 0 0 1-.34-1.7l-2.12-2.08v5.5a1.54 1.54 0 0 1 .42 2.48 1.58 1.58 0 0 1-2.22 0 1.54 1.54 0 0 1 0-2.19c.15-.15.33-.26.51-.34V7.44a1.55 1.55 0 0 1-.85-2.03L6.51 3.1.4 9.18a1.3 1.3 0 0 0 0 1.84l8.93 8.83a1.33 1.33 0 0 0 1.87 0l8.89-8.79a1.3 1.3 0 0 0 0-1.84"></path></svg>`
   }
+]
+
+const studentReviews = [
+  {
+    name: "Ndubuisi Mercy",
+    quote: "A wonderful experience and the teaching style is top notch.",
+  },
+  {
+    name: "Molly",
+    quote: "I had a really great experience learning UI/UX in Rashnotech Solutions. Honestly, it was more enjoyable than I expected.",
+  },
+  {
+    name: "Emmanuel Samuel Oluwayinka",
+    quote: "The training program was truly exceptional. The quality of the material was outstanding, and the instructors provided insightful guidance, significantly enhancing my proficiency.",
+  },
+  {
+    name: "Callistus Ikwuazom",
+    quote: "I had an incredible experience with Rashnotech Solutions. Their courses are top-notch and designed for the modern tech learner.",
+  },
+  {
+    name: "Karl Azoms",
+    quote: "Rashnotech Solutions is hands down one of the best tech hubs I’ve encountered. Their commitment to empowering learners stands out.",
+  },
+  {
+    name: "Prudent Favour Edwin",
+    quote: "I had an amazing experience with Rashnotech. The instructor is incredibly helpful, clear, and patient.",
+  },
+  {
+    name: "Francisca Ezeaku",
+    quote: "My experience with Rashnotech Solutions was exceptional, top notch, and incomparable with other experiences. Thank you Rashnotech for your wealth of wisdom.",
+  },
+  {
+    name: "Iyeduala Victoria",
+    quote: "Sweet experience, I love every bit.",
+  },
+  {
+    name: "Joseph Mathew Taye",
+    quote: "Very conducive environment for learning with good instructor.",
+  },
+  {
+    name: "AbdulKamal W",
+    quote: "Good and ideal place to learn with excellent tutor.",
+  },
 ]
 
 export default function LandingPage({ initialCourses = [] }: { initialCourses?: CourseListResponse[] }) {
@@ -345,99 +389,59 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
         </div>
       </section>
 
-      {/* Impact Stats Section */}
+      {/* Student Reviews Section */}
       <section className="py-20 bg-[#e8f4f8]">
         <div className="container mx-auto px-6">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-[#1a365d] mb-16">
-            More Opportunity. More Impact.
+            Why choose Rashnotech
           </h2>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            {/* Stat Card 1 */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-3xl font-bold text-[#1a365d] mb-2">285K +</div>
-                  <div className="text-gray-600 text-sm">LearnTech Learners<br />Since 2021</div>
+
+          <div className="columns-1 gap-6 space-y-6 md:columns-2 xl:columns-3">
+            {studentReviews.map((review, index) => (
+              <article
+                key={review.name}
+                className="mb-6 break-inside-avoid rounded-xl bg-[#142235] p-6 shadow-sm ring-1 ring-white/10"
+              >
+                <div className="mb-5 flex items-center gap-1 text-amber-300" aria-label="5 star review">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star key={star} className="h-4 w-4 fill-current" />
+                  ))}
                 </div>
-                <div className="p-3 bg-blue-50 rounded-full">
-                  <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                  </svg>
+                <p className="text-lg font-semibold leading-relaxed text-white">
+                  “{review.quote}”
+                </p>
+                <div className="mt-6 flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-sm font-bold text-white">
+                    {review.name
+                      .split(" ")
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((part) => part[0])
+                      .join("")
+                      .toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white">{review.name}</p>
+                    <p className="text-sm text-blue-100">Rashnotech Student</p>
+                  </div>
                 </div>
-              </div>
-            </div>
-            
-            {/* Stat Card 2 */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-3xl font-bold text-[#1a365d] mb-2">73,445</div>
-                  <div className="text-gray-600 text-sm">Found Work<br />Opportunities</div>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-full">
-                  <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            
-            {/* Stat Card 3 */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-3xl font-bold text-[#1a365d] mb-2">20,248</div>
-                  <div className="text-gray-600 text-sm">Young Entrepreneurs<br />Supported</div>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-full">
-                  <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            
-            {/* Stat Card 4 */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-3xl font-bold text-[#1a365d] mb-2">11,452</div>
-                  <div className="text-gray-600 text-sm">Jobs Created<br />Through Entrepreneurship</div>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-full">
-                  <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
+                {index === 0 && (
+                  <div className="mt-5 inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-blue-100">
+                    Verified learner review
+                  </div>
+                )}
+              </article>
+            ))}
           </div>
-          
-          {/* Company Logos */}
-          <div className="text-center">
-            <p className="text-[#1a365d] font-medium mb-8">Explore the Companies Investing in our Talent</p>
-            <div className="flex flex-wrap justify-center items-center gap-8">
-              <div className="bg-white px-6 py-3 rounded-lg shadow-sm">
-                <span className="font-bold text-green-600">PAY</span><span className="font-bold text-gray-800">TECH</span>
-              </div>
-              <div className="bg-white px-6 py-3 rounded-lg shadow-sm text-gray-600 text-sm">
-                <span className="font-medium">Steven Eagell Toyota</span>
-              </div>
-              <div className="bg-white px-6 py-3 rounded-lg shadow-sm">
-                <span className="font-bold text-blue-600">XMAP</span>
-              </div>
-              <div className="bg-white px-6 py-3 rounded-lg shadow-sm">
-                <span className="font-bold text-red-500">HUAWEI</span>
-              </div>
-              <div className="bg-white px-6 py-3 rounded-lg shadow-sm">
-                <span className="font-bold text-green-500">nabo</span>
-              </div>
-              <div className="bg-white px-6 py-3 rounded-lg shadow-sm">
-                <span className="font-bold text-green-600">faiba</span>
-              </div>
-            </div>
+
+          <div className="mt-12 text-center">
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-all hover:bg-blue-500"
+            >
+              Start learning with Rashnotech
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>
