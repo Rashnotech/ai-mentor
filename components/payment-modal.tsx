@@ -82,6 +82,11 @@ export function PaymentModal({
       return paymentApi.initiatePayment(payload)
     },
     onSuccess: (data) => {
+      if (data.status === "active" || !data.checkout_link) {
+        toast.success(data.message || "Your enrollment is already active!")
+        onSuccess()
+        return
+      }
       setPaymentData(data)
       setState("checkout")
     },

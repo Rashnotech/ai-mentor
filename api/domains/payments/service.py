@@ -101,15 +101,7 @@ class PaymentService:
             lock_row=True,
         )
 
-        # 2b. If enrollment is already active, reject
-        if enrollment.enrollment_status == EnrollmentStatus.ACTIVE:
-            raise AppError(
-                status_code=409,
-                detail="You are already enrolled in this course",
-                error_code="ALREADY_ENROLLED",
-            )
-
-        # 2c. If a successful payment already exists, activate/enforce idempotency.
+        # 2b. If a successful payment already exists, activate/enforce idempotency.
         existing_success = await self._get_latest_payment(
             enrollment_id=enrollment.enrollment_id,
             status=PaymentStatus.SUCCESSFUL,
@@ -117,10 +109,23 @@ class PaymentService:
         if existing_success:
             await self._activate_enrollment(existing_success, enrollment)
             await self.db.commit()
-            raise AppError(
-                status_code=409,
-                detail="A successful payment already exists. Enrollment activated.",
-                error_code="ALREADY_PAID",
+            return self._build_existing_access_response(
+                payment=existing_success,
+                enrollment=enrollment,
+                amount=price,
+                message="Existing successful payment found. Course access granted.",
+            )
+
+        # 2c. If enrollment is already active, grant access instead of starting payment.
+        if enrollment.enrollment_status == EnrollmentStatus.ACTIVE and enrollment.is_active:
+            latest_payment = await self._get_latest_payment(
+                enrollment_id=enrollment.enrollment_id
+            )
+            return self._build_existing_access_response(
+                payment=latest_payment,
+                enrollment=enrollment,
+                amount=price,
+                message="You are already enrolled in this course. Course access granted.",
             )
 
         # 2d. Return an existing pending payment to prevent duplicate in-flight transactions.
@@ -925,4 +930,35 @@ class PaymentService:
             ),
             "payment_method": payment.payment_method,
             "transaction_reference": payment.transaction_reference,
+        }
+
+    def _build_existing_access_response(
+        self,
+        payment: Optional[Payment],
+        enrollment: UserCourseEnrollment,
+        amount: float,
+        message: str,
+    ) -> Dict[str, Any]:
+        """Return an idempotent payment-initiation response for existing access."""
+        reference = payment.reference if payment else ""
+        payment_id = payment.id if payment else 0
+        response_amount = float(payment.amount) if payment else float(amount)
+        currency = payment.currency if payment else settings.NOMBA_DEFAULT_CURRENCY
+
+        logger.info(
+            "Existing paid access reused: enrollment=%s payment_ref=%s onboarding_status=%s",
+            enrollment.enrollment_id,
+            reference or "none",
+            "unchanged",
+        )
+
+        return {
+            "enrollment_id": enrollment.enrollment_id,
+            "payment_id": payment_id,
+            "reference": reference,
+            "amount": response_amount,
+            "currency": currency,
+            "checkout_link": None,
+            "status": "active",
+            "message": message,
         }

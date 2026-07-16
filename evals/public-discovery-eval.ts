@@ -19,7 +19,19 @@ const fixture = {
 const checks: Array<[string, boolean]> = []
 const record = (name: string, condition: boolean) => checks.push([name, condition])
 
-const [layout, manifest, robots, sitemap, llms, coursePage, paymentService] = await Promise.all([
+const [
+  layout,
+  manifest,
+  robots,
+  sitemap,
+  llms,
+  coursePage,
+  paymentService,
+  enrollmentService,
+  studentRoutes,
+  paymentModal,
+  apiTypes,
+] = await Promise.all([
   read("app/layout.tsx"),
   read("app/manifest.ts"),
   read("app/robots.ts"),
@@ -27,6 +39,10 @@ const [layout, manifest, robots, sitemap, llms, coursePage, paymentService] = aw
   read("app/llms.txt/route.ts"),
   read("app/courses/[id]/page.tsx"),
   read("api/domains/payments/service.py"),
+  read("api/domains/courses/services/enrollment_service.py"),
+  read("api/domains/courses/routes/student.py"),
+  read("components/payment-modal.tsx"),
+  read("lib/api.ts"),
 ])
 const listSchema = courseListJsonLd([fixture])
 const detailSchema = courseJsonLd(fixture)
@@ -43,6 +59,11 @@ record("course list structured data", listSchema["@type"] === "ItemList" && list
 record("course detail structured data", detailSchema["@type"] === "Course" && detailSchema.provider.name === "Rashnotech")
 record("durable paid onboarding", paymentService.includes("await self._complete_self_paced_onboarding("))
 record("selected course guard", paymentService.includes("selected_course_id != course_id"))
+record("existing paid payment grants access", paymentService.includes("_build_existing_access_response") && paymentService.includes("Existing successful payment found. Course access granted.") && paymentService.includes('"checkout_link": None'))
+record("payment initiation does not throw already enrolled", !paymentService.includes('error_code="ALREADY_ENROLLED"'))
+record("frontend accepts active payment initiation", paymentModal.includes('data.status === "active" || !data.checkout_link') && apiTypes.includes("checkout_link?: string | null"))
+record("student course list uses durable enrollments", enrollmentService.includes("select(UserCourseEnrollment)") && enrollmentService.includes("active_enrollments") && enrollmentService.includes("enrolled_course_ids.add(course.course_id)"))
+record("student course access uses durable enrollments", studentRoutes.includes("UserCourseEnrollment.course_id == course.course_id") && studentRoutes.includes("UserCourseEnrollment.course_id == course_id") && studentRoutes.includes("EnrollmentStatus.ACTIVE"))
 
 const passed = checks.filter(([, ok]) => ok).length
 const score = passed / checks.length

@@ -473,7 +473,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       {/* Mentors Section */}
       <section className="bg-[#f6f8ff] py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-6">
-          <h2 className="mx-auto mb-12 max-w-4xl text-center text-xl font-bold leading-tight tracking-tight text-[#071c2d] md:text-4xl lg:text-5xl">
+          <h2 className="mx-auto mb-12 max-w-4xl text-center text-2xl font-bold leading-tight tracking-tight text-[#071c2d] md:text-3xl lg:text-4xl">
             Learn from experts
           </h2>
 

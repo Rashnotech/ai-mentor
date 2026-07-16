@@ -47,7 +47,7 @@ class PaymentInitiatedResponse(BaseModel):
     reference: str
     amount: float
     currency: str
-    checkout_link: str
+    checkout_link: Optional[str] = None
     status: str = "pending"
     message: str = "Payment initiated successfully. Redirect to checkout."
 

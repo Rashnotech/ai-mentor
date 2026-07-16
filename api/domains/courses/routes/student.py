@@ -126,8 +126,10 @@ async def check_enrollment_status(
     - course_slug: Course slug for routing
     """
     try:
-        from domains.users.models.onboarding import UserProfile
         from domains.courses.models.course import Course
+        from domains.courses.models.progress import UserCourseEnrollment
+        from domains.payments.models import EnrollmentStatus
+        from domains.users.models.onboarding import UserProfile
         
         user_id = current_user.get("user_id")
         
@@ -142,15 +144,29 @@ async def check_enrollment_status(
                 detail="Course not found",
             )
         
-        # Check user's profile for enrollment
-        profile_stmt = select(UserProfile).where(UserProfile.user_id == user_id)
-        profile_result = await db_session.execute(profile_stmt)
-        profile = profile_result.scalar_one_or_none()
-        
         is_enrolled = False
         path_id = None
+
+        enrollment_stmt = select(UserCourseEnrollment).where(
+            UserCourseEnrollment.user_id == user_id,
+            UserCourseEnrollment.course_id == course_id,
+            UserCourseEnrollment.enrollment_status == EnrollmentStatus.ACTIVE,
+            UserCourseEnrollment.is_active == True,
+        )
+        enrollment_result = await db_session.execute(enrollment_stmt)
+        enrollment = enrollment_result.scalar_one_or_none()
+
+        if enrollment:
+            is_enrolled = True
+            path_id = enrollment.path_id
         
-        if profile:
+        if not is_enrolled:
+            # Legacy fallback for older accounts that predate enrollment rows.
+            profile_stmt = select(UserProfile).where(UserProfile.user_id == user_id)
+            profile_result = await db_session.execute(profile_stmt)
+            profile = profile_result.scalar_one_or_none()
+
+        if not is_enrolled and profile:
             # Check if this course is the enrolled course
             if profile.selected_course_id:
                 try:
@@ -195,8 +211,10 @@ async def check_enrollment_status_by_slug(
     Check if the current user is enrolled in a specific course by slug.
     """
     try:
-        from domains.users.models.onboarding import UserProfile
         from domains.courses.models.course import Course
+        from domains.courses.models.progress import UserCourseEnrollment
+        from domains.payments.models import EnrollmentStatus
+        from domains.users.models.onboarding import UserProfile
         
         user_id = current_user.get("user_id")
         
@@ -211,15 +229,29 @@ async def check_enrollment_status_by_slug(
                 detail="Course not found",
             )
         
-        # Check user's profile for enrollment
-        profile_stmt = select(UserProfile).where(UserProfile.user_id == user_id)
-        profile_result = await db_session.execute(profile_stmt)
-        profile = profile_result.scalar_one_or_none()
-        
         is_enrolled = False
         path_id = None
+
+        enrollment_stmt = select(UserCourseEnrollment).where(
+            UserCourseEnrollment.user_id == user_id,
+            UserCourseEnrollment.course_id == course.course_id,
+            UserCourseEnrollment.enrollment_status == EnrollmentStatus.ACTIVE,
+            UserCourseEnrollment.is_active == True,
+        )
+        enrollment_result = await db_session.execute(enrollment_stmt)
+        enrollment = enrollment_result.scalar_one_or_none()
+
+        if enrollment:
+            is_enrolled = True
+            path_id = enrollment.path_id
         
-        if profile:
+        if not is_enrolled:
+            # Legacy fallback for older accounts that predate enrollment rows.
+            profile_stmt = select(UserProfile).where(UserProfile.user_id == user_id)
+            profile_result = await db_session.execute(profile_stmt)
+            profile = profile_result.scalar_one_or_none()
+
+        if not is_enrolled and profile:
             if profile.selected_course_id:
                 try:
                     enrolled_course_id = int(profile.selected_course_id)
@@ -277,8 +309,9 @@ async def get_learning_content_by_slug(
         from domains.users.models.onboarding import UserProfile
         from domains.courses.models.course import Course, LearningPath, Module, Lesson, Project
         from domains.courses.models.assessment import AssessmentQuestion, AssessmentResponse
-        from domains.courses.models.progress import LessonProgress, ProjectSubmission  # Use correct tables
+        from domains.courses.models.progress import LessonProgress, ProjectSubmission, UserCourseEnrollment  # Use correct tables
         from core.constant import SkillLevel, LearningMode
+        from domains.payments.models import EnrollmentStatus
         
         user_id = current_user.get("user_id")
         
@@ -303,12 +336,25 @@ async def get_learning_content_by_slug(
         user_skill_level = None
         user_learning_mode = None
         is_preview_mode = preview and current_user.get("role") in [UserRole.ADMIN, UserRole.MENTOR]
+
+        enrollment_stmt = select(UserCourseEnrollment).where(
+            UserCourseEnrollment.user_id == user_id,
+            UserCourseEnrollment.course_id == course.course_id,
+            UserCourseEnrollment.enrollment_status == EnrollmentStatus.ACTIVE,
+            UserCourseEnrollment.is_active == True,
+        )
+        enrollment_result = await db_session.execute(enrollment_stmt)
+        enrollment = enrollment_result.scalar_one_or_none()
+
+        if enrollment:
+            is_enrolled = True
+            path_id = enrollment.path_id
         
         if profile:
             user_skill_level = profile.skill_level
             user_learning_mode = profile.learning_mode
             
-            if profile.selected_course_id:
+            if not is_enrolled and profile.selected_course_id:
                 try:
                     enrolled_course_id = int(profile.selected_course_id)
                     if enrolled_course_id == course.course_id:
@@ -1378,25 +1424,40 @@ async def get_module_availability(
     """
     from domains.courses.jobs.module_availability_job import ModuleAvailabilityService
     from domains.courses.models.course import Module, LearningPath
+    from domains.courses.models.progress import UserCourseEnrollment
+    from domains.payments.models import EnrollmentStatus
     from domains.users.models.onboarding import UserProfile
     from datetime import datetime, timezone
     
     try:
         user_id = current_user.get("user_id")
         
-        # Get user's assigned path for this course
+        enrollment_stmt = select(UserCourseEnrollment).where(
+            UserCourseEnrollment.user_id == user_id,
+            UserCourseEnrollment.course_id == course_id,
+            UserCourseEnrollment.enrollment_status == EnrollmentStatus.ACTIVE,
+            UserCourseEnrollment.is_active == True,
+        )
+        enrollment_result = await db_session.execute(enrollment_stmt)
+        enrollment = enrollment_result.scalar_one_or_none()
+        path_id = enrollment.path_id if enrollment else None
+
+        # Legacy fallback for older accounts that predate enrollment rows.
         profile_stmt = select(UserProfile).where(UserProfile.user_id == user_id)
         profile_result = await db_session.execute(profile_stmt)
         profile = profile_result.scalar_one_or_none()
-        
-        if not profile or not profile.current_path_id:
+
+        if not path_id and profile:
+            path_id = profile.current_path_id
+
+        if not path_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No learning path assigned for this course",
             )
         
         # Verify path belongs to this course
-        path_stmt = select(LearningPath).where(LearningPath.path_id == profile.current_path_id)
+        path_stmt = select(LearningPath).where(LearningPath.path_id == path_id)
         path_result = await db_session.execute(path_stmt)
         path = path_result.scalar_one_or_none()
         
@@ -1410,11 +1471,11 @@ async def get_module_availability(
         availability_service = ModuleAvailabilityService(db_session)
         availability_records = await availability_service.get_user_path_modules_availability(
             user_id=user_id,
-            path_id=profile.current_path_id,
+            path_id=path_id,
         )
         
         # Get all modules for the path
-        modules_stmt = select(Module).where(Module.path_id == profile.current_path_id).order_by(Module.order)
+        modules_stmt = select(Module).where(Module.path_id == path_id).order_by(Module.order)
         modules_result = await db_session.execute(modules_stmt)
         modules = modules_result.scalars().all()
         

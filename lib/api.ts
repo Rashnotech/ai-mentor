@@ -2893,7 +2893,7 @@ export interface PaymentInitiatedResponse {
   reference: string
   amount: number
   currency: string
-  checkout_link: string
+  checkout_link?: string | null
   status: string
   message: string
 }

@@ -1,6 +1,7 @@
 """Regression tests for paid self-paced enrollment and onboarding consistency."""
 import sys
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import IsolatedAsyncioTestCase
@@ -82,6 +83,51 @@ class EnrollmentPaymentConsistencyTests(IsolatedAsyncioTestCase):
         self.assertTrue(enrollment.is_active)
         self.assertIsNotNone(enrollment.enrolled_at)
         service._complete_self_paced_onboarding.assert_awaited_once()
+
+    async def test_initiate_reuses_successful_payment_instead_of_raising(self):
+        db = SimpleNamespace(commit=AsyncMock())
+        service = PaymentService(db)
+        service._ensure_enrollment_status_column = AsyncMock()
+        service._get_course = AsyncMock(
+            return_value=SimpleNamespace(course_id=42, title="Python", is_active=True)
+        )
+        service._resolve_path_and_price = AsyncMock(
+            return_value=(SimpleNamespace(path_id=7), 5000.0)
+        )
+        enrollment = SimpleNamespace(
+            enrollment_id=3,
+            user_id="student-1",
+            course_id=42,
+            path_id=7,
+            enrollment_status=EnrollmentStatus.PENDING_PAYMENT,
+            is_active=False,
+            enrolled_at=None,
+        )
+        payment = SimpleNamespace(
+            id=9,
+            reference="PAY-EXISTING",
+            amount=Decimal("5000.00"),
+            currency="NGN",
+            status=PaymentStatus.SUCCESSFUL,
+            verified_at=datetime(2026, 7, 16, tzinfo=timezone.utc),
+        )
+        service._get_or_create_pending_enrollment = AsyncMock(return_value=enrollment)
+        service._get_latest_payment = AsyncMock(return_value=payment)
+        service._activate_enrollment = AsyncMock()
+
+        result = await service.initiate_payment(
+            user_id="student-1",
+            user_email="student@example.com",
+            course_id=42,
+            path_id=7,
+        )
+
+        self.assertEqual(result["status"], "active")
+        self.assertIsNone(result["checkout_link"])
+        self.assertEqual(result["payment_id"], 9)
+        self.assertIn("Course access granted", result["message"])
+        service._activate_enrollment.assert_awaited_once_with(payment, enrollment)
+        db.commit.assert_awaited_once()
 
 
 if __name__ == "__main__":

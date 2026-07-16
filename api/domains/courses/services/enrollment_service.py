@@ -8,8 +8,10 @@ from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
 from domains.courses.models.course import Course, LearningPath
+from domains.courses.models.progress import UserCourseEnrollment
 from domains.courses.services.path_assignment_service import PathAssignmentService
 from domains.users.models.user import User, UserRole
+from domains.payments.models import EnrollmentStatus
 from core.errors import AppError
 import logging
 
@@ -42,7 +44,32 @@ class EnrollmentService:
         from domains.users.models.onboarding import UserProfile
         
         try:
-            # Get student's profile
+            enrollment_stmt = select(UserCourseEnrollment).where(
+                and_(
+                    UserCourseEnrollment.user_id == student_id,
+                    UserCourseEnrollment.course_id == course_id,
+                    UserCourseEnrollment.enrollment_status == EnrollmentStatus.ACTIVE,
+                    UserCourseEnrollment.is_active == True,
+                )
+            )
+            enrollment_result = await self.db_session.execute(enrollment_stmt)
+            enrollment = enrollment_result.scalar_one_or_none()
+
+            if enrollment:
+                path = None
+                if enrollment.path_id:
+                    path_stmt = select(LearningPath).where(
+                        LearningPath.path_id == enrollment.path_id
+                    )
+                    path_result = await self.db_session.execute(path_stmt)
+                    path = path_result.scalar_one_or_none()
+                return {
+                    "already_enrolled": True,
+                    "path_id": enrollment.path_id,
+                    "path_title": path.title if path else None,
+                }
+
+            # Legacy fallback: get student's single-course profile.
             profile_stmt = select(UserProfile).where(UserProfile.user_id == student_id)
             profile_result = await self.db_session.execute(profile_stmt)
             profile = profile_result.scalar_one_or_none()
@@ -426,11 +453,13 @@ class EnrollmentService:
             if existing:
                 if existing.path_id != path_id:
                     existing.path_id = path_id
-                    existing.updated_at = datetime.now(timezone.utc)
-                    await self.db_session.commit()
                     logger.info(f"Updated enrollment path for user {user_id} in course {course_id} to {path_id}")
                 else:
                     logger.info(f"Enrollment record already exists for user {user_id} in course {course_id}")
+                existing.is_active = True
+                existing.enrollment_status = EnrollmentStatus.ACTIVE
+                existing.updated_at = datetime.now(timezone.utc)
+                await self.db_session.commit()
                 return
             
             enrollment = UserCourseEnrollment(
@@ -439,6 +468,7 @@ class EnrollmentService:
                 path_id=path_id,
                 enrolled_at=enrolled_at,
                 is_active=True,
+                enrollment_status=EnrollmentStatus.ACTIVE,
             )
             self.db_session.add(enrollment)
             await self.db_session.commit()
@@ -496,12 +526,61 @@ class EnrollmentService:
             enrolled_courses = []
             enrolled_course_ids = set()
 
-            if profile:
-                # Get the course selected during onboarding
+            enrollment_stmt = (
+                select(UserCourseEnrollment)
+                .where(
+                    and_(
+                        UserCourseEnrollment.user_id == student_id,
+                        UserCourseEnrollment.enrollment_status == EnrollmentStatus.ACTIVE,
+                        UserCourseEnrollment.is_active == True,
+                    )
+                )
+                .order_by(UserCourseEnrollment.enrolled_at.asc())
+            )
+            enrollment_result = await self.db_session.execute(enrollment_stmt)
+            active_enrollments = enrollment_result.scalars().all()
+
+            for enrollment in active_enrollments:
+                course = await self._get_course(enrollment.course_id)
+                if not course:
+                    continue
+
+                path = None
+                if enrollment.path_id:
+                    path_stmt = select(LearningPath).where(
+                        and_(
+                            LearningPath.path_id == enrollment.path_id,
+                            LearningPath.course_id == course.course_id,
+                        )
+                    )
+                    path_result = await self.db_session.execute(path_stmt)
+                    path = path_result.scalar_one_or_none()
+
+                if not path:
+                    path_stmt = select(LearningPath).where(
+                        and_(
+                            LearningPath.course_id == course.course_id,
+                            LearningPath.is_default == True,
+                        )
+                    )
+                    path_result = await self.db_session.execute(path_stmt)
+                    path = path_result.scalar_one_or_none()
+
+                enrolled_course_ids.add(course.course_id)
+                course_data = await self._build_course_data(
+                    course=course,
+                    path=path,
+                    student_id=student_id,
+                    profile=profile,
+                    enrollment=enrollment,
+                )
+                enrolled_courses.append(course_data)
+
+            if profile and not enrolled_courses:
+                # Legacy fallback for users created before durable enrollment rows.
                 course = None
                 path = None
 
-                # First, try to get course from current_path_id
                 if profile.current_path_id:
                     path_stmt = select(LearningPath).where(LearningPath.path_id == profile.current_path_id)
                     path_result = await self.db_session.execute(path_stmt)
@@ -509,22 +588,18 @@ class EnrollmentService:
                     if path:
                         course = await self._get_course(path.course_id)
 
-                # If no course from path, try selected_course_id (could be ID or slug)
                 if not course and profile.selected_course_id:
-                    # Try as integer course_id first
                     try:
                         course_id = int(profile.selected_course_id)
                         course = await self._get_course(course_id)
                     except (ValueError, TypeError):
                         pass
 
-                    # If not found, try as slug
                     if not course:
                         slug_stmt = select(Course).where(Course.slug == profile.selected_course_id)
                         slug_result = await self.db_session.execute(slug_stmt)
                         course = slug_result.scalar_one_or_none()
 
-                    # Get the path for this course if we don't have one
                     if course and not path:
                         path_stmt = select(LearningPath).where(
                             and_(
@@ -535,14 +610,13 @@ class EnrollmentService:
                         path_result = await self.db_session.execute(path_stmt)
                         path = path_result.scalar_one_or_none()
 
-                # Build course data with progress
                 if course:
                     enrolled_course_ids.add(course.course_id)
                     course_data = await self._build_course_data(
                         course=course,
                         path=path,
                         student_id=student_id,
-                        profile=profile
+                        profile=profile,
                     )
                     enrolled_courses.append(course_data)
 
@@ -594,7 +668,8 @@ class EnrollmentService:
         course: Course,
         path: Optional[LearningPath],
         student_id: str,
-        profile
+        profile,
+        enrollment: Optional[UserCourseEnrollment] = None,
     ) -> dict:
         """Build course data with progress information."""
         from domains.courses.models.course import Module, Lesson
@@ -678,7 +753,11 @@ class EnrollmentService:
             "completed_lessons": completed_lessons,
             "path_id": path.path_id if path else None,
             "path_title": path.title if path else None,
-            "enrolled_at": profile.created_at.isoformat() if profile and profile.created_at else None,
+            "enrolled_at": (
+                enrollment.enrolled_at.isoformat()
+                if enrollment and enrollment.enrolled_at
+                else profile.created_at.isoformat() if profile and profile.created_at else None
+            ),
             "last_accessed_at": profile.last_active_at.isoformat() if profile and profile.last_active_at else None,
         }
 
