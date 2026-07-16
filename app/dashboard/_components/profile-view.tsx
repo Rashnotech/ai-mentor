@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useUserStore } from "@/lib/stores/user-store"
 import { useAuth } from "@/lib/auth-context"
-import { authApi, gamificationApi } from "@/lib/api"
+import { authApi, gamificationApi, rewardsApi, type CertificateResponse } from "@/lib/api"
 
 export function ProfileView() {
   const [isEditing, setIsEditing] = useState(false)
@@ -24,6 +24,7 @@ export function ProfileView() {
   const [isSaving, setIsSaving] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [certificates, setCertificates] = useState<CertificateResponse[]>([])
 
   // Get user from Zustand store
   const user = useUserStore((state) => state.user)
@@ -46,11 +47,13 @@ export function ProfileView() {
   const fetchProfile = async () => {
     setIsLoading(true)
     try {
-      // Fetch profile and gamification data in parallel
-      const [profileResponse, gamificationResponse] = await Promise.all([
+      // Fetch profile, gamification, and certificates in parallel
+      const [profileResponse, gamificationResponse, certificateResponse] = await Promise.all([
         authApi.getMe(),
         gamificationApi.getMyGamification().catch(() => null), // Don't fail if gamification fails
+        rewardsApi.getMyCertificates().catch(() => []), // Don't fail profile if rewards are unavailable
       ])
+      setCertificates(certificateResponse)
       
       if (profileResponse?.user) {
         // Update Zustand store with fresh data including gamification
@@ -132,6 +135,15 @@ export function ProfileView() {
     return date.toLocaleDateString("en-US", { month: "short", year: "numeric" })
   }
 
+  const formatCertificateDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
+
   const handleSave = async () => {
     setIsSaving(true)
     try {
@@ -176,30 +188,6 @@ export function ProfileView() {
     }
     setIsEditing(false)
   }
-
-  const achievements = [
-    {
-      id: 1,
-      title: "React Fundamentals",
-      course: "React for Beginners",
-      date: "Jan 15, 2025",
-      image: "/placeholder.svg?height=100&width=150",
-    },
-    {
-      id: 2,
-      title: "Python Basics",
-      course: "The Complete Python Bootcamp",
-      date: "Dec 20, 2024",
-      image: "/placeholder.svg?height=100&width=150",
-    },
-    {
-      id: 3,
-      title: "Web Development",
-      course: "Web Development Fundamentals",
-      date: "Nov 10, 2024",
-      image: "/placeholder.svg?height=100&width=150",
-    },
-  ]
 
   return (
     <div className="max-w-4xl animate-in fade-in duration-500">
@@ -477,26 +465,40 @@ export function ProfileView() {
           <Award className="w-6 h-6 text-blue-600" />
           <h3 className="text-xl font-bold text-gray-900">Achievements & Certificates</h3>
         </div>
-        {achievements.length > 0 ? (
+        {certificates.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {achievements.map((achievement) => (
+            {certificates.map((certificate) => (
               <div
-                key={achievement.id}
+                key={certificate.certificate_id}
                 className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group"
               >
-                <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-4">
-                  <img
-                    src={achievement.image || "/placeholder.svg"}
-                    alt={achievement.title}
-                    className="w-full h-24 object-cover rounded-lg"
-                  />
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-5 flex items-center justify-center">
+                  <div className="w-full h-24 rounded-lg border border-blue-100 bg-white/80 flex flex-col items-center justify-center text-center">
+                    <Award className="w-8 h-8 text-blue-600 mb-2" />
+                    <span className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">
+                      Certificate
+                    </span>
+                  </div>
                 </div>
                 <div className="p-4">
-                  <h4 className="font-semibold text-gray-900 mb-1">{achievement.title}</h4>
-                  <p className="text-sm text-gray-500 mb-2">{achievement.course}</p>
+                  <h4 className="font-semibold text-gray-900 mb-1 line-clamp-2">
+                    {certificate.course_title || `Course #${certificate.course_id}`}
+                  </h4>
+                  <p className="text-sm text-gray-500 mb-2 line-clamp-1">
+                    {certificate.path_title || "Course completion certificate"}
+                  </p>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400">{achievement.date}</span>
-                    <button className="text-xs text-blue-600 hover:underline">View</button>
+                    <span className="text-xs text-gray-400">
+                      {formatCertificateDate(certificate.issued_at)}
+                    </span>
+                    <a
+                      href={certificate.certificate_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      View
+                    </a>
                   </div>
                 </div>
               </div>

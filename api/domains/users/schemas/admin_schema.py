@@ -74,6 +74,54 @@ class UserStatsResponse(BaseModel):
     admins: int
 
 
+class AdminUserCertificateResponse(BaseModel):
+    """Certificate assigned to a student by an admin."""
+
+    certificate_id: int
+    course_id: int
+    path_id: Optional[int] = None
+    course_title: Optional[str] = None
+    path_title: Optional[str] = None
+    issued_at: datetime
+    certificate_url: str
+    is_public: bool
+
+    class Config:
+        from_attributes = True
+
+
+class AdminUserEnrollmentResponse(BaseModel):
+    """Course enrollment summary shown in the admin user detail modal."""
+
+    enrollment_id: int
+    course_id: int
+    course_title: str
+    course_slug: Optional[str] = None
+    path_id: Optional[int] = None
+    path_title: Optional[str] = None
+    enrollment_status: str
+    is_active: bool
+    enrolled_at: Optional[datetime] = None
+    certificate: Optional[AdminUserCertificateResponse] = None
+
+
+class AdminUserLearningResponse(BaseModel):
+    """Admin view of a student's enrolled courses and certificates."""
+
+    user_id: str
+    enrolled_courses: List[AdminUserEnrollmentResponse]
+    certificates: List[AdminUserCertificateResponse]
+
+
+class AdminCertificateUploadRequest(BaseModel):
+    """Request to assign or update a certificate for an enrolled course."""
+
+    course_id: int = Field(..., description="Course the certificate belongs to")
+    path_id: Optional[int] = Field(None, description="Learning path the certificate belongs to")
+    certificate_url: str = Field(..., min_length=1, max_length=255, description="Certificate file URL")
+    is_public: bool = Field(True, description="Whether the certificate is visible to the student")
+
+
 class MentorProfileResponse(BaseModel):
     """Mentor profile response"""
     user_id: str

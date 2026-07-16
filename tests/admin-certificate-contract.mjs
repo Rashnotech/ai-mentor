@@ -1,0 +1,56 @@
+import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
+
+const profileView = await readFile("app/dashboard/_components/profile-view.tsx", "utf8")
+const adminUsersPage = await readFile("app/admin/users/page-client.tsx", "utf8")
+const apiClient = await readFile("lib/api.ts", "utf8")
+const adminRoutes = await readFile("api/domains/users/routes/admin.py", "utf8")
+const adminSchemas = await readFile("api/domains/users/schemas/admin_schema.py", "utf8")
+const rewardsRoutes = await readFile("api/domains/courses/routes/rewards.py", "utf8")
+const courseSchemas = await readFile("api/domains/courses/schemas/course_schema.py", "utf8")
+
+assert.match(profileView, /rewardsApi\.getMyCertificates\(\)/)
+assert.match(profileView, /certificates\.map/)
+assert.match(profileView, /certificate\.certificate_url/)
+assert.match(profileView, /certificate\.course_title/)
+assert.doesNotMatch(profileView, /const achievements = \[/)
+assert.doesNotMatch(profileView, /React Fundamentals|Python Basics|Web Development Fundamentals/)
+assert.doesNotMatch(profileView, /placeholder\.svg\?height=100&width=150/)
+
+assert.match(apiClient, /export interface CertificateResponse/)
+assert.match(apiClient, /export const rewardsApi/)
+assert.match(apiClient, /getMyCertificates/)
+assert.match(apiClient, /export interface AdminUserLearningResponse/)
+assert.match(apiClient, /export interface AdminCertificateUploadPayload/)
+assert.match(apiClient, /getUserLearning/)
+assert.match(apiClient, /uploadCertificate/)
+
+assert.match(adminUsersPage, /selectedUserLearning/)
+assert.match(adminUsersPage, /loadUserLearning/)
+assert.match(adminUsersPage, /userAdminApi\.getUserLearning/)
+assert.match(adminUsersPage, /userAdminApi\.uploadCertificate/)
+assert.match(adminUsersPage, /Enrolled Courses/)
+assert.match(adminUsersPage, /Upload Certificate/)
+assert.match(adminUsersPage, /Certificate URL/)
+assert.match(adminUsersPage, /View Certificate/)
+
+assert.match(adminSchemas, /class AdminUserLearningResponse/)
+assert.match(adminSchemas, /class AdminUserEnrollmentResponse/)
+assert.match(adminSchemas, /class AdminCertificateUploadRequest/)
+assert.match(adminSchemas, /certificate_url: str/)
+
+assert.match(adminRoutes, /@router\.get\("\/\{user_id\}\/learning"/)
+assert.match(adminRoutes, /@router\.post\("\/\{user_id\}\/certificates"/)
+assert.match(adminRoutes, /UserCourseEnrollment/)
+assert.match(adminRoutes, /Certificate/)
+assert.match(adminRoutes, /Student is not enrolled in this course/)
+assert.match(adminRoutes, /certificate\.certificate_url = request\.certificate_url\.strip\(\)/)
+assert.match(adminRoutes, /session\.add\(certificate\)/)
+
+assert.match(rewardsRoutes, /course_title/)
+assert.match(rewardsRoutes, /path_title/)
+assert.match(rewardsRoutes, /select\(Course\)/)
+assert.match(courseSchemas, /course_title: Optional\[str\]/)
+assert.match(courseSchemas, /path_title: Optional\[str\]/)
+
+console.log("Admin certificate contract: PASS")

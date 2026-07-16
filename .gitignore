@@ -4,8 +4,10 @@ venv/
 .env.local
 api/.venv
 graphQL/.venv
+graphQL
 node_modules
 package-lock.json
 dist
 *.tsbuildinfo
 api/.env
+graphQL/.env

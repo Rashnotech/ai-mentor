@@ -4,11 +4,13 @@ Rewards and gamification routes for students and mentors.
 Endpoints for viewing badges, certificates, points, XP, and streaks.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import Optional
 
 from auth.dependencies import get_current_user, get_db_session
+from domains.courses.models.course import Course, LearningPath
 from domains.courses.services.reward_service import RewardService, BadgeType
 from domains.courses.services.gamification_service import GamificationService
 from domains.courses.schemas.course_schema import (
@@ -248,14 +250,32 @@ async def get_my_certificates(
     try:
         service = RewardService(db_session)
         certificates = await service.get_user_certificates(current_user.get("user_id"))
+        course_ids = {c.course_id for c in certificates if c.course_id is not None}
+        path_ids = {c.path_id for c in certificates if c.path_id is not None}
+        courses_by_id = {}
+        paths_by_id = {}
+
+        if course_ids:
+            course_result = await db_session.execute(
+                select(Course).where(Course.course_id.in_(course_ids))
+            )
+            courses_by_id = {course.course_id: course for course in course_result.scalars().all()}
+
+        if path_ids:
+            path_result = await db_session.execute(
+                select(LearningPath).where(LearningPath.path_id.in_(path_ids))
+            )
+            paths_by_id = {path.path_id: path for path in path_result.scalars().all()}
 
         return [
             CertificateResponse(
                 certificate_id=c.certificate_id,
                 course_id=c.course_id,
                 path_id=c.path_id,
+                course_title=courses_by_id.get(c.course_id).title if c.course_id in courses_by_id else None,
+                path_title=paths_by_id.get(c.path_id).title if c.path_id in paths_by_id else None,
                 issued_at=c.issued_at.isoformat(),
-                certificate_url=c.certificate_url,
+                certificate_url=c.certificate_url or "",
                 is_public=c.is_public,
             )
             for c in certificates

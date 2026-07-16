@@ -1159,6 +1159,43 @@ export interface UserStatsResponse {
   admins: number
 }
 
+export interface AdminUserCertificate {
+  certificate_id: number
+  course_id: number
+  path_id: number | null
+  course_title: string | null
+  path_title: string | null
+  issued_at: string
+  certificate_url: string
+  is_public: boolean
+}
+
+export interface AdminUserEnrollmentCourse {
+  enrollment_id: number
+  course_id: number
+  course_title: string
+  course_slug: string | null
+  path_id: number | null
+  path_title: string | null
+  enrollment_status: string
+  is_active: boolean
+  enrolled_at: string | null
+  certificate: AdminUserCertificate | null
+}
+
+export interface AdminUserLearningResponse {
+  user_id: string
+  enrolled_courses: AdminUserEnrollmentCourse[]
+  certificates: AdminUserCertificate[]
+}
+
+export interface AdminCertificateUploadPayload {
+  course_id: number
+  path_id?: number | null
+  certificate_url: string
+  is_public?: boolean
+}
+
 export interface MentorProfileResponse {
   user_id: string
   title: string | null
@@ -2215,6 +2252,31 @@ export interface GamificationResponse {
   timezone: string
 }
 
+export interface CertificateResponse {
+  certificate_id: number
+  course_id: number
+  path_id: number | null
+  course_title?: string | null
+  path_title?: string | null
+  issued_at: string
+  certificate_url: string
+  is_public: boolean
+}
+
+// ============================================================================
+// REWARDS API
+// ============================================================================
+
+export const rewardsApi = {
+  /**
+   * Get certificates earned by the current user
+   */
+  getMyCertificates: async (): Promise<CertificateResponse[]> => {
+    const response = await apiClient.get<CertificateResponse[]>("/rewards/me/certificates")
+    return response.data
+  },
+}
+
 // ============================================================================
 // GAMIFICATION API
 // ============================================================================
@@ -2427,6 +2489,25 @@ export const userAdminApi = {
    */
   getUser: async (userId: string): Promise<UserAdminResponse> => {
     const response = await apiClient.get<UserAdminResponse>(`/admin/users/${userId}`)
+    return response.data
+  },
+
+  /**
+   * Get a user's enrolled courses and certificates
+   */
+  getUserLearning: async (userId: string): Promise<AdminUserLearningResponse> => {
+    const response = await apiClient.get<AdminUserLearningResponse>(`/admin/users/${userId}/learning`)
+    return response.data
+  },
+
+  /**
+   * Assign or update a certificate for one of a user's enrolled courses
+   */
+  uploadCertificate: async (
+    userId: string,
+    data: AdminCertificateUploadPayload
+  ): Promise<AdminUserCertificate> => {
+    const response = await apiClient.post<AdminUserCertificate>(`/admin/users/${userId}/certificates`, data)
     return response.data
   },
 

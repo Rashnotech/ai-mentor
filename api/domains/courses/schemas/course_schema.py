@@ -596,7 +596,9 @@ class CertificateResponse(BaseModel):
 
     certificate_id: int = Field(description="Certificate ID")
     course_id: int = Field(description="Course ID")
-    path_id: int = Field(description="Path ID")
+    path_id: Optional[int] = Field(None, description="Path ID")
+    course_title: Optional[str] = Field(None, description="Course title")
+    path_title: Optional[str] = Field(None, description="Learning path title")
     issued_at: str = Field(description="Issue timestamp")
     certificate_url: str = Field(description="Certificate URL")
     is_public: bool = Field(description="Whether certificate is publicly visible")

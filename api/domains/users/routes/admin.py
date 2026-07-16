@@ -9,10 +9,17 @@ from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_user_service, get_current_user, require_role, get_db_session
+from domains.courses.models.certification import Certificate
+from domains.courses.models.course import Course, LearningPath
+from domains.courses.models.progress import UserCourseEnrollment
 from domains.users.models.user import User
 from domains.users.models.onboarding import MentorProfile
 from domains.users.services.user_service import UserService, UserRole
 from domains.users.schemas.admin_schema import (
+    AdminCertificateUploadRequest,
+    AdminUserCertificateResponse,
+    AdminUserEnrollmentResponse,
+    AdminUserLearningResponse,
     UserAdminResponse,
     UserListResponse,
     UserCreateRequest,
@@ -26,6 +33,99 @@ from auth.password import hash_password
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin/users", tags=["Admin - Users"])
+
+
+def _enum_value(value) -> str:
+    """Return a frontend-safe string for SQLAlchemy enum values."""
+    if hasattr(value, "value"):
+        return value.value
+    return str(value) if value is not None else "unknown"
+
+
+def _serialize_admin_certificate(
+    certificate: Certificate,
+    course: Optional[Course] = None,
+    path: Optional[LearningPath] = None,
+) -> AdminUserCertificateResponse:
+    """Convert a Certificate row to the admin API response shape."""
+    return AdminUserCertificateResponse(
+        certificate_id=certificate.certificate_id,
+        course_id=certificate.course_id,
+        path_id=certificate.path_id,
+        course_title=course.title if course else None,
+        path_title=path.title if path else None,
+        issued_at=certificate.issued_at,
+        certificate_url=certificate.certificate_url or "",
+        is_public=bool(certificate.is_public),
+    )
+
+
+async def _get_user_learning_response(
+    user_id: str,
+    session: AsyncSession,
+) -> AdminUserLearningResponse:
+    """Build the enrolled courses and certificates summary for an admin modal."""
+    enrollment_stmt = (
+        select(UserCourseEnrollment, Course, LearningPath)
+        .join(Course, Course.course_id == UserCourseEnrollment.course_id)
+        .outerjoin(LearningPath, LearningPath.path_id == UserCourseEnrollment.path_id)
+        .where(UserCourseEnrollment.user_id == user_id)
+        .order_by(UserCourseEnrollment.enrolled_at.desc())
+    )
+    enrollment_result = await session.execute(enrollment_stmt)
+    enrollment_rows = enrollment_result.all()
+
+    certificate_stmt = (
+        select(Certificate, Course, LearningPath)
+        .join(Course, Course.course_id == Certificate.course_id)
+        .outerjoin(LearningPath, LearningPath.path_id == Certificate.path_id)
+        .where(Certificate.user_id == user_id)
+        .order_by(Certificate.issued_at.desc())
+    )
+    certificate_result = await session.execute(certificate_stmt)
+    certificate_rows = certificate_result.all()
+
+    certificates = [
+        _serialize_admin_certificate(certificate, course, path)
+        for certificate, course, path in certificate_rows
+    ]
+
+    certificates_by_exact_key = {
+        (certificate.course_id, certificate.path_id): _serialize_admin_certificate(certificate, course, path)
+        for certificate, course, path in certificate_rows
+    }
+    certificates_by_course = {}
+    for certificate, course, path in certificate_rows:
+        certificates_by_course.setdefault(
+            certificate.course_id,
+            _serialize_admin_certificate(certificate, course, path),
+        )
+
+    enrolled_courses = []
+    for enrollment, course, path in enrollment_rows:
+        certificate = certificates_by_exact_key.get(
+            (enrollment.course_id, enrollment.path_id)
+        ) or certificates_by_course.get(enrollment.course_id)
+        enrolled_courses.append(
+            AdminUserEnrollmentResponse(
+                enrollment_id=enrollment.enrollment_id,
+                course_id=enrollment.course_id,
+                course_title=course.title,
+                course_slug=course.slug,
+                path_id=enrollment.path_id,
+                path_title=path.title if path else None,
+                enrollment_status=_enum_value(enrollment.enrollment_status),
+                is_active=bool(enrollment.is_active),
+                enrolled_at=enrollment.enrolled_at,
+                certificate=certificate,
+            )
+        )
+
+    return AdminUserLearningResponse(
+        user_id=user_id,
+        enrolled_courses=enrolled_courses,
+        certificates=certificates,
+    )
 
 
 @router.get("", response_model=UserListResponse)
@@ -479,6 +579,134 @@ async def get_user(
         created_at=user.created_at,
         updated_at=user.updated_at,
     )
+
+
+@router.get("/{user_id}/learning", response_model=AdminUserLearningResponse)
+async def get_user_learning(
+    user_id: str,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    """
+    Get a student's enrolled courses and certificates for the admin user detail modal.
+    Requires ADMIN role.
+    """
+    if current_user.get("role") != UserRole.ADMIN.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    user_result = await session.execute(select(User).where(User.id == user_id))
+    if not user_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    return await _get_user_learning_response(user_id, session)
+
+
+@router.post("/{user_id}/certificates", response_model=AdminUserCertificateResponse)
+async def upload_user_certificate(
+    user_id: str,
+    request: AdminCertificateUploadRequest,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    """
+    Assign or update a certificate URL for one of the student's enrolled courses.
+    Requires ADMIN role.
+    """
+    if current_user.get("role") != UserRole.ADMIN.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    user_result = await session.execute(select(User).where(User.id == user_id))
+    if not user_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    enrollment_stmt = (
+        select(UserCourseEnrollment, Course, LearningPath)
+        .join(Course, Course.course_id == UserCourseEnrollment.course_id)
+        .outerjoin(LearningPath, LearningPath.path_id == UserCourseEnrollment.path_id)
+        .where(
+            UserCourseEnrollment.user_id == user_id,
+            UserCourseEnrollment.course_id == request.course_id,
+        )
+    )
+    if request.path_id is not None:
+        enrollment_stmt = enrollment_stmt.where(UserCourseEnrollment.path_id == request.path_id)
+
+    enrollment_result = await session.execute(enrollment_stmt)
+    enrollment_row = enrollment_result.first()
+    if not enrollment_row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student is not enrolled in this course"
+        )
+
+    enrollment, course, path = enrollment_row
+    resolved_path_id = request.path_id if request.path_id is not None else enrollment.path_id
+    resolved_path = path
+
+    if resolved_path_id is None:
+        default_path_result = await session.execute(
+            select(LearningPath)
+            .where(
+                LearningPath.course_id == request.course_id,
+                LearningPath.is_default == True,
+            )
+            .limit(1)
+        )
+        resolved_path = default_path_result.scalar_one_or_none()
+        resolved_path_id = resolved_path.path_id if resolved_path else None
+
+    certificate_stmt = select(Certificate).where(
+        Certificate.user_id == user_id,
+        Certificate.course_id == request.course_id,
+    )
+    if resolved_path_id is None:
+        certificate_stmt = certificate_stmt.where(Certificate.path_id.is_(None))
+    else:
+        certificate_stmt = certificate_stmt.where(Certificate.path_id == resolved_path_id)
+
+    certificate_result = await session.execute(certificate_stmt)
+    certificate = certificate_result.scalar_one_or_none()
+    now = datetime.now(timezone.utc)
+
+    if certificate:
+        certificate.certificate_url = request.certificate_url.strip()
+        certificate.is_public = request.is_public
+        certificate.issued_at = now
+    else:
+        certificate = Certificate(
+            user_id=user_id,
+            course_id=request.course_id,
+            path_id=resolved_path_id,
+            certificate_url=request.certificate_url.strip(),
+            is_public=request.is_public,
+            issued_at=now,
+        )
+        session.add(certificate)
+
+    await session.commit()
+    await session.refresh(certificate)
+
+    logger.info(
+        "Admin %s assigned certificate %s to user %s for course %s",
+        current_user.get("user_id"),
+        certificate.certificate_id,
+        user_id,
+        request.course_id,
+    )
+
+    return _serialize_admin_certificate(certificate, course, resolved_path)
 
 
 @router.post("", response_model=UserAdminResponse, status_code=status.HTTP_201_CREATED)
