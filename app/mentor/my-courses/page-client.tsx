@@ -1047,6 +1047,8 @@ export default function MyCoursesPage() {
 
   return (
     <div className="space-y-6">
+      {!selectedCourse && (
+        <>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -1162,98 +1164,179 @@ export default function MyCoursesPage() {
             )}
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid gap-4">
-          {filteredCourses.map((course) => (
-            <Card
-              key={course.course_id}
-              className={`transition-all hover:shadow-md cursor-pointer ${
-                selectedCourse === course.course_id ? "ring-2 ring-blue-500" : ""
-              }`}
-              onClick={() => setSelectedCourse(selectedCourse === course.course_id ? null : course.course_id)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-gray-900 truncate">{course.title}</h3>
-                      <Badge variant={course.is_active ? "default" : "secondary"}>
-                        {course.is_active ? "Active" : "Draft"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-500 line-clamp-2 mb-2">{course.description}</p>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <FolderOpen className="w-4 h-4" />
-                        {course.paths_count || 0} paths
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <BookOpen className="w-4 h-4" />
-                        {course.modules_count || 0} modules
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {course.estimated_hours}h
-                      </span>
-                      <Badge variant="outline" className="text-xs">
-                        {course.difficulty_level}
-                      </Badge>
-                    </div>
-                    {selectedCourse !== course.course_id && (
-                      <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
-                        <ChevronRight className="w-3 h-3" /> Click to manage content
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditCourseModal(course)}
-                      className="h-8 w-8"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button asChild variant="ghost" size="icon" className="h-8 w-8">
-                      <Link href={`/courses/${course.slug}/learn?preview=1`} aria-label={`Preview ${course.title}`}>
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setCourseToDelete(course)
-                        setShowDeleteConfirm(true)
-                      }}
-                      className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      ) : !selectedCourse ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Course Catalog</CardTitle>
+            <CardDescription>Manage your courses, paths, modules, lessons, projects, and quizzes.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Course</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Canonical Path</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Paths</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Modules</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Hours</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Level</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
+                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCourses.map((course) => (
+                    <tr key={course.course_id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <div>
+                          <p className="font-medium text-sm text-gray-900">{course.title}</p>
+                          <p className="text-xs text-gray-500 line-clamp-1">{course.description || "No description"}</p>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <code className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700 font-mono">
+                          /courses/{course.slug}
+                        </code>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-600">{course.paths_count || 0}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600">{course.modules_count || 0}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600">{course.estimated_hours}h</td>
+                      <td className="py-3 px-4">
+                        <Badge
+                          className={
+                            course.difficulty_level === "BEGINNER"
+                              ? "bg-green-100 text-green-700 border-0"
+                              : course.difficulty_level === "INTERMEDIATE"
+                              ? "bg-yellow-100 text-yellow-700 border-0"
+                              : "bg-red-100 text-red-700 border-0"
+                          }
+                        >
+                          {course.difficulty_level.toLowerCase()}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge
+                          className={
+                            course.is_active
+                              ? "bg-green-100 text-green-700 border-0"
+                              : "bg-gray-100 text-gray-600 border-0"
+                          }
+                        >
+                          {course.is_active ? "Active" : "Draft"}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 bg-transparent"
+                            onClick={() => setSelectedCourse(course.course_id)}
+                          >
+                            <FolderOpen className="w-4 h-4 mr-1" />
+                            Manage
+                          </Button>
+                          <Button asChild size="sm" variant="outline" className="h-8 bg-transparent">
+                            <Link href={`/courses/${course.slug}/learn?preview=1`} aria-label={`Preview ${course.title}`}>
+                              <Eye className="w-4 h-4 mr-1" />
+                              Preview
+                            </Link>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onClick={() => openEditCourseModal(course)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                            onClick={() => {
+                              setCourseToDelete(course)
+                              setShowDeleteConfirm(true)
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+        </>
       )}
 
       {/* Learning Paths Section - 3 Column Layout */}
       {selectedCourse && (
         <>
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Manage Content: {courses.find(c => c.course_id === selectedCourse)?.title}
-              </h2>
-              <p className="text-sm text-gray-500">Create learning paths, modules, lessons, projects, and assessments</p>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2 text-sm">
+              <button
+                onClick={() => {
+                  setSelectedCourse(null)
+                  setSelectedPathId(null)
+                  setSelectedModuleId(null)
+                }}
+                className="text-blue-600 hover:underline font-medium"
+              >
+                Courses
+              </button>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <span className="text-gray-900 font-medium">{courses.find(c => c.course_id === selectedCourse)?.title}</span>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setSelectedCourse(null)}>
-              Close
-            </Button>
+
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">{courses.find(c => c.course_id === selectedCourse)?.title}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="px-2 py-1 bg-blue-50 rounded text-xs text-blue-700 font-mono">
+                    /courses/{courses.find(c => c.course_id === selectedCourse)?.slug}
+                  </code>
+                  <Badge
+                    className={
+                      courses.find(c => c.course_id === selectedCourse)?.is_active
+                        ? "bg-green-100 text-green-700 border-0"
+                        : "bg-gray-100 text-gray-600 border-0"
+                    }
+                  >
+                    {courses.find(c => c.course_id === selectedCourse)?.is_active ? "Active" : "Draft"}
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const course = courses.find(c => c.course_id === selectedCourse)
+                    if (course) openEditCourseModal(course)
+                  }}
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit Course
+                </Button>
+                <Button
+                  className="bg-purple-600 hover:bg-purple-700"
+                  onClick={() => {
+                    resetPathForm()
+                    setShowCreatePathModal(true)
+                  }}
+                >
+                  <FolderOpen className="w-4 h-4 mr-2" />
+                  Add Learning Path
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="overflow-x-auto pb-2">
-            <div className="grid grid-cols-3 gap-6 min-w-[900px]">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Column 1: Learning Paths */}
               <Card>
                 <CardHeader className="pb-3">
@@ -1685,7 +1768,6 @@ export default function MyCoursesPage() {
             </CardContent>
           </Card>
           </div>
-        </div>
         </>
       )}
 

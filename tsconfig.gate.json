@@ -8,6 +8,8 @@
     "app/courses/page-client.tsx",
     "app/courses/[id]/page.tsx",
     "app/courses/[id]/page-client.tsx",
+    "app/courses/[id]/learn/page-client.tsx",
+    "app/mentor/my-courses/page-client.tsx",
     "app/payment/callback/page-client.tsx",
     "app/onboarding/page-client.tsx",
     "app/onboarding/mode-selection/page-client.tsx",

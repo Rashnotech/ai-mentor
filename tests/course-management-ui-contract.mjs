@@ -1,0 +1,45 @@
+import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
+
+const adminCourses = await readFile("app/admin/courses/page-client.tsx", "utf8")
+const mentorCourses = await readFile("app/mentor/my-courses/page-client.tsx", "utf8")
+const learnPage = await readFile("app/courses/[id]/learn/page-client.tsx", "utf8")
+const gateConfig = await readFile("tsconfig.gate.json", "utf8")
+
+assert.match(adminCourses, /jsonImportFile/)
+assert.match(adminCourses, /jsonImportInputRef/)
+assert.match(adminCourses, /importCourseJsonMutation/)
+assert.match(adminCourses, /courseAdminApi\.importCourseFromJson/)
+assert.match(adminCourses, /Import Course JSON/)
+assert.match(adminCourses, /Upload JSON/)
+assert.match(adminCourses, /handleJsonFileChange/)
+assert.match(adminCourses, /validateCourseJsonFile/)
+assert.match(adminCourses, /setSelectedCourse\(result\.course_id\)/)
+
+assert.match(adminCourses, /max-h-\[560px\] space-y-2 overflow-y-auto pr-2/)
+
+assert.match(learnPage, /function QuizMarkdown/)
+assert.match(learnPage, /remarkPlugins=\{\[remarkGfm\]\}/)
+assert.match(learnPage, /content=\{currentQuestion\.question_text\}/)
+assert.match(learnPage, /content=\{option\}/)
+assert.match(learnPage, /content=\{currentQuestion\.explanation\}/)
+assert.match(learnPage, /content=\{lastAnswerResult\.explanation\}/)
+assert.doesNotMatch(learnPage, /<h3 className="mb-6 text-base font-semibold text-gray-900 sm:text-lg">\s*\{currentQuestion\.question_text\}\s*<\/h3>/)
+
+assert.match(mentorCourses, /\{!selectedCourse && \(/)
+assert.match(mentorCourses, /Course Catalog/)
+assert.match(mentorCourses, /Canonical Path/)
+assert.match(mentorCourses, /<table className="w-full">/)
+assert.match(mentorCourses, /Manage/)
+assert.match(mentorCourses, /Preview/)
+assert.match(mentorCourses, /Courses\s*<\/button>/)
+assert.match(mentorCourses, /grid grid-cols-1 lg:grid-cols-3 gap-6/)
+assert.match(mentorCourses, /Edit Course/)
+assert.match(mentorCourses, /Add Learning Path/)
+assert.doesNotMatch(mentorCourses, /Click to manage content/)
+
+assert.match(gateConfig, /app\/admin\/courses\/page-client\.tsx/)
+assert.match(gateConfig, /app\/mentor\/my-courses\/page-client\.tsx/)
+assert.match(gateConfig, /app\/courses\/\[id\]\/learn\/page-client\.tsx/)
+
+console.log("Course management UI contract: PASS")

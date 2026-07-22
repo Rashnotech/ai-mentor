@@ -925,6 +925,64 @@ interface QuizContentViewProps {
   previewMode?: boolean
 }
 
+function QuizMarkdown({
+  content,
+  className = "",
+  inline = false,
+}: {
+  content: string
+  className?: string
+  inline?: boolean
+}) {
+  return (
+    <div className={className}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) =>
+            inline ? (
+              <span>{children}</span>
+            ) : (
+              <p className="my-2 leading-relaxed">{children}</p>
+            ),
+          ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-5">{children}</ul>,
+          ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-5">{children}</ol>,
+          li: ({ children }) => <li>{children}</li>,
+          code: ({ className, children }) => {
+            const isInline = !className
+            return isInline ? (
+              <code className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-sm text-pink-600">
+                {children}
+              </code>
+            ) : (
+              <code className={className}>{children}</code>
+            )
+          },
+          pre: ({ children }) => (
+            <pre className="my-3 overflow-x-auto rounded-lg bg-gray-900 p-3 text-sm text-gray-100">
+              {children}
+            </pre>
+          ),
+          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          a: ({ href, children }) => (
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+              {children}
+            </a>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="my-3 border-l-4 border-gray-300 pl-4 italic text-gray-600">
+              {children}
+            </blockquote>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  )
+}
+
 function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, previewMode = false }: QuizContentViewProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
@@ -1055,20 +1113,28 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
                   {q.is_correct ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">Q{idx + 1}: {q.question_text}</p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Your answer: <span className="font-medium">{q.user_answer || "Not answered"}</span>
-                  </p>
+                  <div className="font-medium text-gray-900">
+                    <span>Q{idx + 1}: </span>
+                    <QuizMarkdown content={q.question_text} inline className="inline" />
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    <span>Your answer: </span>
+                    {q.user_answer ? (
+                      <QuizMarkdown content={q.user_answer} inline className="inline font-medium" />
+                    ) : (
+                      <span className="font-medium">Not answered</span>
+                    )}
+                  </div>
                   {!q.is_correct && q.correct_answer && (
-                    <p className="text-sm text-green-700 mt-1">
-                      Correct answer: <span className="font-medium">{q.correct_answer}</span>
-                    </p>
+                    <div className="text-sm text-green-700 mt-1">
+                      <span>Correct answer: </span>
+                      <QuizMarkdown content={q.correct_answer} inline className="inline font-medium" />
+                    </div>
                   )}
                   {q.explanation && (
                     <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                      <p className="text-sm text-blue-800">
-                        <span className="font-semibold">Explanation:</span> {q.explanation}
-                      </p>
+                      <span className="text-sm font-semibold text-blue-800">Explanation:</span>
+                      <QuizMarkdown content={q.explanation} className="mt-1 text-sm text-blue-800" />
                     </div>
                   )}
                 </div>
@@ -1154,9 +1220,10 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
             <span className="text-xs text-gray-400">{currentQuestion.points} points</span>
           </div>
 
-          <h3 className="mb-6 text-base font-semibold text-gray-900 sm:text-lg">
-            {currentQuestion.question_text}
-          </h3>
+          <QuizMarkdown
+            content={currentQuestion.question_text}
+            className="mb-6 text-base font-semibold text-gray-900 sm:text-lg"
+          />
 
           {/* Answer Options */}
           {currentQuestion.options && currentQuestion.options.length > 0 ? (
@@ -1197,11 +1264,13 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
                       }`}>
                         {(isSelected || isCorrect) && <Check className="w-4 h-4 text-white" />}
                       </div>
-                      <span className={`font-medium ${
+                      <QuizMarkdown
+                        content={option}
+                        inline
+                        className={`font-medium ${
                         isAnswered && !isSelected ? "text-gray-500" : "text-gray-900"
-                      }`}>
-                        {option}
-                      </span>
+                      }`}
+                      />
                     </div>
                   </button>
                 )
@@ -1233,9 +1302,10 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
                   <p className={`font-semibold ${currentQuestion.is_correct ? "text-green-700" : "text-red-700"}`}>
                     {currentQuestion.is_correct ? "Correct!" : "Incorrect"}
                   </p>
-                  <p className="text-sm text-gray-700 mt-1">
-                    <span className="font-medium">Explanation:</span> {currentQuestion.explanation}
-                  </p>
+                  <div className="text-sm text-gray-700 mt-1">
+                    <span className="font-medium">Explanation:</span>
+                    <QuizMarkdown content={currentQuestion.explanation} className="mt-1" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1259,9 +1329,10 @@ function QuizContentView({ quiz, moduleTitle, onSubmitAnswer, onNext, hasNext, p
                     {lastAnswerResult.is_correct ? "Correct!" : "Incorrect"}
                   </p>
                   {lastAnswerResult.explanation && (
-                    <p className="text-sm text-gray-700 mt-1">
-                      <span className="font-medium">Explanation:</span> {lastAnswerResult.explanation}
-                    </p>
+                    <div className="text-sm text-gray-700 mt-1">
+                      <span className="font-medium">Explanation:</span>
+                      <QuizMarkdown content={lastAnswerResult.explanation} className="mt-1" />
+                    </div>
                   )}
                 </div>
               </div>

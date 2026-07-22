@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useRef, useState, useMemo, type ChangeEvent } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -54,7 +54,8 @@ import {
   FileText,
   Code,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Upload
 } from "lucide-react"
 
 // Mock data that will be replaced by API calls in future iterations
@@ -95,6 +96,8 @@ export function CoursesManagementView() {
   const [showAssignMentorModal, setShowAssignMentorModal] = useState(false)
   const [courseToAssignMentor, setCourseToAssignMentor] = useState<CourseListResponse | null>(null)
   const [selectedMentorId, setSelectedMentorId] = useState("")
+  const [jsonImportFile, setJsonImportFile] = useState<File | null>(null)
+  const jsonImportInputRef = useRef<HTMLInputElement | null>(null)
   
   // Modal states
   const [showCreateCourseModal, setShowCreateCourseModal] = useState(false)
@@ -260,6 +263,43 @@ export function CoursesManagementView() {
     },
     onError: (error) => {
       toast.error("Failed to assign mentor", {
+        description: getApiErrorMessage(error),
+      })
+    },
+  })
+
+  const importCourseJsonMutation = useMutation({
+    mutationFn: (file: File) => courseAdminApi.importCourseFromJson(file),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "courses"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "learningPaths"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "modules"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "lessons"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "projects"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "assessments"] })
+
+      const summary = [
+        `Course ${result.action}: ${result.course_name}`,
+        `Path ${result.learning_path_action}: ${result.learning_path_name}`,
+        `Modules C/U: ${result.modules.created}/${result.modules.updated}`,
+        `Lessons C/U: ${result.lessons.created}/${result.lessons.updated}`,
+        `Projects C/U: ${result.projects.created}/${result.projects.updated}`,
+        `Quizzes C/U: ${result.quizzes.created}/${result.quizzes.updated}`,
+      ].join(" | ")
+
+      toast.success("Course JSON imported", {
+        description: summary,
+      })
+
+      setSelectedCourse(result.course_id)
+      setSelectedPathId(result.learning_path_id)
+      setJsonImportFile(null)
+      if (jsonImportInputRef.current) {
+        jsonImportInputRef.current.value = ""
+      }
+    },
+    onError: (error) => {
+      toast.error("Failed to import JSON", {
         description: getApiErrorMessage(error),
       })
     },
@@ -943,6 +983,86 @@ export function CoursesManagementView() {
       courseId: courseToAssignMentor.course_id,
       mentorId: selectedMentorId,
     })
+  }
+
+  const handleJsonFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      setJsonImportFile(null)
+      return
+    }
+
+    const isJsonMime = ["application/json", "text/plain", "text/json"].includes(file.type)
+    const isJsonExtension = file.name.toLowerCase().endsWith(".json")
+    if (!isJsonMime && !isJsonExtension) {
+      toast.error("Invalid file type", {
+        description: "Please choose a valid JSON file.",
+      })
+      setJsonImportFile(null)
+      event.target.value = ""
+      return
+    }
+
+    setJsonImportFile(file)
+  }
+
+  const validateCourseJsonFile = async (file: File): Promise<string[]> => {
+    const errors: string[] = []
+
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(await file.text())
+    } catch {
+      return ["Invalid JSON format. Please upload a valid JSON document."]
+    }
+
+    if (!parsed || typeof parsed !== "object") {
+      return ["Invalid JSON structure. Root payload must be an object."]
+    }
+
+    const payload = parsed as Record<string, unknown>
+    const courseDescription = typeof payload.description === "string" ? payload.description.trim() : ""
+    if (!courseDescription) {
+      errors.push("Course description is required.")
+    } else if (courseDescription.length < 10) {
+      errors.push("Course description must be at least 10 characters.")
+    }
+
+    const learningPath = payload.learning_path
+    if (!learningPath || typeof learningPath !== "object") {
+      errors.push("learning_path is required and must be an object.")
+      return errors
+    }
+
+    const learningPathPayload = learningPath as Record<string, unknown>
+    const learningPathDescription =
+      typeof learningPathPayload.description === "string" ? learningPathPayload.description.trim() : ""
+    if (!learningPathDescription) {
+      errors.push("Learning path description is required.")
+    } else if (learningPathDescription.length < 10) {
+      errors.push("Learning path description must be at least 10 characters.")
+    }
+
+    return errors
+  }
+
+  const handleJsonImport = async () => {
+    if (!jsonImportFile) {
+      toast.error("No file selected", {
+        description: "Choose a JSON file before uploading.",
+      })
+      return
+    }
+
+    const validationErrors = await validateCourseJsonFile(jsonImportFile)
+    if (validationErrors.length > 0) {
+      toast.error("Fix JSON validation errors", {
+        description: validationErrors.join(" | "),
+      })
+      return
+    }
+
+    importCourseJsonMutation.mutate(jsonImportFile)
   }
 
   const handleAddModule = async () => {
@@ -2341,6 +2461,48 @@ export function CoursesManagementView() {
             </Button>
           </div>
 
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Import Course JSON</CardTitle>
+              <CardDescription>
+                Upload a course JSON file to create or update an entire course hierarchy.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  ref={jsonImportInputRef}
+                  type="file"
+                  accept=".json,application/json,text/plain,text/json"
+                  onChange={handleJsonFileChange}
+                  className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+                />
+                <Button
+                  onClick={handleJsonImport}
+                  disabled={!jsonImportFile || importCourseJsonMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {importCourseJsonMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload JSON
+                    </>
+                  )}
+                </Button>
+              </div>
+              {jsonImportFile && (
+                <p className="text-sm text-gray-500">
+                  Selected file: {jsonImportFile.name}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Courses Table */}
           <Card>
             <CardHeader>
@@ -2901,7 +3063,8 @@ export function CoursesManagementView() {
                     </Button>
                   </div>
                 ) : (
-                  modules.map((module, index) => (
+                  <div className="max-h-[560px] space-y-2 overflow-y-auto pr-2">
+                    {modules.map((module, index) => (
                     <div
                       key={module.module_id}
                       className={`p-3 rounded-lg border transition-colors ${
@@ -2958,7 +3121,8 @@ export function CoursesManagementView() {
                         </button>
                       </div>
                     </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>

@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import { readFile } from "node:fs/promises"
 
 const profileView = await readFile("app/dashboard/_components/profile-view.tsx", "utf8")
-const adminPage = await readFile("app/admin/page-client.tsx", "utf8")
+const adminUsersPage = await readFile("app/admin/users/page-client.tsx", "utf8")
 const apiClient = await readFile("lib/api.ts", "utf8")
 const adminRoutes = await readFile("api/domains/users/routes/admin.py", "utf8")
 const rewardsRoutes = await readFile("api/domains/courses/routes/rewards.py", "utf8")
@@ -38,18 +38,18 @@ const checks = [
     "admin certificate assignment is tied to enrolled courses",
     adminRoutes.includes("UserCourseEnrollment") &&
       adminRoutes.includes("Student is not enrolled in this course") &&
-      adminPage.includes("selectedUserLearning?.enrolled_courses"),
+      adminUsersPage.includes("selectedUserLearning?.enrolled_courses"),
   ],
   [
     "admin modal displays enrolled courses and certificate links",
-    adminPage.includes("Enrolled Courses") &&
-      adminPage.includes("View Certificate") &&
-      adminPage.includes("No certificate yet"),
+    adminUsersPage.includes("Enrolled Courses") &&
+      adminUsersPage.includes("View Certificate") &&
+      adminUsersPage.includes("No certificate yet"),
   ],
   [
     "admin modal can save or update certificate URL",
-    adminPage.includes("Certificate URL") &&
-      adminPage.includes("handleSaveCertificate") &&
+    adminUsersPage.includes("Certificate URL") &&
+      adminUsersPage.includes("handleSaveCertificate") &&
       adminRoutes.includes("certificate.certificate_url = request.certificate_url.strip()"),
   ],
 ]
