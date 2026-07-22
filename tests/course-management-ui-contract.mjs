@@ -30,6 +30,7 @@ assert.match(learnPage, /w-full min-w-0 max-w-full rounded-xl border border-gray
 assert.match(learnPage, /break-words text-sm font-semibold leading-snug text-gray-900/)
 assert.match(learnPage, /break-words text-\[13px\] font-semibold leading-snug/)
 assert.match(learnPage, /mt-0\.5 break-words text-\[11px\] leading-4 text-gray-500/)
+assert.match(learnPage, /mt-0\.5 line-clamp-2 break-words text-\[11px\] leading-4 text-gray-500/)
 assert.match(learnPage, /break-words px-1 py-2 text-\[11px\] leading-4 text-gray-600/)
 assert.match(learnPage, /flex h-full min-w-0 min-h-0 flex-col bg-linear-to-b/)
 assert.match(learnPage, /ScrollArea className="min-h-0 flex-1 px-4 pb-5 pt-4"/)

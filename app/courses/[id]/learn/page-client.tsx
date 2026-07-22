@@ -247,7 +247,7 @@ function ProjectCard({ project, isActive, onSelect }: ProjectCardProps) {
             {project.title}
           </h4>
           {project.description && (
-            <p className="mt-0.5 break-words text-[11px] leading-4 text-gray-500">{project.description}</p>
+            <p className="mt-0.5 line-clamp-2 break-words text-[11px] leading-4 text-gray-500">{project.description}</p>
           )}
           <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] text-gray-400">
             {project.estimated_hours && (

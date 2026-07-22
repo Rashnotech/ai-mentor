@@ -57,6 +57,7 @@ const checks = [
       learnPage.includes("break-words text-sm font-semibold leading-snug text-gray-900") &&
       learnPage.includes("break-words text-[13px] font-semibold leading-snug") &&
       learnPage.includes("mt-0.5 break-words text-[11px] leading-4 text-gray-500") &&
+      learnPage.includes("mt-0.5 line-clamp-2 break-words text-[11px] leading-4 text-gray-500") &&
       learnPage.includes("break-words px-1 py-2 text-[11px] leading-4 text-gray-600") &&
       learnPage.includes("flex h-full min-w-0 min-h-0 flex-col bg-linear-to-b") &&
       !/w-full min-w-0 max-w-full overflow-hidden rounded-(lg|xl)/.test(learnPage) &&
