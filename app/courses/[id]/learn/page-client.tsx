@@ -153,7 +153,7 @@ function LessonCard({ lesson, isActive, onSelect }: LessonCardProps) {
   return (
     <div
       onClick={onSelect}
-      className={`w-full min-w-0 max-w-full overflow-hidden rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer ${
+      className={`w-full min-w-0 max-w-full rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer ${
         isActive
           ? "border-blue-300 bg-blue-50 shadow-sm"
           : lesson.is_completed
@@ -212,7 +212,7 @@ function ProjectCard({ project, isActive, onSelect }: ProjectCardProps) {
   return (
     <div
       onClick={onSelect}
-      className={`w-full min-w-0 max-w-full overflow-hidden rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer ${
+      className={`w-full min-w-0 max-w-full rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer ${
         isActive
           ? "border-purple-300 bg-purple-50 shadow-sm"
           : project.is_completed
@@ -295,7 +295,7 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
                          (module.quiz?.is_completed ? 1 : 0)
 
   return (
-    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-gray-200 bg-white">
+    <div className="w-full min-w-0 max-w-full rounded-xl border border-gray-200 bg-white">
       <button
         onClick={onToggle}
         className="flex w-full min-w-0 items-center justify-between gap-2.5 p-2.5 transition-colors hover:bg-gray-50"
@@ -349,7 +349,7 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
           {module.quiz && module.quiz.questions.length > 0 && (
             <div
               onClick={() => onSelectItem(`quiz-${module.module_id}`, "quiz")}
-              className={`w-full min-w-0 max-w-full overflow-hidden rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer ${
+              className={`w-full min-w-0 max-w-full rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer ${
                 activeItemId === `quiz-${module.module_id}`
                   ? "border-amber-300 bg-amber-50 shadow-sm"
                   : module.quiz.is_completed
@@ -1423,7 +1423,7 @@ function LearningNavigationPanel({
   onClose,
 }: LearningNavigationPanelProps) {
   return (
-    <div className="flex h-full min-w-0 min-h-0 flex-col overflow-hidden bg-linear-to-b from-white to-slate-50">
+    <div className="flex h-full min-w-0 min-h-0 flex-col bg-linear-to-b from-white to-slate-50">
       <div className="border-b border-gray-100 px-4 py-4 text-left">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -2067,7 +2067,7 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
         </div>
 
         <aside className="hidden w-[360px] shrink-0 lg:block xl:w-[390px]">
-          <div className="sticky top-24 h-[calc(100vh-7rem)] overflow-hidden rounded-3xl border border-white/80 bg-white/90 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur">
+          <div className="sticky top-24 h-[calc(100vh-7rem)] rounded-3xl border border-white/80 bg-white/90 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur">
             <LearningNavigationPanel
               courseContent={courseContent}
               expandedModules={expandedModules}

@@ -46,16 +46,20 @@ const checks = [
     "student learn sidebar is desktop-visible and mobile-toggleable",
     learnPage.includes('className="border-gray-200 bg-white/90 shadow-none lg:hidden"') &&
       learnPage.includes('<aside className="hidden w-[360px] shrink-0 lg:block xl:w-[390px]">') &&
-      learnPage.includes("sticky top-24 h-[calc(100vh-7rem)] overflow-hidden") &&
+      learnPage.includes("sticky top-24 h-[calc(100vh-7rem)] rounded-3xl") &&
+      !learnPage.includes("sticky top-24 h-[calc(100vh-7rem)] overflow-hidden") &&
       !/SheetHeader|SheetTitle|SheetDescription/.test(learnPage),
   ],
   [
     "student learn sidebar text is width-safe",
-    learnPage.includes("w-full min-w-0 max-w-full overflow-hidden rounded-lg border px-2.5 py-2 text-left") &&
+    learnPage.includes("w-full min-w-0 max-w-full rounded-lg border px-2.5 py-2 text-left") &&
+      learnPage.includes("w-full min-w-0 max-w-full rounded-xl border border-gray-200 bg-white") &&
       learnPage.includes("truncate text-[13px] font-semibold leading-snug") &&
       learnPage.includes("line-clamp-1 break-words text-[11px] leading-4 text-gray-500") &&
       learnPage.includes("line-clamp-2 break-words px-1 py-2 text-[11px] leading-4 text-gray-600") &&
-      learnPage.includes("flex h-full min-w-0 min-h-0 flex-col overflow-hidden") &&
+      learnPage.includes("flex h-full min-w-0 min-h-0 flex-col bg-linear-to-b") &&
+      !/w-full min-w-0 max-w-full overflow-hidden rounded-(lg|xl)/.test(learnPage) &&
+      !learnPage.includes("flex h-full min-w-0 min-h-0 flex-col overflow-hidden") &&
       learnPage.includes('ScrollArea className="min-h-0 flex-1 px-4 pb-5 pt-4"') &&
       learnPage.includes('className="min-w-0 space-y-2 pr-1"') &&
       !learnPage.includes("wrap-break-word"),
