@@ -1171,8 +1171,86 @@ export default function MyCoursesPage() {
             <CardDescription>Manage your courses, paths, modules, lessons, projects, and quizzes.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="grid gap-3 xl:hidden">
+              {filteredCourses.map((course) => (
+                <div key={course.course_id} className="rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold text-gray-900 line-clamp-1">{course.title}</h3>
+                        <Badge
+                          className={
+                            course.is_active
+                              ? "bg-green-100 text-green-700 border-0"
+                              : "bg-gray-100 text-gray-600 border-0"
+                          }
+                        >
+                          {course.is_active ? "Active" : "Draft"}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-sm text-gray-500 line-clamp-2">{course.description || "No description"}</p>
+                      <code className="mt-3 inline-block max-w-full truncate rounded bg-gray-100 px-2 py-1 font-mono text-xs text-gray-700">
+                        /courses/{course.slug}
+                      </code>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-gray-600 sm:grid-cols-4">
+                    <span>{course.paths_count || 0} paths</span>
+                    <span>{course.modules_count || 0} modules</span>
+                    <span>{course.estimated_hours}h</span>
+                    <span className="capitalize">{course.difficulty_level.toLowerCase()}</span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 bg-transparent"
+                      onClick={() => setSelectedCourse(course.course_id)}
+                    >
+                      <FolderOpen className="w-4 h-4 mr-1" />
+                      Manage
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="h-8 bg-transparent">
+                      <Link href={`/courses/${course.slug}/learn?preview=1`} aria-label={`Preview ${course.title}`}>
+                        <Eye className="w-4 h-4 mr-1" />
+                        Preview
+                      </Link>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      onClick={() => openEditCourseModal(course)}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => {
+                        setCourseToDelete(course)
+                        setShowDeleteConfirm(true)
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden overflow-hidden xl:block">
+              <table className="w-full table-fixed">
+                <colgroup>
+                  <col className="w-[24%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[17%]" />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Course</th>
@@ -1190,12 +1268,12 @@ export default function MyCoursesPage() {
                     <tr key={course.course_id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4">
                         <div>
-                          <p className="font-medium text-sm text-gray-900">{course.title}</p>
+                          <p className="font-medium text-sm text-gray-900 truncate">{course.title}</p>
                           <p className="text-xs text-gray-500 line-clamp-1">{course.description || "No description"}</p>
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <code className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700 font-mono">
+                        <code className="block truncate px-2 py-1 bg-gray-100 rounded text-xs text-gray-700 font-mono">
                           /courses/{course.slug}
                         </code>
                       </td>
@@ -1227,7 +1305,7 @@ export default function MyCoursesPage() {
                         </Badge>
                       </td>
                       <td className="py-3 px-4">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex flex-wrap justify-end gap-2">
                           <Button
                             size="sm"
                             variant="outline"
@@ -2907,12 +2985,12 @@ export default function MyCoursesPage() {
 
       {/* Edit Project Modal */}
       <Dialog open={showEditProjectModal} onOpenChange={setShowEditProjectModal}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="shrink-0">
             <DialogTitle>Edit Project</DialogTitle>
             <DialogDescription>Update this project.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto pr-2 flex-1">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-project-title">Title *</Label>
@@ -2940,7 +3018,7 @@ export default function MyCoursesPage() {
               <Input id="edit-project-skills" value={projectForm.required_skills} onChange={(e) => setProjectForm({ ...projectForm, required_skills: e.target.value })} />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="shrink-0">
             <Button variant="outline" onClick={() => setShowEditProjectModal(false)}>Cancel</Button>
             <Button onClick={handleUpdateProject} disabled={!projectForm.title || !projectForm.description || updateProjectMutation.isPending}>
               {updateProjectMutation.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : "Save Changes"}

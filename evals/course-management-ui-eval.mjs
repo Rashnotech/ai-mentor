@@ -43,12 +43,15 @@ const checks = [
     !/<h3 className="mb-6 text-base font-semibold text-gray-900 sm:text-lg">\s*\{currentQuestion\.question_text\}\s*<\/h3>/.test(learnPage),
   ],
   [
-    "mentor course list uses admin table layout",
+    "mentor course list uses responsive admin-style layout without horizontal scroll",
     mentorCourses.includes("Course Catalog") &&
       mentorCourses.includes("Canonical Path") &&
-      mentorCourses.includes('<table className="w-full">') &&
+      mentorCourses.includes("grid gap-3 xl:hidden") &&
+      mentorCourses.includes("hidden overflow-hidden xl:block") &&
+      mentorCourses.includes('<table className="w-full table-fixed">') &&
       mentorCourses.includes("Manage") &&
-      mentorCourses.includes("Preview"),
+      mentorCourses.includes("Preview") &&
+      !mentorCourses.includes("overflow-x-auto"),
   ],
   [
     "mentor selected-course view follows admin detail flow",
@@ -58,6 +61,13 @@ const checks = [
       mentorCourses.includes("Edit Course") &&
       mentorCourses.includes("Add Learning Path") &&
       !mentorCourses.includes("Click to manage content"),
+  ],
+  [
+    "mentor edit-project modal stays within viewport and scrolls internally",
+    mentorCourses.includes("Dialog open={showEditProjectModal}") &&
+      mentorCourses.includes("max-w-lg max-h-[90vh] overflow-hidden flex flex-col") &&
+      mentorCourses.includes("space-y-4 overflow-y-auto pr-2 flex-1") &&
+      mentorCourses.includes("DialogFooter className=\"shrink-0\""),
   ],
   [
     "gate typecheck includes touched pages",
