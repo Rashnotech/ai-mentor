@@ -178,7 +178,7 @@ function LessonCard({ lesson, isActive, onSelect }: LessonCardProps) {
             {lesson.title}
           </h4>
           {lesson.description && (
-            <p className="mt-0.5 line-clamp-1 break-words text-[11px] leading-4 text-gray-500">{lesson.description}</p>
+            <p className="mt-0.5 line-clamp-1 text-wrap text-ellipsis text-[11px] leading-4 text-gray-500">{lesson.description}</p>
           )}
           <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] text-gray-400">
             {lesson.content_type && (
@@ -247,7 +247,7 @@ function ProjectCard({ project, isActive, onSelect }: ProjectCardProps) {
             {project.title}
           </h4>
           {project.description && (
-            <p className="mt-0.5 line-clamp-1 break-words text-[11px] leading-4 text-gray-500">{project.description}</p>
+            <p className="mt-0.5 line-clamp-1 text-wrap text-ellipsis text-[11px] leading-4 text-gray-500">{project.description}</p>
           )}
           <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] text-gray-400">
             {project.estimated_hours && (
@@ -333,7 +333,7 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
       {isExpanded && (
         <div className="space-y-1.5 border-t border-gray-100 p-2.5 pt-0">
           {module.description && (
-            <p className="line-clamp-2 break-words px-1 py-2 text-[11px] leading-4 text-gray-600">{module.description}</p>
+            <p className="line-clamp-2 text-ellipsis px-1 py-2 text-[11px] leading-4 text-gray-600">{module.description}</p>
           )}
           
           {module.lessons.map((lesson) => (
