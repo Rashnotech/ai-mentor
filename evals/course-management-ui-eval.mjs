@@ -43,6 +43,20 @@ const checks = [
     !/<h3 className="mb-6 text-base font-semibold text-gray-900 sm:text-lg">\s*\{currentQuestion\.question_text\}\s*<\/h3>/.test(learnPage),
   ],
   [
+    "student learn sidebar is desktop-visible and mobile-toggleable",
+    learnPage.includes('className="border-gray-200 bg-white/90 shadow-none lg:hidden"') &&
+      learnPage.includes('<aside className="hidden w-[360px] shrink-0 lg:block xl:w-[390px]">') &&
+      learnPage.includes("sticky top-24 h-[calc(100vh-7rem)] overflow-hidden") &&
+      !/SheetHeader|SheetTitle|SheetDescription/.test(learnPage),
+  ],
+  [
+    "student learn sidebar text is width-safe",
+    learnPage.includes("w-full max-w-full overflow-hidden rounded-xl border p-3 text-left") &&
+      learnPage.includes("truncate text-sm font-semibold leading-snug") &&
+      learnPage.includes("line-clamp-3 break-words px-1 py-2 text-xs leading-5 text-gray-600") &&
+      !learnPage.includes("wrap-break-word"),
+  ],
+  [
     "mentor course list uses responsive admin-style layout without horizontal scroll",
     mentorCourses.includes("Course Catalog") &&
       mentorCourses.includes("Canonical Path") &&

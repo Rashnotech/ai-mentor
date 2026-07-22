@@ -34,9 +34,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
 } from "@/components/ui/sheet"
 import { studentCoursesApi, type LearningContentResponse, type ModuleContent, type LessonContent, type ProjectContent, type QuizContent, type QuizQuestion } from "@/lib/api"
 import { toast } from "sonner"
@@ -156,7 +153,7 @@ function LessonCard({ lesson, isActive, onSelect }: LessonCardProps) {
   return (
     <div
       onClick={onSelect}
-      className={`p-4 rounded-xl border transition-all cursor-pointer ${
+      className={`w-full max-w-full overflow-hidden rounded-xl border p-3 text-left transition-all cursor-pointer ${
         isActive
           ? "border-blue-300 bg-blue-50 shadow-sm"
           : lesson.is_completed
@@ -164,9 +161,9 @@ function LessonCard({ lesson, isActive, onSelect }: LessonCardProps) {
           : "border-gray-200 bg-white hover:border-blue-200 hover:shadow-sm"
       }`}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex min-w-0 items-start gap-2.5">
         <div
-          className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+          className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
             lesson.is_completed
               ? "bg-green-100 text-green-600"
               : isActive
@@ -177,25 +174,25 @@ function LessonCard({ lesson, isActive, onSelect }: LessonCardProps) {
           {lesson.is_completed ? <CheckCircle2 className="w-5 h-5" /> : getContentIcon()}
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className={`font-semibold ${lesson.is_completed ? "text-green-700" : "text-gray-900"}`}>
+          <h4 className={`truncate text-sm font-semibold leading-snug ${lesson.is_completed ? "text-green-700" : "text-gray-900"}`}>
             {lesson.title}
           </h4>
           {lesson.description && (
-            <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">{lesson.description}</p>
+            <p className="mt-0.5 line-clamp-2 break-words text-xs leading-5 text-gray-500">{lesson.description}</p>
           )}
-          <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-gray-400">
             {lesson.content_type && (
-              <span className="capitalize">{lesson.content_type}</span>
+              <span className="max-w-[8rem] truncate capitalize">{lesson.content_type}</span>
             )}
             {lesson.estimated_minutes && (
-              <span className="flex items-center gap-1">
+              <span className="flex shrink-0 items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {lesson.estimated_minutes} min
               </span>
             )}
           </div>
         </div>
-        {isActive && <ArrowRight className="w-5 h-5 text-blue-500 shrink-0" />}
+        {isActive && <ArrowRight className="w-4 h-4 text-blue-500 shrink-0" />}
       </div>
     </div>
   )
@@ -215,7 +212,7 @@ function ProjectCard({ project, isActive, onSelect }: ProjectCardProps) {
   return (
     <div
       onClick={onSelect}
-      className={`p-4 rounded-xl border transition-all cursor-pointer ${
+      className={`w-full max-w-full overflow-hidden rounded-xl border p-3 text-left transition-all cursor-pointer ${
         isActive
           ? "border-purple-300 bg-purple-50 shadow-sm"
           : project.is_completed
@@ -223,9 +220,9 @@ function ProjectCard({ project, isActive, onSelect }: ProjectCardProps) {
           : "border-gray-200 bg-white hover:border-purple-200 hover:shadow-sm"
       }`}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex min-w-0 items-start gap-2.5">
         <div
-          className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+          className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
             project.is_completed
               ? "bg-green-100 text-green-600"
               : isActive
@@ -246,15 +243,15 @@ function ProjectCard({ project, isActive, onSelect }: ProjectCardProps) {
               </span>
             )}
           </div>
-          <h4 className={`font-semibold mt-1 ${project.is_completed ? "text-green-700" : "text-gray-900"}`}>
+          <h4 className={`mt-1 truncate text-sm font-semibold leading-snug ${project.is_completed ? "text-green-700" : "text-gray-900"}`}>
             {project.title}
           </h4>
           {project.description && (
-            <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">{project.description}</p>
+            <p className="mt-0.5 line-clamp-2 break-words text-xs leading-5 text-gray-500">{project.description}</p>
           )}
-          <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-gray-400">
             {project.estimated_hours && (
-              <span className="flex items-center gap-1">
+              <span className="flex shrink-0 items-center gap-1">
                 <Clock className="w-3 h-3" />
                 ~{project.estimated_hours}h
               </span>
@@ -265,15 +262,15 @@ function ProjectCard({ project, isActive, onSelect }: ProjectCardProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 text-blue-500 hover:underline"
+                className="flex min-w-0 items-center gap-1 text-blue-500 hover:underline"
               >
                 <ExternalLink className="w-3 h-3" />
-                Starter Code
+                <span className="truncate">Starter Code</span>
               </a>
             )}
           </div>
         </div>
-        {isActive && <ArrowRight className="w-5 h-5 text-purple-500 shrink-0" />}
+        {isActive && <ArrowRight className="w-4 h-4 text-purple-500 shrink-0" />}
       </div>
     </div>
   )
@@ -314,10 +311,10 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
             )}
           </div>
           <div className="text-left min-w-0 flex-1">
-            <h3 className="font-semibold text-gray-900 text-sm leading-snug line-clamp-1 wrap-break-word">
+            <h3 className="truncate text-sm font-semibold leading-snug text-gray-900">
               {module.title}
             </h3>
-            <p className="text-xs text-gray-500 line-clamp-1 wrap-break-word">
+            <p className="truncate text-xs text-gray-500">
               {completedItems}/{totalItems} completed • {module.progress_percent}%
             </p>
           </div>
@@ -336,7 +333,7 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
       {isExpanded && (
         <div className="p-3 pt-0 space-y-2 border-t border-gray-100">
           {module.description && (
-            <p className="text-xs text-gray-600 px-1 py-2 line-clamp-2 wrap-break-word">{module.description}</p>
+            <p className="line-clamp-3 break-words px-1 py-2 text-xs leading-5 text-gray-600">{module.description}</p>
           )}
           
           {module.lessons.map((lesson) => (
@@ -383,10 +380,10 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
                       </span>
                     )}
                   </div>
-                  <h4 className={`font-semibold mt-1 text-sm leading-snug wrap-break-word ${module.quiz.is_completed ? "text-green-700" : "text-gray-900"}`}>
+                  <h4 className={`mt-1 truncate text-sm font-semibold leading-snug ${module.quiz.is_completed ? "text-green-700" : "text-gray-900"}`}>
                     Module Quiz
                   </h4>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="mt-0.5 truncate text-xs text-gray-500">
                     {module.quiz.answered_count}/{module.quiz.total_questions} questions answered
                   </p>
                 </div>
@@ -1427,13 +1424,13 @@ function LearningNavigationPanel({
 }: LearningNavigationPanelProps) {
   return (
     <div className="flex h-full min-h-0 flex-col bg-linear-to-b from-white to-slate-50">
-      <SheetHeader className="border-b border-gray-100 px-5 py-4 text-left">
+      <div className="border-b border-gray-100 px-5 py-4 text-left">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <SheetTitle className="text-base font-semibold text-gray-900">Course outline</SheetTitle>
-            <SheetDescription className="text-xs text-gray-500">
+            <h2 className="text-base font-semibold text-gray-900">Course outline</h2>
+            <p className="text-xs text-gray-500">
               Browse modules without leaving the lesson view.
-            </SheetDescription>
+            </p>
           </div>
           {onClose ? (
             <Button variant="ghost" size="icon-sm" onClick={onClose} className="rounded-full">
@@ -1456,7 +1453,7 @@ function LearningNavigationPanel({
             <p className="text-sm font-semibold text-gray-900">{courseContent.progress.completed_projects}/{courseContent.progress.total_projects}</p>
           </div>
         </div>
-      </SheetHeader>
+      </div>
 
       <div className="px-5 pt-4">
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -1905,7 +1902,7 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
               <Button
                 variant="outline"
                 onClick={() => setIsModulePanelOpen(true)}
-                className="hidden border-gray-200 bg-white/90 shadow-none sm:inline-flex"
+                className="border-gray-200 bg-white/90 shadow-none lg:hidden"
               >
                 <PanelLeft className="w-4 h-4" />
                 Modules
@@ -2068,6 +2065,18 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
             </div>
           )}
         </div>
+
+        <aside className="hidden w-[360px] shrink-0 lg:block xl:w-[390px]">
+          <div className="sticky top-24 h-[calc(100vh-7rem)] overflow-hidden rounded-3xl border border-white/80 bg-white/90 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur">
+            <LearningNavigationPanel
+              courseContent={courseContent}
+              expandedModules={expandedModules}
+              activeItemId={activeItemId}
+              onToggleModule={handleToggleModule}
+              onSelectItem={handleSelectItem}
+            />
+          </div>
+        </aside>
       </div>
     </div>
   )
