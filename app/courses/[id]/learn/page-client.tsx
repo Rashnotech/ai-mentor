@@ -138,22 +138,22 @@ function LessonCard({ lesson, isActive, onSelect }: LessonCardProps) {
   const getContentIcon = () => {
     switch (lesson.content_type?.toLowerCase()) {
       case "video":
-        return <Video className="w-5 h-5" />
+        return <Video className="w-4 h-4" />
       case "article":
       case "text":
-        return <FileText className="w-5 h-5" />
+        return <FileText className="w-4 h-4" />
       case "code":
       case "exercise":
-        return <FileCode2 className="w-5 h-5" />
+        return <FileCode2 className="w-4 h-4" />
       default:
-        return <BookOpen className="w-5 h-5" />
+        return <BookOpen className="w-4 h-4" />
     }
   }
 
   return (
     <div
       onClick={onSelect}
-      className={`w-full max-w-full overflow-hidden rounded-xl border p-3 text-left transition-all cursor-pointer ${
+      className={`w-full min-w-0 max-w-full overflow-hidden rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer ${
         isActive
           ? "border-blue-300 bg-blue-50 shadow-sm"
           : lesson.is_completed
@@ -161,9 +161,9 @@ function LessonCard({ lesson, isActive, onSelect }: LessonCardProps) {
           : "border-gray-200 bg-white hover:border-blue-200 hover:shadow-sm"
       }`}
     >
-      <div className="flex min-w-0 items-start gap-2.5">
+      <div className="flex min-w-0 items-start gap-2">
         <div
-          className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
             lesson.is_completed
               ? "bg-green-100 text-green-600"
               : isActive
@@ -171,18 +171,18 @@ function LessonCard({ lesson, isActive, onSelect }: LessonCardProps) {
               : "bg-gray-100 text-gray-500"
           }`}
         >
-          {lesson.is_completed ? <CheckCircle2 className="w-5 h-5" /> : getContentIcon()}
+          {lesson.is_completed ? <CheckCircle2 className="w-4 h-4" /> : getContentIcon()}
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className={`truncate text-sm font-semibold leading-snug ${lesson.is_completed ? "text-green-700" : "text-gray-900"}`}>
+          <h4 className={`truncate text-[13px] font-semibold leading-snug ${lesson.is_completed ? "text-green-700" : "text-gray-900"}`}>
             {lesson.title}
           </h4>
           {lesson.description && (
-            <p className="mt-0.5 line-clamp-2 break-words text-xs leading-5 text-gray-500">{lesson.description}</p>
+            <p className="mt-0.5 line-clamp-1 break-words text-[11px] leading-4 text-gray-500">{lesson.description}</p>
           )}
-          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-gray-400">
+          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] text-gray-400">
             {lesson.content_type && (
-              <span className="max-w-[8rem] truncate capitalize">{lesson.content_type}</span>
+              <span className="max-w-[6rem] truncate capitalize">{lesson.content_type}</span>
             )}
             {lesson.estimated_minutes && (
               <span className="flex shrink-0 items-center gap-1">
@@ -192,7 +192,7 @@ function LessonCard({ lesson, isActive, onSelect }: LessonCardProps) {
             )}
           </div>
         </div>
-        {isActive && <ArrowRight className="w-4 h-4 text-blue-500 shrink-0" />}
+        {isActive && <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-500" />}
       </div>
     </div>
   )
@@ -212,7 +212,7 @@ function ProjectCard({ project, isActive, onSelect }: ProjectCardProps) {
   return (
     <div
       onClick={onSelect}
-      className={`w-full max-w-full overflow-hidden rounded-xl border p-3 text-left transition-all cursor-pointer ${
+      className={`w-full min-w-0 max-w-full overflow-hidden rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer ${
         isActive
           ? "border-purple-300 bg-purple-50 shadow-sm"
           : project.is_completed
@@ -220,9 +220,9 @@ function ProjectCard({ project, isActive, onSelect }: ProjectCardProps) {
           : "border-gray-200 bg-white hover:border-purple-200 hover:shadow-sm"
       }`}
     >
-      <div className="flex min-w-0 items-start gap-2.5">
+      <div className="flex min-w-0 items-start gap-2">
         <div
-          className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
             project.is_completed
               ? "bg-green-100 text-green-600"
               : isActive
@@ -230,26 +230,26 @@ function ProjectCard({ project, isActive, onSelect }: ProjectCardProps) {
               : "bg-gray-100 text-gray-500"
           }`}
         >
-          {project.is_completed ? <CheckCircle2 className="w-5 h-5" /> : <Code2 className="w-5 h-5" />}
+          {project.is_completed ? <CheckCircle2 className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
+            <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">
               Project
             </span>
             {project.is_completed && (
-              <span className="text-xs font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded">
+              <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700">
                 Completed
               </span>
             )}
           </div>
-          <h4 className={`mt-1 truncate text-sm font-semibold leading-snug ${project.is_completed ? "text-green-700" : "text-gray-900"}`}>
+          <h4 className={`mt-1 truncate text-[13px] font-semibold leading-snug ${project.is_completed ? "text-green-700" : "text-gray-900"}`}>
             {project.title}
           </h4>
           {project.description && (
-            <p className="mt-0.5 line-clamp-2 break-words text-xs leading-5 text-gray-500">{project.description}</p>
+            <p className="mt-0.5 line-clamp-1 break-words text-[11px] leading-4 text-gray-500">{project.description}</p>
           )}
-          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-gray-400">
+          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] text-gray-400">
             {project.estimated_hours && (
               <span className="flex shrink-0 items-center gap-1">
                 <Clock className="w-3 h-3" />
@@ -270,7 +270,7 @@ function ProjectCard({ project, isActive, onSelect }: ProjectCardProps) {
             )}
           </div>
         </div>
-        {isActive && <ArrowRight className="w-4 h-4 text-purple-500 shrink-0" />}
+        {isActive && <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-purple-500" />}
       </div>
     </div>
   )
@@ -295,13 +295,13 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
                          (module.quiz?.is_completed ? 1 : 0)
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white max-w-full">
+    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-gray-200 bg-white">
       <button
         onClick={onToggle}
-        className="w-full p-3 flex items-center justify-between gap-3 hover:bg-gray-50 transition-colors"
+        className="flex w-full min-w-0 items-center justify-between gap-2.5 p-2.5 transition-colors hover:bg-gray-50"
       >
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
             module.progress_percent === 100 ? "bg-green-100" : "bg-blue-100"
           }`}>
             {module.progress_percent === 100 ? (
@@ -310,7 +310,7 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
               <span className="text-xs font-bold text-blue-600">{module.order}</span>
             )}
           </div>
-          <div className="text-left min-w-0 flex-1">
+          <div className="min-w-0 flex-1 text-left">
             <h3 className="truncate text-sm font-semibold leading-snug text-gray-900">
               {module.title}
             </h3>
@@ -320,7 +320,7 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden hidden md:block">
+          <div className="hidden h-1.5 w-12 overflow-hidden rounded-full bg-gray-100 xl:block">
             <div
               className="h-full bg-blue-600 transition-all duration-300"
               style={{ width: `${module.progress_percent}%` }}
@@ -331,9 +331,9 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
       </button>
 
       {isExpanded && (
-        <div className="p-3 pt-0 space-y-2 border-t border-gray-100">
+        <div className="space-y-1.5 border-t border-gray-100 p-2.5 pt-0">
           {module.description && (
-            <p className="line-clamp-3 break-words px-1 py-2 text-xs leading-5 text-gray-600">{module.description}</p>
+            <p className="line-clamp-2 break-words px-1 py-2 text-[11px] leading-4 text-gray-600">{module.description}</p>
           )}
           
           {module.lessons.map((lesson) => (
@@ -349,7 +349,7 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
           {module.quiz && module.quiz.questions.length > 0 && (
             <div
               onClick={() => onSelectItem(`quiz-${module.module_id}`, "quiz")}
-              className={`p-3 rounded-xl border transition-all cursor-pointer max-w-full ${
+              className={`w-full min-w-0 max-w-full overflow-hidden rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer ${
                 activeItemId === `quiz-${module.module_id}`
                   ? "border-amber-300 bg-amber-50 shadow-sm"
                   : module.quiz.is_completed
@@ -357,9 +357,9 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
                   : "border-gray-200 bg-white hover:border-amber-200 hover:shadow-sm"
               }`}
             >
-              <div className="flex items-start gap-3 min-w-0">
+              <div className="flex min-w-0 items-start gap-2">
                 <div
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
                     module.quiz.is_completed
                       ? "bg-green-100 text-green-600"
                       : activeItemId === `quiz-${module.module_id}`
@@ -371,23 +371,23 @@ function ModuleAccordion({ module, isExpanded, onToggle, activeItemId, onSelectI
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] font-medium px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
+                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
                       Quiz
                     </span>
                     {module.quiz.is_completed && (
-                      <span className="text-[11px] font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded">
+                      <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700">
                         {module.quiz.score_percent}%
                       </span>
                     )}
                   </div>
-                  <h4 className={`mt-1 truncate text-sm font-semibold leading-snug ${module.quiz.is_completed ? "text-green-700" : "text-gray-900"}`}>
+                  <h4 className={`mt-1 truncate text-[13px] font-semibold leading-snug ${module.quiz.is_completed ? "text-green-700" : "text-gray-900"}`}>
                     Module Quiz
                   </h4>
-                  <p className="mt-0.5 truncate text-xs text-gray-500">
+                  <p className="mt-0.5 truncate text-[11px] text-gray-500">
                     {module.quiz.answered_count}/{module.quiz.total_questions} questions answered
                   </p>
                 </div>
-                {activeItemId === `quiz-${module.module_id}` && <ArrowRight className="w-4 h-4 text-amber-500 shrink-0" />}
+                {activeItemId === `quiz-${module.module_id}` && <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />}
               </div>
             </div>
           )}
@@ -1423,8 +1423,8 @@ function LearningNavigationPanel({
   onClose,
 }: LearningNavigationPanelProps) {
   return (
-    <div className="flex h-full min-h-0 flex-col bg-linear-to-b from-white to-slate-50">
-      <div className="border-b border-gray-100 px-5 py-4 text-left">
+    <div className="flex h-full min-w-0 min-h-0 flex-col overflow-hidden bg-linear-to-b from-white to-slate-50">
+      <div className="border-b border-gray-100 px-4 py-4 text-left">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Course outline</h2>
@@ -1439,24 +1439,24 @@ function LearningNavigationPanel({
           ) : null}
         </div>
 
-        <div className="grid grid-cols-3 gap-3 pt-3">
-          <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
+        <div className="grid grid-cols-3 gap-2 pt-3">
+          <div className="min-w-0 rounded-xl border border-blue-100 bg-blue-50 px-2.5 py-2">
             <p className="text-[11px] font-medium uppercase tracking-wide text-blue-600">Modules</p>
             <p className="text-sm font-semibold text-gray-900">{courseContent.modules.length}</p>
           </div>
-          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2">
+          <div className="min-w-0 rounded-xl border border-emerald-100 bg-emerald-50 px-2.5 py-2">
             <p className="text-[11px] font-medium uppercase tracking-wide text-emerald-600">Lessons</p>
             <p className="text-sm font-semibold text-gray-900">{courseContent.progress.completed_lessons}/{courseContent.progress.total_lessons}</p>
           </div>
-          <div className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2">
+          <div className="min-w-0 rounded-xl border border-amber-100 bg-amber-50 px-2.5 py-2">
             <p className="text-[11px] font-medium uppercase tracking-wide text-amber-600">Projects</p>
             <p className="text-sm font-semibold text-gray-900">{courseContent.progress.completed_projects}/{courseContent.progress.total_projects}</p>
           </div>
         </div>
       </div>
 
-      <div className="px-5 pt-4">
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="px-4 pt-4">
+        <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
           <div className="flex items-center justify-between text-sm text-gray-600">
             <span>Overall progress</span>
             <span className="font-semibold text-gray-900">{courseContent.progress.overall_percent}%</span>
@@ -1470,8 +1470,8 @@ function LearningNavigationPanel({
         </div>
       </div>
 
-      <ScrollArea className="min-h-0 flex-1 px-5 pb-5 pt-4">
-        <div className="space-y-3 pr-1">
+      <ScrollArea className="min-h-0 flex-1 px-4 pb-5 pt-4">
+        <div className="min-w-0 space-y-2 pr-1">
           {courseContent.modules.map((module) => (
             <ModuleAccordion
               key={module.module_id}
