@@ -54,12 +54,16 @@ const checks = [
     "student learn sidebar text is width-safe",
     learnPage.includes("w-full min-w-0 max-w-full rounded-lg border px-2.5 py-2 text-left") &&
       learnPage.includes("w-full min-w-0 max-w-full rounded-xl border border-gray-200 bg-white") &&
-      learnPage.includes("truncate text-[13px] font-semibold leading-snug") &&
-      learnPage.includes("line-clamp-1 break-words text-[11px] leading-4 text-gray-500") &&
-      learnPage.includes("line-clamp-2 break-words px-1 py-2 text-[11px] leading-4 text-gray-600") &&
+      learnPage.includes("break-words text-sm font-semibold leading-snug text-gray-900") &&
+      learnPage.includes("break-words text-[13px] font-semibold leading-snug") &&
+      learnPage.includes("mt-0.5 break-words text-[11px] leading-4 text-gray-500") &&
+      learnPage.includes("break-words px-1 py-2 text-[11px] leading-4 text-gray-600") &&
       learnPage.includes("flex h-full min-w-0 min-h-0 flex-col bg-linear-to-b") &&
       !/w-full min-w-0 max-w-full overflow-hidden rounded-(lg|xl)/.test(learnPage) &&
       !learnPage.includes("flex h-full min-w-0 min-h-0 flex-col overflow-hidden") &&
+      !learnPage.includes("truncate text-[13px] font-semibold leading-snug") &&
+      !/line-clamp-1 .*text-\[11px\] leading-4 text-gray-500/.test(learnPage) &&
+      !/line-clamp-2 .*text-\[11px\] leading-4 text-gray-600/.test(learnPage) &&
       learnPage.includes('ScrollArea className="min-h-0 flex-1 px-4 pb-5 pt-4"') &&
       learnPage.includes('className="min-w-0 space-y-2 pr-1"') &&
       !learnPage.includes("wrap-break-word"),
