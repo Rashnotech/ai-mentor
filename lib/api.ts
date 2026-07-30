@@ -1889,6 +1889,17 @@ export const courseAdminApi = {
     return response.data
   },
 
+  /**
+   * Reject a project submission with feedback (mentor/admin). Used for both
+   * "Needs Revision" and "Rejected" outcomes — the backend only has one
+   * negative terminal status.
+   */
+  rejectProjectSubmission: async (submissionId: number, feedback: string): Promise<any> => {
+    const url = `/reviews/submissions/${submissionId}/reject?feedback=${encodeURIComponent(feedback)}`
+    const response = await apiClient.post(url)
+    return response.data
+  },
+
   // Learning Paths
   listLearningPaths: async (courseId: number): Promise<LearningPathResponse[]> => {
     const response = await apiClient.get<LearningPathResponse[]>(`/courses/${courseId}/paths`)

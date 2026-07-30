@@ -108,27 +108,26 @@ const checks = [
     ].every((file) => gateConfig.includes(file)),
   ],
   [
-    "mentor project review only allows Approve (no Needs Revision / Reject)",
-    !/<option value="needs_revision">/.test(mentorStudents) &&
-      !/<option value="rejected">/.test(mentorStudents) &&
-      !mentorStudents.includes("rejectProjectSubmission") &&
-      !mentorStudents.includes("Review Status") &&
-      mentorStudents.includes("Approve Project") &&
-      mentorStudents.includes("courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb, score)"),
+    "mentor project review offers all 3 outcomes: Approved, Needs Revision, Rejected",
+    /<option value="needs_revision">/.test(mentorStudents) &&
+      /<option value="approved">/.test(mentorStudents) &&
+      /<option value="rejected">/.test(mentorStudents) &&
+      mentorStudents.includes("courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb, score)") &&
+      mentorStudents.includes("courseAdminApi.rejectProjectSubmission(Number(project.submission_id), fb)"),
   ],
   [
-    "mentor review form is always editable (approved projects are not locked read-only)",
-    mentorStudents.includes("reviewApproved[project.submission_id] ?? true") &&
-      mentorStudents.includes('type="checkbox"') &&
-      mentorStudents.includes('project.status === "approved" ? "Update Review" : "Approve Project"') &&
-      !mentorStudents.includes("Project Approved</p>"),
+    "mentor review form is always editable (approved/rejected projects are not locked read-only)",
+    mentorStudents.includes('reviewStatus[project.submission_id] || "needs_revision"') &&
+      !mentorStudents.includes("Project Approved</p>") &&
+      mentorStudents.includes('project.status === "approved" &&') &&
+      mentorStudents.includes('project.status === "rejected" &&'),
   ],
   [
-    "mentor score input only shows while the Approved checkbox is checked",
-    /\(reviewApproved\[project\.submission_id\] \?\? true\) && \(\s*<div>\s*<label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Score \(out of 100\)<\/label>/.test(
+    "mentor score input only shows when Review Status is Approved, and Needs Revision/Rejected require feedback",
+    /\(reviewStatus\[project\.submission_id\] \|\| "needs_revision"\) === "approved" && \(\s*<div>\s*<label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Score \(out of 100\)<\/label>/.test(
       mentorStudents
     ) &&
-      mentorStudents.includes('disabled={submittingReviewId === project.submission_id || !(reviewApproved[project.submission_id] ?? true)}'),
+      mentorStudents.includes('if (status !== "approved" && !fb.trim())'),
   ],
   [
     "learning page scrolls to top when the active lesson/module changes",

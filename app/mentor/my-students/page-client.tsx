@@ -43,7 +43,7 @@ export default function MyStudentsPage() {
   const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null)
   const [reviewFeedback, setReviewFeedback] = useState<Record<number, string>>({})
   const [reviewScore, setReviewScore] = useState<Record<number, number>>({})
-  const [reviewApproved, setReviewApproved] = useState<Record<number, boolean>>({})
+  const [reviewStatus, setReviewStatus] = useState<Record<number, "approved" | "needs_revision" | "rejected">>({})
   const [submittingReviewId, setSubmittingReviewId] = useState<number | null>(null)
 
   // Fetch students from API (only students enrolled in mentor's courses)
@@ -85,16 +85,17 @@ export default function MyStudentsPage() {
       // initialize review inputs from existing data
       const fbMap: Record<number, string> = {}
       const scoreMap: Record<number, number> = {}
-      const approvedMap: Record<number, boolean> = {}
+      const statusMap: Record<number, "approved" | "needs_revision" | "rejected"> = {}
       projects.forEach((p) => {
         fbMap[p.submission_id] = p.reviewer_feedback || ""
         scoreMap[p.submission_id] = p.points_earned ?? 100
-        // Default checked — Approve is the only valid review outcome.
-        approvedMap[p.submission_id] = true
+        if (p.status === "approved") statusMap[p.submission_id] = "approved"
+        else if (p.status === "rejected") statusMap[p.submission_id] = "rejected"
+        else statusMap[p.submission_id] = "needs_revision" // default for a fresh submission
       })
       setReviewFeedback(fbMap)
       setReviewScore(scoreMap)
-      setReviewApproved(approvedMap)
+      setReviewStatus(statusMap)
     } catch (error) {
       console.error("Error fetching student projects:", error)
       setStudentProjects([])
@@ -640,26 +641,35 @@ export default function MyStudentsPage() {
                           </div>
                         )}
 
-                        {/* Review Section — always editable, Approve is the only outcome */}
+                        {/* Review Section — always editable, any status can be resubmitted */}
                         <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-4 bg-white border-t border-gray-100">
                           {project.status === "approved" && (
                             <p className="text-xs text-green-700 flex items-center gap-1.5">
                               <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                              Approved on {formatDate(project.reviewed_at)} — you can still update the score or feedback below.
+                              Approved on {formatDate(project.reviewed_at)} — you can still update the status, score, or feedback below.
+                            </p>
+                          )}
+                          {project.status === "rejected" && (
+                            <p className="text-xs text-orange-700 flex items-center gap-1.5">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              Marked as needing revision on {formatDate(project.reviewed_at)} — you can still update the status, score, or feedback below.
                             </p>
                           )}
 
-                          <label className="flex items-center gap-2 cursor-pointer w-fit">
-                            <input
-                              type="checkbox"
-                              checked={reviewApproved[project.submission_id] ?? true}
-                              onChange={(e) => setReviewApproved({ ...reviewApproved, [project.submission_id]: e.target.checked })}
-                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="text-sm font-semibold text-gray-900">Approved</span>
-                          </label>
+                          <div>
+                            <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Review Status</label>
+                            <select
+                              value={reviewStatus[project.submission_id] || "needs_revision"}
+                              onChange={(e) => setReviewStatus({ ...reviewStatus, [project.submission_id]: e.target.value as "approved" | "needs_revision" | "rejected" })}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            >
+                              <option value="needs_revision">Needs Revision</option>
+                              <option value="approved">Approved</option>
+                              <option value="rejected">Rejected</option>
+                            </select>
+                          </div>
 
-                          {(reviewApproved[project.submission_id] ?? true) && (
+                          {(reviewStatus[project.submission_id] || "needs_revision") === "approved" && (
                             <div>
                               <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Score (out of 100)</label>
                               <input
@@ -683,28 +693,36 @@ export default function MyStudentsPage() {
                             <p className="text-xs text-gray-500 mt-1">{reviewFeedback[project.submission_id]?.length || 0}/2000 characters</p>
                           </div>
 
-                          {!(reviewApproved[project.submission_id] ?? true) && (
-                            <p className="text-xs text-gray-500">Check &ldquo;Approved&rdquo; to award a score and save the review.</p>
-                          )}
-
                           {/* Review Actions */}
                           <div className="flex gap-3 pt-2">
                             <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={async () => {
+                              const status = reviewStatus[project.submission_id] || "needs_revision"
                               const fb = reviewFeedback[project.submission_id] || ""
-                              const score = reviewScore[project.submission_id] ?? 100
-                              const wasAlreadyApproved = project.status === "approved"
+
+                              if (status !== "approved" && !fb.trim()) {
+                                toast.error("Feedback is required for Needs Revision or Rejected.")
+                                return
+                              }
+
                               setSubmittingReviewId(project.submission_id)
                               try {
-                                const res = await courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb, score)
-                                setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? score, reviewer_feedback: fb, reviewed_at: res.reviewed_at } : p))
-                                toast.success(wasAlreadyApproved ? "Review updated!" : "Project approved successfully!")
+                                if (status === "approved") {
+                                  const score = reviewScore[project.submission_id] ?? 100
+                                  const res = await courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb, score)
+                                  setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? score, reviewer_feedback: fb, reviewed_at: res.reviewed_at } : p))
+                                  toast.success("Project approved successfully!")
+                                } else {
+                                  const res = await courseAdminApi.rejectProjectSubmission(Number(project.submission_id), fb)
+                                  setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: res.reviewer_feedback, reviewed_at: res.reviewed_at } : p))
+                                  toast.success(status === "needs_revision" ? "Sent back for revision." : "Project rejected.")
+                                }
                               } catch (err) {
                                 console.error("Review error:", err)
                                 toast.error("Failed to submit review. Please try again.")
                               } finally {
                                 setSubmittingReviewId(null)
                               }
-                            }} disabled={submittingReviewId === project.submission_id || !(reviewApproved[project.submission_id] ?? true)}>
+                            }} disabled={submittingReviewId === project.submission_id}>
                               {submittingReviewId === project.submission_id ? (
                                 <>
                                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -713,7 +731,11 @@ export default function MyStudentsPage() {
                               ) : (
                                 <>
                                   <CheckCircle className="w-4 h-4 mr-2" />
-                                  {project.status === "approved" ? "Update Review" : "Approve Project"}
+                                  {(reviewStatus[project.submission_id] || "needs_revision") === "approved"
+                                    ? "Approve Project"
+                                    : (reviewStatus[project.submission_id] || "needs_revision") === "rejected"
+                                      ? "Reject Project"
+                                      : "Send Back for Revision"}
                                 </>
                               )}
                             </Button>
