@@ -43,6 +43,7 @@ export default function MyStudentsPage() {
   const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null)
   const [reviewFeedback, setReviewFeedback] = useState<Record<number, string>>({})
   const [reviewScore, setReviewScore] = useState<Record<number, number>>({})
+  const [reviewApproved, setReviewApproved] = useState<Record<number, boolean>>({})
   const [submittingReviewId, setSubmittingReviewId] = useState<number | null>(null)
 
   // Fetch students from API (only students enrolled in mentor's courses)
@@ -84,12 +85,16 @@ export default function MyStudentsPage() {
       // initialize review inputs from existing data
       const fbMap: Record<number, string> = {}
       const scoreMap: Record<number, number> = {}
+      const approvedMap: Record<number, boolean> = {}
       projects.forEach((p) => {
         fbMap[p.submission_id] = p.reviewer_feedback || ""
         scoreMap[p.submission_id] = p.points_earned ?? 100
+        // Default checked — Approve is the only valid review outcome.
+        approvedMap[p.submission_id] = true
       })
       setReviewFeedback(fbMap)
       setReviewScore(scoreMap)
+      setReviewApproved(approvedMap)
     } catch (error) {
       console.error("Error fetching student projects:", error)
       setStudentProjects([])
@@ -635,29 +640,26 @@ export default function MyStudentsPage() {
                           </div>
                         )}
 
-                        {/* Approval Status or Review Section */}
-                        {project.status === "approved" ? (
-                          <div className="px-4 py-4 sm:px-6 sm:py-5 bg-green-50 border-t border-green-100">
-                            <div className="flex items-start gap-3">
-                              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-green-900">Project Approved</p>
-                                <p className="text-xs text-green-700 mt-1">This project was approved on {formatDate(project.reviewed_at)}</p>
-                                <div className="mt-3 p-3 bg-white rounded-lg border border-green-100">
-                                  <p className="text-xs font-medium text-gray-600 mb-1">Score</p>
-                                  <p className="text-lg font-bold text-blue-600">{project.points_earned}/100</p>
-                                </div>
-                                {project.reviewer_feedback && (
-                                  <div className="mt-3 p-3 bg-white rounded-lg border border-green-100">
-                                    <p className="text-xs font-medium text-gray-600 mb-1">Your Feedback:</p>
-                                    <p className="text-sm text-gray-700">{project.reviewer_feedback}</p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-4 bg-white">
+                        {/* Review Section — always editable, Approve is the only outcome */}
+                        <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-4 bg-white border-t border-gray-100">
+                          {project.status === "approved" && (
+                            <p className="text-xs text-green-700 flex items-center gap-1.5">
+                              <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                              Approved on {formatDate(project.reviewed_at)} — you can still update the score or feedback below.
+                            </p>
+                          )}
+
+                          <label className="flex items-center gap-2 cursor-pointer w-fit">
+                            <input
+                              type="checkbox"
+                              checked={reviewApproved[project.submission_id] ?? true}
+                              onChange={(e) => setReviewApproved({ ...reviewApproved, [project.submission_id]: e.target.checked })}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm font-semibold text-gray-900">Approved</span>
+                          </label>
+
+                          {(reviewApproved[project.submission_id] ?? true) && (
                             <div>
                               <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Score (out of 100)</label>
                               <input
@@ -673,45 +675,50 @@ export default function MyStudentsPage() {
                                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                             </div>
+                          )}
 
-                            <div>
-                              <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Feedback</label>
-                              <textarea value={reviewFeedback[project.submission_id] || ""} onChange={(e) => setReviewFeedback({ ...reviewFeedback, [project.submission_id]: e.target.value })} placeholder="Provide constructive feedback for the student..." rows={4} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-                              <p className="text-xs text-gray-500 mt-1">{reviewFeedback[project.submission_id]?.length || 0}/2000 characters</p>
-                            </div>
-
-                            {/* Review Actions */}
-                            <div className="flex gap-3 pt-2">
-                              <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={async () => {
-                                const fb = reviewFeedback[project.submission_id] || ""
-                                const score = reviewScore[project.submission_id] ?? 100
-                                setSubmittingReviewId(project.submission_id)
-                                try {
-                                  const res = await courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb, score)
-                                  setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? score, reviewer_feedback: fb, reviewed_at: res.reviewed_at } : p))
-                                  toast.success("Project approved successfully!")
-                                } catch (err) {
-                                  console.error("Review error:", err)
-                                  toast.error("Failed to submit review. Please try again.")
-                                } finally {
-                                  setSubmittingReviewId(null)
-                                }
-                              }} disabled={submittingReviewId === project.submission_id}>
-                                {submittingReviewId === project.submission_id ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Submitting...
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle className="w-4 h-4 mr-2" />
-                                    Approve Project
-                                  </>
-                                )}
-                              </Button>
-                            </div>
+                          <div>
+                            <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Feedback</label>
+                            <textarea value={reviewFeedback[project.submission_id] || ""} onChange={(e) => setReviewFeedback({ ...reviewFeedback, [project.submission_id]: e.target.value })} placeholder="Provide constructive feedback for the student..." rows={4} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                            <p className="text-xs text-gray-500 mt-1">{reviewFeedback[project.submission_id]?.length || 0}/2000 characters</p>
                           </div>
-                        )}
+
+                          {!(reviewApproved[project.submission_id] ?? true) && (
+                            <p className="text-xs text-gray-500">Check &ldquo;Approved&rdquo; to award a score and save the review.</p>
+                          )}
+
+                          {/* Review Actions */}
+                          <div className="flex gap-3 pt-2">
+                            <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={async () => {
+                              const fb = reviewFeedback[project.submission_id] || ""
+                              const score = reviewScore[project.submission_id] ?? 100
+                              const wasAlreadyApproved = project.status === "approved"
+                              setSubmittingReviewId(project.submission_id)
+                              try {
+                                const res = await courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb, score)
+                                setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? score, reviewer_feedback: fb, reviewed_at: res.reviewed_at } : p))
+                                toast.success(wasAlreadyApproved ? "Review updated!" : "Project approved successfully!")
+                              } catch (err) {
+                                console.error("Review error:", err)
+                                toast.error("Failed to submit review. Please try again.")
+                              } finally {
+                                setSubmittingReviewId(null)
+                              }
+                            }} disabled={submittingReviewId === project.submission_id || !(reviewApproved[project.submission_id] ?? true)}>
+                              {submittingReviewId === project.submission_id ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Submitting...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  {project.status === "approved" ? "Update Review" : "Approve Project"}
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     ))}
                 </div>

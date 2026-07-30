@@ -115,11 +115,18 @@ const checks = [
       mentorStudents.includes("courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb, score)"),
   ],
   [
-    "mentor score input only shows for pending review, not for already-approved projects",
-    mentorStudents.includes('{project.status === "approved" ? (') &&
-      /Score \(out of 100\)[\s\S]*?type="number"/.test(mentorStudents) &&
-      mentorStudents.includes('<p className="text-xs font-medium text-gray-600 mb-1">Score</p>') &&
-      !/Project Approved[\s\S]{0,400}type="number"/.test(mentorStudents),
+    "mentor review form is always editable (approved projects are not locked read-only)",
+    mentorStudents.includes("reviewApproved[project.submission_id] ?? true") &&
+      mentorStudents.includes('type="checkbox"') &&
+      mentorStudents.includes('project.status === "approved" ? "Update Review" : "Approve Project"') &&
+      !mentorStudents.includes("Project Approved</p>"),
+  ],
+  [
+    "mentor score input only shows while the Approved checkbox is checked",
+    /\(reviewApproved\[project\.submission_id\] \?\? true\) && \(\s*<div>\s*<label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Score \(out of 100\)<\/label>/.test(
+      mentorStudents
+    ) &&
+      mentorStudents.includes('disabled={submittingReviewId === project.submission_id || !(reviewApproved[project.submission_id] ?? true)}'),
   ],
   [
     "learning page scrolls to top when the active lesson/module changes",
