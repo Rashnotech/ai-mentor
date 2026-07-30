@@ -28,6 +28,9 @@ import {
   RotateCcw,
   XCircle,
   FileCheck,
+  Compass,
+  Eye,
+  EyeOff,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -660,6 +663,9 @@ interface ProjectContentViewProps {
 function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = false }: ProjectContentViewProps) {
   const [linkValue, setLinkValue] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [guidance, setGuidance] = useState<{ title: string; message: string } | null>(null)
+  const [isLoadingGuidance, setIsLoadingGuidance] = useState(!previewMode)
+  const [showGuidance, setShowGuidance] = useState(true)
 
   const handleSubmit = async () => {
     if (!linkValue.trim()) return
@@ -671,8 +677,59 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
     }
   }
 
+  // AI mentor trigger: student starts a project. Idempotent on the backend,
+  // so this is safe to call every time the project tab opens.
+  useEffect(() => {
+    if (previewMode) return
+    let cancelled = false
+    setIsLoadingGuidance(true)
+    setShowGuidance(true)
+    studentCoursesApi.startProject(project.project_id)
+      .then((res) => {
+        if (!cancelled) setGuidance({ title: res.guidance.title, message: res.guidance.message })
+      })
+      .catch((error) => console.error("Failed to load AI mentor guidance:", error))
+      .finally(() => {
+        if (!cancelled) setIsLoadingGuidance(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [project.project_id, previewMode])
+
   return (
     <div className="space-y-4 sm:space-y-6">
+      {!previewMode && (isLoadingGuidance || guidance) && (
+        <div className="rounded-xl border border-blue-100 bg-blue-50/70 overflow-hidden">
+          <button
+            onClick={() => setShowGuidance((prev) => !prev)}
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold text-blue-900">
+              <Compass className="w-4 h-4 text-blue-600" />
+              AI Guidance
+            </span>
+            {showGuidance ? (
+              <EyeOff className="w-4 h-4 text-blue-500" />
+            ) : (
+              <Eye className="w-4 h-4 text-blue-500" />
+            )}
+          </button>
+          {showGuidance && (
+            <div className="px-4 pb-4">
+              {isLoadingGuidance ? (
+                <div className="flex items-center gap-2 text-sm text-blue-700">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Getting guidance from your AI mentor...
+                </div>
+              ) : (
+                <p className="text-sm leading-relaxed text-blue-900">{guidance?.message}</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="rounded-xl border border-purple-100 bg-linear-to-r from-purple-50 to-blue-50 p-4 sm:p-6">
         <div className="mb-4 flex items-start gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100 sm:h-12 sm:w-12">

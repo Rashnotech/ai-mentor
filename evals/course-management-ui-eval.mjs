@@ -5,6 +5,8 @@ const adminCourses = await readFile("app/admin/courses/page-client.tsx", "utf8")
 const mentorCourses = await readFile("app/mentor/my-courses/page-client.tsx", "utf8")
 const learnPage = await readFile("app/courses/[id]/learn/page-client.tsx", "utf8")
 const mentorStudents = await readFile("app/mentor/my-students/page-client.tsx", "utf8")
+const dashboardView = await readFile("app/dashboard/_components/dashboard-view.tsx", "utf8")
+const apiLib = await readFile("lib/api.ts", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 const checks = [
@@ -133,6 +135,28 @@ const checks = [
     /useEffect\(\(\) => \{\s*if \(!activeItemId\) return\s*window\.scrollTo\(\{ top: 0, behavior: "smooth" \}\)\s*\}, \[activeItemId\]\)/.test(
       learnPage
     ),
+  ],
+  [
+    "AI mentor: lib/api.ts exposes typed feed + project-start calls",
+    apiLib.includes("export interface AIMentorFeedbackItem") &&
+      apiLib.includes("startProject: async (projectId: number)") &&
+      apiLib.includes("getMentorFeedback: async (limit: number = 20)") &&
+      apiLib.includes("/enrollments/progress/projects/${projectId}/start") &&
+      apiLib.includes("/enrollments/progress/ai-feedback"),
+  ],
+  [
+    "AI mentor: student dashboard AI Mentor Feedback section is wired to real data, not a static placeholder",
+    dashboardView.includes("studentCoursesApi.getMentorFeedback(10)") &&
+      dashboardView.includes("FEEDBACK_ICONS") &&
+      dashboardView.includes("mentorFeedback.length === 0") &&
+      !dashboardView.includes("Complete your current lesson to unlock personalized feedback"),
+  ],
+  [
+    "AI mentor: project-start guidance is a collapsible panel, not always-on",
+    learnPage.includes("studentCoursesApi.startProject(project.project_id)") &&
+      learnPage.includes("setShowGuidance((prev) => !prev)") &&
+      /showGuidance &&\s*\(\s*<div className="px-4 pb-4">/.test(learnPage) &&
+      learnPage.includes("!previewMode && (isLoadingGuidance || guidance)"),
   ],
 ]
 

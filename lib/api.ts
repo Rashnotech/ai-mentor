@@ -2230,6 +2230,38 @@ export const studentCoursesApi = {
     })
     return response.data
   },
+
+  /**
+   * AI mentor trigger: call once when a student opens a project. Idempotent —
+   * returns the same guidance on repeat calls instead of regenerating it.
+   */
+  startProject: async (projectId: number): Promise<{ guidance: AIMentorFeedbackItem }> => {
+    const response = await apiClient.post(`/enrollments/progress/projects/${projectId}/start`)
+    return response.data
+  },
+
+  /**
+   * The student's "AI Mentor Feedback" dashboard feed (quiz reviews, project
+   * guidance, inactivity check-ins), newest first.
+   */
+  getMentorFeedback: async (limit: number = 20): Promise<AIMentorFeedbackItem[]> => {
+    const response = await apiClient.get<{ items: AIMentorFeedbackItem[] }>(
+      `/enrollments/progress/ai-feedback?limit=${limit}`
+    )
+    return response.data.items
+  },
+}
+
+// AI Mentor Feedback — smart-trigger messages generated for a student
+// (quiz score review, project-start guidance, inactivity check-in)
+export interface AIMentorFeedbackItem {
+  feedback_id: number
+  category: "quiz_encouragement" | "quiz_correction" | "project_guidance" | "inactivity_checkin"
+  title: string
+  message: string
+  context_title: string | null
+  score_percent: number | null
+  created_at: string
 }
 
 // ============================================================================

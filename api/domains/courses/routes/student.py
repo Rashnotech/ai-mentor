@@ -370,7 +370,11 @@ async def get_learning_content_by_slug(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You are not enrolled in this course",
             )
-        
+
+        if not is_preview_mode:
+            from domains.users.services.activity_service import touch_last_active
+            await touch_last_active(db_session, user_id)
+
         # Determine the appropriate learning path
         path = None
 
@@ -843,9 +847,11 @@ async def complete_lesson(
     try:
         from domains.courses.models.course import Lesson, Module, LearningPath
         from domains.courses.models.progress import LessonProgress
-        
+        from domains.users.services.activity_service import touch_last_active
+
         user_id = current_user.get("user_id")
-        
+        await touch_last_active(db_session, user_id)
+
         service = ProgressService(db_session)
         progress = await service.mark_lesson_completed(
             user_id=user_id,
@@ -934,29 +940,31 @@ async def submit_quiz_answer(
     """
     try:
         from domains.courses.models.assessment import AssessmentQuestion, AssessmentResponse
-        
+        from domains.users.services.activity_service import touch_last_active
+
         # Get the question from database
         result = await db_session.execute(
             select(AssessmentQuestion).where(AssessmentQuestion.question_id == question_id)
         )
         question = result.scalar_one_or_none()
-        
+
         if not question:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Question not found",
             )
-        
+
         # Check if answer is correct (case-insensitive comparison)
         is_correct = False
         correct_index = int(question.correct_answer)
         if question.correct_answer:
             # For multiple choice, compare exactly
             is_correct = answer.strip().lower() == question.options[correct_index].strip().lower()
-        
+
         # Save the response
         user_id = current_user.get("user_id")
-        
+        await touch_last_active(db_session, user_id)
+
         # Check if response already exists
         existing_result = await db_session.execute(
             select(AssessmentResponse).where(
@@ -965,7 +973,7 @@ async def submit_quiz_answer(
             )
         )
         existing_response = existing_result.scalar_one_or_none()
-        
+
         if existing_response:
             # Update existing response
             existing_response.response_text = answer
@@ -982,9 +990,17 @@ async def submit_quiz_answer(
                 attempts=1,
             )
             db_session.add(new_response)
-        
+
         await db_session.commit()
-        
+
+        # AI mentor trigger: if this answer completes the module's quiz, review the
+        # score and generate encouragement (>=50%) or corrective feedback (<50%).
+        # Best-effort — a failure here must never break the student's quiz result.
+        try:
+            await _maybe_trigger_quiz_feedback(db_session, user_id, question.module_id)
+        except Exception as e:
+            logger.error(f"AI mentor quiz feedback trigger failed: {str(e)}")
+
         return {
             "question_id": question_id,
             "is_correct": is_correct,
@@ -1001,6 +1017,53 @@ async def submit_quiz_answer(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error submitting quiz answer",
         )
+
+
+async def _maybe_trigger_quiz_feedback(db_session: AsyncSession, user_id: str, module_id: int) -> None:
+    """If the student has now answered every question in this module's quiz,
+    generate AI mentor feedback once (encouragement or correction based on score)."""
+    from domains.courses.models.assessment import AssessmentQuestion, AssessmentResponse
+    from domains.courses.models.course import Module
+    from domains.ai.services import mentor_feedback_service
+
+    questions_stmt = select(AssessmentQuestion).where(AssessmentQuestion.module_id == module_id)
+    questions_result = await db_session.execute(questions_stmt)
+    questions = questions_result.scalars().all()
+    if not questions:
+        return
+
+    question_ids = [q.question_id for q in questions]
+    responses_stmt = select(AssessmentResponse).where(
+        AssessmentResponse.user_id == user_id,
+        AssessmentResponse.question_id.in_(question_ids),
+    )
+    responses_result = await db_session.execute(responses_stmt)
+    responses = {r.question_id: r for r in responses_result.scalars().all()}
+
+    if len(responses) < len(questions):
+        return  # quiz not yet fully answered
+
+    if await mentor_feedback_service.has_quiz_feedback(db_session, user_id, module_id):
+        return  # already generated for this module
+
+    total_points = sum(q.points or 0 for q in questions)
+    earned_points = sum(q.points or 0 for q in questions if responses[q.question_id].is_correct)
+    correct_count = sum(1 for q in questions if responses[q.question_id].is_correct)
+    score_percent = (earned_points / total_points * 100) if total_points > 0 else 0.0
+
+    module_result = await db_session.execute(select(Module).where(Module.module_id == module_id))
+    module = module_result.scalar_one_or_none()
+    module_title = module.title if module else "this module"
+
+    await mentor_feedback_service.generate_quiz_feedback(
+        db_session=db_session,
+        user_id=user_id,
+        module_id=module_id,
+        module_title=module_title,
+        score_percent=score_percent,
+        correct_count=correct_count,
+        total_count=len(questions),
+    )
 
 
 @progress_router.post(
@@ -1102,9 +1165,14 @@ async def submit_project(
     - Submission details with deadline status and points (pending approval)
     """
     try:
+        from domains.users.services.activity_service import touch_last_active
+
+        user_id = current_user.get("user_id")
+        await touch_last_active(db_session, user_id)
+
         service = ProgressService(db_session)
         submission = await service.submit_project(
-            user_id=current_user.get("user_id"),
+            user_id=user_id,
             project_id=project_id,
             module_id=request.module_id,
             solution_url=request.solution_url,
@@ -1132,6 +1200,131 @@ async def submit_project(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error submitting project",
         )
+
+
+@progress_router.post(
+    "/projects/{project_id}/start",
+    status_code=status.HTTP_200_OK,
+    summary="Mark a project as started",
+    description="Called once when a student opens a project. Marks progress in_progress and returns AI mentor guidance.",
+)
+async def start_project(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """
+    AI mentor trigger: student starts a project.
+
+    Idempotent — calling this again for a project the student already started
+    just returns the previously generated guidance instead of regenerating it.
+
+    **Returns:**
+    - guidance: { feedback_id, title, message, created_at }
+    """
+    try:
+        from datetime import datetime, timezone
+        from domains.courses.models.course import Project
+        from domains.progress.models.progress import UserProgress
+        from domains.ai.services import mentor_feedback_service
+        from domains.users.services.activity_service import touch_last_active
+        from core.constant import ProgressStatus
+
+        user_id = current_user.get("user_id")
+        await touch_last_active(db_session, user_id)
+
+        project_result = await db_session.execute(select(Project).where(Project.project_id == project_id))
+        project = project_result.scalar_one_or_none()
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+
+        progress_result = await db_session.execute(
+            select(UserProgress).where(
+                UserProgress.user_id == user_id,
+                UserProgress.project_id == project_id,
+            )
+        )
+        progress = progress_result.scalar_one_or_none()
+        now = datetime.now(timezone.utc)
+        if not progress:
+            db_session.add(UserProgress(
+                user_id=user_id,
+                project_id=project_id,
+                status=ProgressStatus.IN_PROGRESS,
+                started_at=now,
+            ))
+            await db_session.commit()
+        elif progress.status == ProgressStatus.NOT_STARTED:
+            progress.status = ProgressStatus.IN_PROGRESS
+            progress.started_at = now
+            db_session.add(progress)
+            await db_session.commit()
+
+        existing = await mentor_feedback_service.get_existing_project_guidance(db_session, user_id, project_id)
+        if existing:
+            guidance = existing
+        else:
+            guidance = await mentor_feedback_service.generate_project_guidance(
+                db_session=db_session,
+                user_id=user_id,
+                project_id=project_id,
+                project_title=project.title,
+                project_description=project.description,
+                required_skills=project.required_skills,
+            )
+
+        return {
+            "guidance": {
+                "feedback_id": guidance.feedback_id,
+                "category": guidance.category,
+                "title": guidance.title,
+                "message": guidance.message,
+                "context_title": guidance.context_title,
+                "score_percent": guidance.score_percent,
+                "created_at": guidance.created_at.isoformat(),
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting project {project_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error starting project",
+        )
+
+
+@progress_router.get(
+    "/ai-feedback",
+    status_code=status.HTTP_200_OK,
+    summary="Get AI Mentor Feedback feed",
+    description="The student's dashboard feed of AI-generated mentor messages (quiz reviews, project guidance, check-ins).",
+)
+async def get_ai_mentor_feedback(
+    limit: int = Query(20, ge=1, le=50),
+    current_user: User = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """List the current student's AI Mentor Feedback, newest first."""
+    from domains.ai.services import mentor_feedback_service
+
+    user_id = current_user.get("user_id")
+    feed = await mentor_feedback_service.get_feed(db_session, user_id, limit=limit)
+    return {
+        "items": [
+            {
+                "feedback_id": item.feedback_id,
+                "category": item.category,
+                "title": item.title,
+                "message": item.message,
+                "context_title": item.context_title,
+                "score_percent": item.score_percent,
+                "created_at": item.created_at.isoformat(),
+            }
+            for item in feed
+        ]
+    }
 
 
 @progress_router.get(

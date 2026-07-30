@@ -1,11 +1,28 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { BookOpen, Award, Star, Loader2 } from "lucide-react"
+import { BookOpen, Award, Star, Loader2, Sparkles, BookMarked, Compass, HeartHandshake } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useUserStore } from "@/lib/stores/user-store"
-import { studentCoursesApi, type StudentCourseResponse } from "@/lib/api"
+import { studentCoursesApi, type StudentCourseResponse, type AIMentorFeedbackItem } from "@/lib/api"
+
+const FEEDBACK_ICONS: Record<AIMentorFeedbackItem["category"], typeof Sparkles> = {
+  quiz_encouragement: Sparkles,
+  quiz_correction: BookMarked,
+  project_guidance: Compass,
+  inactivity_checkin: HeartHandshake,
+}
+
+function timeAgo(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime()
+  const diffMinutes = Math.round(diffMs / 60000)
+  if (diffMinutes < 60) return diffMinutes <= 1 ? "just now" : `${diffMinutes}m ago`
+  const diffHours = Math.round(diffMinutes / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+  const diffDays = Math.round(diffHours / 24)
+  return diffDays === 1 ? "1 day ago" : `${diffDays} days ago`
+}
 
 interface DashboardViewProps {
   onChangeView: (view: string) => void
@@ -17,6 +34,9 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
   
   const [enrolledCourses, setEnrolledCourses] = useState<StudentCourseResponse[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [mentorFeedback, setMentorFeedback] = useState<AIMentorFeedbackItem[]>([])
+  const [isLoadingFeedback, setIsLoadingFeedback] = useState(true)
+  const [showAllFeedback, setShowAllFeedback] = useState(false)
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -30,6 +50,20 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
       }
     }
     fetchCourses()
+  }, [])
+
+  useEffect(() => {
+    const fetchFeedback = async () => {
+      try {
+        const items = await studentCoursesApi.getMentorFeedback(10)
+        setMentorFeedback(items)
+      } catch (error) {
+        console.error("Failed to fetch AI mentor feedback:", error)
+      } finally {
+        setIsLoadingFeedback(false)
+      }
+    }
+    fetchFeedback()
   }, [])
 
   // Get the course with most progress for next steps
@@ -166,12 +200,41 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
               <Star className="w-5 h-5" />
               AI Mentor Feedback
             </div>
-            <div className="space-y-4">
-              <div className="text-sm text-gray-300 italic">
-                "Keep up the great work! Complete your current lesson to unlock personalized feedback from your AI mentor."
+
+            {isLoadingFeedback ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
               </div>
-              <button className="text-sm text-blue-300 hover:underline">View full feedback →</button>
-            </div>
+            ) : mentorFeedback.length === 0 ? (
+              <div className="text-sm text-gray-300 italic">
+                "Keep up the great work! Complete a quiz or start a project to get personalized feedback from your AI mentor."
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {(showAllFeedback ? mentorFeedback : mentorFeedback.slice(0, 3)).map((item) => {
+                  const Icon = FEEDBACK_ICONS[item.category]
+                  return (
+                    <div key={item.feedback_id} className="border-l-2 border-yellow-400/60 pl-3">
+                      <div className="flex items-center gap-2 text-sm font-medium text-white">
+                        <Icon className="w-4 h-4 text-yellow-400 shrink-0" />
+                        <span className="line-clamp-1">{item.title}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-gray-300 line-clamp-3">{item.message}</p>
+                      <p className="mt-1 text-xs text-gray-500">{timeAgo(item.created_at)}</p>
+                    </div>
+                  )
+                })}
+
+                {mentorFeedback.length > 3 && (
+                  <button
+                    onClick={() => setShowAllFeedback((prev) => !prev)}
+                    className="text-sm text-blue-300 hover:underline"
+                  >
+                    {showAllFeedback ? "Show less ↑" : "View full feedback →"}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

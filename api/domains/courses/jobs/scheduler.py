@@ -8,6 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from domains.courses.jobs.module_availability_job import run_module_availability_job
 from domains.bootcamps.jobs.bootcamp_start_job import run_bootcamp_start_job
+from domains.ai.jobs.inactivity_checkin_job import run_inactivity_checkin_job
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +42,21 @@ def setup_scheduled_jobs():
         misfire_grace_time=3600,  # Allow up to 1 hour delay
     )
     
+    # Inactivity Check-in Job - Runs daily at 7:00 AM UTC
+    # AI mentor trigger: nudge students inactive for 3+ days, once per episode
+    scheduler.add_job(
+        run_inactivity_checkin_job,
+        CronTrigger(hour=7, minute=0, timezone="UTC"),
+        id="inactivity_checkin_job",
+        name="Send AI mentor check-in emails to inactive students",
+        replace_existing=True,
+        misfire_grace_time=3600,  # Allow up to 1 hour delay
+    )
+
     logger.info("Scheduled jobs configured:")
     logger.info(" - Module Availability Job: Daily at 6:00 AM UTC")
     logger.info(" - Bootcamp Start Job: Daily at 0:05 AM UTC")
+    logger.info(" - Inactivity Check-in Job: Daily at 7:00 AM UTC")
 
 
 def start_scheduler():

@@ -19,6 +19,7 @@ from domains.courses.models.certification import Certificate
 from domains.progress.models.progress import UserProgress
 from domains.payments.models import Payment, PaymentAuditLog, EnrollmentStatus, PaymentStatus
 from domains.surveys.models import Survey, SurveyQuestion, SurveyResponse, UserSurveyEvent
+from domains.ai.models.feedback import AIMentorFeedback
 # Add other model imports as needed
 
 # this is the Alembic Config object

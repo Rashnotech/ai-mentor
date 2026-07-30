@@ -364,6 +364,84 @@ AI Mentor Team
             text_content=text_content,
         )
 
+    # ------------------------------------------------------------------ #
+    #  AI mentor inactivity check-in
+    # ------------------------------------------------------------------ #
+
+    async def send_inactivity_checkin(
+        self,
+        user_email: str,
+        user_name: str,
+        message: str,
+    ) -> bool:
+        """
+        Send a check-in email when a student has been inactive for 3+ days.
+
+        Args:
+            user_email: Recipient email address
+            user_name: Recipient's display name
+            message: AI-generated (or fallback template) check-in message body
+
+        Returns:
+            True if email sent successfully, False otherwise
+        """
+        subject = "We miss you! — AI Mentor"
+
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }}
+                .header h1 {{ margin: 0; font-size: 24px; font-weight: 700; }}
+                .content {{ background: #ffffff; padding: 40px 30px; border-radius: 0 0 12px 12px; }}
+                .message-box {{ background: #f0f4ff; border-left: 4px solid #2563eb; border-radius: 8px; padding: 20px; margin: 24px 0; color: #1e3a8a; font-size: 15px; }}
+                .btn {{ display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 8px 0 24px; }}
+                .footer {{ text-align: center; color: #9ca3af; font-size: 12px; margin-top: 24px; padding: 16px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>We miss you!</h1>
+                </div>
+                <div class="content">
+                    <p>Hi {user_name or 'there'},</p>
+                    <div class="message-box">{message}</div>
+                    <div style="text-align: center;">
+                        <a href="https://aimentor.com/dashboard" class="btn">Continue Learning</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <p>© 2026 AI Mentor. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        text_content = f"""Hi {user_name or 'there'},
+
+{message}
+
+Continue learning: https://aimentor.com/dashboard
+
+---
+AI Mentor Team
+"""
+
+        return await self._send_email(
+            to_email=user_email,
+            to_name=user_name or user_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+        )
+
 
 # Singleton instance for easy import
 email_service = EmailService()
