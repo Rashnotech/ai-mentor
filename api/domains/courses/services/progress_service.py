@@ -308,6 +308,7 @@ class ProgressService:
         self,
         submission_id: int,
         feedback: Optional[str] = None,
+        points: Optional[float] = None,
     ) -> ProjectSubmission:
         """
         Approve a project submission (reviewer/mentor action).
@@ -315,6 +316,8 @@ class ProgressService:
         Args:
             submission_id: Submission ID to approve
             feedback: Optional reviewer feedback
+            points: Optional score (0-100) awarded by the mentor. Overrides the
+                auto-calculated deadline points when provided.
 
         Returns:
             Updated ProjectSubmission
@@ -336,6 +339,8 @@ class ProgressService:
             submission.reviewed_at = datetime.now(timezone.utc)
             if feedback:
                 submission.reviewer_feedback = feedback
+            if points is not None:
+                submission.points_earned = points
 
             self.db_session.add(submission)
             await self.db_session.commit()

@@ -1557,6 +1557,14 @@ export default function LearningModulePage({ params }: { params: Promise<{ id: s
     fetchContent()
   }, [id, router, isPreviewMode])
 
+  // Scroll to the top of the page whenever the active lesson/project/quiz changes
+  // (triggered by the "Next" button or by picking an item from the course outline)
+  // so the student always starts reading from the top instead of wherever they last scrolled.
+  useEffect(() => {
+    if (!activeItemId) return
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }, [activeItemId])
+
   const handleToggleModule = (moduleId: number) => {
     setExpandedModules(prev => {
       const next = new Set(prev)

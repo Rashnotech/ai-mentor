@@ -25,7 +25,6 @@ import {
   FolderOpen,
   ExternalLink,
   CheckCircle,
-  XCircle,
   Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -43,8 +42,7 @@ export default function MyStudentsPage() {
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null)
   const [reviewFeedback, setReviewFeedback] = useState<Record<number, string>>({})
-  const [reviewPoints, setReviewPoints] = useState<Record<number, number>>({})
-  const [reviewStatus, setReviewStatus] = useState<Record<number, "approved" | "needs_revision" | "rejected">>({})
+  const [reviewScore, setReviewScore] = useState<Record<number, number>>({})
   const [submittingReviewId, setSubmittingReviewId] = useState<number | null>(null)
 
   // Fetch students from API (only students enrolled in mentor's courses)
@@ -85,19 +83,13 @@ export default function MyStudentsPage() {
       setStudentProjects(projects)
       // initialize review inputs from existing data
       const fbMap: Record<number, string> = {}
-      const ptsMap: Record<number, number> = {}
-      const statusMap: Record<number, "approved" | "needs_revision" | "rejected"> = {}
+      const scoreMap: Record<number, number> = {}
       projects.forEach((p) => {
         fbMap[p.submission_id] = p.reviewer_feedback || ""
-        ptsMap[p.submission_id] = p.points_earned ?? 0
-        // Map backend status to review status selector values
-        if (p.status === "approved") statusMap[p.submission_id] = "approved"
-        else if (p.status === "rejected") statusMap[p.submission_id] = "rejected"
-        else statusMap[p.submission_id] = "needs_revision" // default for submitted
+        scoreMap[p.submission_id] = p.points_earned ?? 100
       })
       setReviewFeedback(fbMap)
-      setReviewPoints(ptsMap)
-      setReviewStatus(statusMap)
+      setReviewScore(scoreMap)
     } catch (error) {
       console.error("Error fetching student projects:", error)
       setStudentProjects([])
@@ -647,10 +639,14 @@ export default function MyStudentsPage() {
                         {project.status === "approved" ? (
                           <div className="px-4 py-4 sm:px-6 sm:py-5 bg-green-50 border-t border-green-100">
                             <div className="flex items-start gap-3">
-                              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold text-green-900">Project Approved</p>
                                 <p className="text-xs text-green-700 mt-1">This project was approved on {formatDate(project.reviewed_at)}</p>
+                                <div className="mt-3 p-3 bg-white rounded-lg border border-green-100">
+                                  <p className="text-xs font-medium text-gray-600 mb-1">Score</p>
+                                  <p className="text-lg font-bold text-blue-600">{project.points_earned}/100</p>
+                                </div>
                                 {project.reviewer_feedback && (
                                   <div className="mt-3 p-3 bg-white rounded-lg border border-green-100">
                                     <p className="text-xs font-medium text-gray-600 mb-1">Your Feedback:</p>
@@ -663,12 +659,19 @@ export default function MyStudentsPage() {
                         ) : (
                           <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-4 bg-white">
                             <div>
-                              <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Review Status</label>
-                              <select value={reviewStatus[project.submission_id] || "needs_revision"} onChange={(e) => setReviewStatus({ ...reviewStatus, [project.submission_id]: e.target.value as "approved" | "needs_revision" | "rejected" })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                                <option value="needs_revision">Needs Revision</option>
-                                <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
-                              </select>
+                              <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">Score (out of 100)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={reviewScore[project.submission_id] ?? 100}
+                                onChange={(e) => {
+                                  const raw = Number(e.target.value)
+                                  const clamped = Number.isNaN(raw) ? 0 : Math.min(100, Math.max(0, raw))
+                                  setReviewScore({ ...reviewScore, [project.submission_id]: clamped })
+                                }}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
                             </div>
 
                             <div>
@@ -680,19 +683,13 @@ export default function MyStudentsPage() {
                             {/* Review Actions */}
                             <div className="flex gap-3 pt-2">
                               <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={async () => {
-                                const status = reviewStatus[project.submission_id] || "needs_revision"
                                 const fb = reviewFeedback[project.submission_id] || ""
+                                const score = reviewScore[project.submission_id] ?? 100
                                 setSubmittingReviewId(project.submission_id)
                                 try {
-                                  if (status === "approved") {
-                                    const res = await courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb)
-                                    setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: fb, reviewed_at: res.reviewed_at } : p))
-                                    toast.success("Project approved successfully!")
-                                  } else {
-                                    const res = await courseAdminApi.rejectProjectSubmission(Number(project.submission_id), fb)
-                                    setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? p.points_earned, reviewer_feedback: res.reviewer_feedback, reviewed_at: res.reviewed_at } : p))
-                                    toast.error("Project rejected.")
-                                  }
+                                  const res = await courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb, score)
+                                  setStudentProjects((prev) => prev.map((p) => p.submission_id === project.submission_id ? { ...p, status: res.status, is_approved: res.is_approved, points_earned: res.points_earned ?? score, reviewer_feedback: fb, reviewed_at: res.reviewed_at } : p))
+                                  toast.success("Project approved successfully!")
                                 } catch (err) {
                                   console.error("Review error:", err)
                                   toast.error("Failed to submit review. Please try again.")
@@ -708,7 +705,7 @@ export default function MyStudentsPage() {
                                 ) : (
                                   <>
                                     <CheckCircle className="w-4 h-4 mr-2" />
-                                    Submit Review
+                                    Approve Project
                                   </>
                                 )}
                               </Button>

@@ -2,7 +2,9 @@
 """
 Mentor/reviewer project approval routes.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user, get_db_session
@@ -25,6 +27,7 @@ router = APIRouter(prefix="/reviews", tags=["mentor-reviews"])
 async def approve_project(
     submission_id: int,
     feedback: str = "",
+    points: Optional[float] = Query(None, ge=0, le=100, description="Score (0-100) to award the student. Overrides the auto-calculated deadline points."),
     current_user: User = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db_session),
 ):
@@ -36,6 +39,7 @@ async def approve_project(
 
     **Query Parameters:**
     - feedback: Optional feedback for student
+    - points: Optional score (0-100) to award. Overrides the auto-calculated deadline points.
 
     **Required:**
     - Mentor or Admin role
@@ -49,12 +53,13 @@ async def approve_project(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only mentors and admins can approve submissions",
             )
-        
+
 
         service = ProgressService(db_session)
         submission = await service.approve_project_submission(
             submission_id=submission_id,
             feedback=feedback if feedback else None,
+            points=points,
         )
 
         return {

@@ -773,9 +773,15 @@ class EnrollmentService:
         """
         from domains.users.models.onboarding import UserProfile
         from domains.courses.models.course import Module, Project
-        from domains.courses.models.progress import ProjectSubmission
+        from domains.courses.models.progress import ProjectSubmission, DeadlineStatus
         from domains.progress.models.progress import UserProgress
         from core.constant import ProgressStatus
+
+        deadline_status_labels = {
+            DeadlineStatus.FIRST_DEADLINE: "on_time",
+            DeadlineStatus.SECOND_DEADLINE: "late_50",
+            DeadlineStatus.LATE: "late_25",
+        }
 
         try:
             # Get student's profile to find their enrolled course
@@ -932,6 +938,10 @@ class EnrollmentService:
                     "submission_url": submission.solution_url if submission else None,
                     "submitted_at": submission.submitted_at.isoformat() if submission and submission.submitted_at else None,
                     "reviewer_feedback": submission.reviewer_feedback if submission else None,
+                    "project_title": project.title,
+                    "points_earned": submission.points_earned if submission else None,
+                    "deadline_status": deadline_status_labels.get(submission.deadline_status) if submission else None,
+                    "reviewed_at": submission.reviewed_at.isoformat() if submission and submission.reviewed_at else None,
                 })
 
             return {

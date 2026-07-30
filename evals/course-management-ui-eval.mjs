@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises"
 const adminCourses = await readFile("app/admin/courses/page-client.tsx", "utf8")
 const mentorCourses = await readFile("app/mentor/my-courses/page-client.tsx", "utf8")
 const learnPage = await readFile("app/courses/[id]/learn/page-client.tsx", "utf8")
+const mentorStudents = await readFile("app/mentor/my-students/page-client.tsx", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 const checks = [
@@ -103,6 +104,28 @@ const checks = [
       "app/mentor/my-courses/page-client.tsx",
       "app/courses/[id]/learn/page-client.tsx",
     ].every((file) => gateConfig.includes(file)),
+  ],
+  [
+    "mentor project review only allows Approve (no Needs Revision / Reject)",
+    !/<option value="needs_revision">/.test(mentorStudents) &&
+      !/<option value="rejected">/.test(mentorStudents) &&
+      !mentorStudents.includes("rejectProjectSubmission") &&
+      !mentorStudents.includes("Review Status") &&
+      mentorStudents.includes("Approve Project") &&
+      mentorStudents.includes("courseAdminApi.approveProjectSubmission(Number(project.submission_id), fb, score)"),
+  ],
+  [
+    "mentor score input only shows for pending review, not for already-approved projects",
+    mentorStudents.includes('{project.status === "approved" ? (') &&
+      /Score \(out of 100\)[\s\S]*?type="number"/.test(mentorStudents) &&
+      mentorStudents.includes('<p className="text-xs font-medium text-gray-600 mb-1">Score</p>') &&
+      !/Project Approved[\s\S]{0,400}type="number"/.test(mentorStudents),
+  ],
+  [
+    "learning page scrolls to top when the active lesson/module changes",
+    /useEffect\(\(\) => \{\s*if \(!activeItemId\) return\s*window\.scrollTo\(\{ top: 0, behavior: "smooth" \}\)\s*\}, \[activeItemId\]\)/.test(
+      learnPage
+    ),
   ],
 ]
 

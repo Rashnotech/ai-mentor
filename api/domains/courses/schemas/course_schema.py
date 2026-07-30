@@ -701,6 +701,12 @@ class StudentProjectResponse(BaseModel):
     submitted_at: Optional[str] = Field(None, description="Submission timestamp")
     reviewer_feedback: Optional[str] = Field(None, description="Reviewer feedback if reviewed")
 
+    # Mentor review fields (populated when a submission exists)
+    project_title: Optional[str] = Field(None, description="Project title (mentor review UI)")
+    points_earned: Optional[float] = Field(None, description="Score/points awarded for this submission")
+    deadline_status: Optional[str] = Field(None, description="Deadline compliance: on_time, late_50, or late_25")
+    reviewed_at: Optional[str] = Field(None, description="Review timestamp if reviewed")
+
     class Config:
         from_attributes = True
 
