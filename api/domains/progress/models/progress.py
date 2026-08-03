@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """a module that handles progress tracking"""
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, CheckConstraint, Index
 from sqlalchemy.sql.sqltypes import Text
 from sqlalchemy.orm import relationship
@@ -15,11 +15,11 @@ class UserProgress(Base):
     lesson_id = Column(Integer, ForeignKey("lessons.lesson_id", ondelete="CASCADE"), index=True, nullable=True)
     project_id = Column(Integer, ForeignKey("projects.project_id", ondelete="CASCADE"), index=True, nullable=True)
     status = Column(Enum(ProgressStatus), index=True)
-    started_at = Column(DateTime)
-    completed_at = Column(DateTime)
+    started_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
     time_spent_seconds = Column(Integer)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # NOTE: Removed relationship to avoid circular imports
     # Uncomment after UserProgress is properly configured
