@@ -709,6 +709,58 @@ async def upload_user_certificate(
     return _serialize_admin_certificate(certificate, course, resolved_path)
 
 
+@router.delete("/{user_id}/enrollments/{enrollment_id}", status_code=status.HTTP_200_OK)
+async def delete_user_enrollment(
+    user_id: str,
+    enrollment_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    """
+    Remove a student's enrollment in a course.
+
+    This is a hard delete of the enrollment row. Per existing FK constraints,
+    it cascades to that enrollment's payment records (payments.enrollment_id
+    is ON DELETE CASCADE) and nulls out any survey responses tied to it
+    (ON DELETE SET NULL). Progress/submissions are keyed by user_id+course_id,
+    not enrollment_id, so they are unaffected.
+
+    Requires ADMIN role.
+    """
+    if current_user.get("role") != UserRole.ADMIN.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    enrollment_result = await session.execute(
+        select(UserCourseEnrollment).where(
+            UserCourseEnrollment.enrollment_id == enrollment_id,
+            UserCourseEnrollment.user_id == user_id,
+        )
+    )
+    enrollment = enrollment_result.scalar_one_or_none()
+    if not enrollment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Enrollment not found for this user"
+        )
+
+    course_id = enrollment.course_id
+    await session.delete(enrollment)
+    await session.commit()
+
+    logger.info(
+        "Admin %s deleted enrollment %s (course %s) for user %s",
+        current_user.get("user_id"),
+        enrollment_id,
+        course_id,
+        user_id,
+    )
+
+    return {"deleted": True, "enrollment_id": enrollment_id}
+
+
 @router.post("", response_model=UserAdminResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     request: UserCreateRequest,

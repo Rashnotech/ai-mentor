@@ -2550,6 +2550,14 @@ export const userAdminApi = {
   },
 
   /**
+   * Remove a student's enrollment in a course. Hard delete — also removes
+   * that enrollment's payment records (cascades at the DB level).
+   */
+  deleteEnrollment: async (userId: string, enrollmentId: number): Promise<void> => {
+    await apiClient.delete(`/admin/users/${userId}/enrollments/${enrollmentId}`)
+  },
+
+  /**
    * Create a new user
    */
   createUser: async (data: UserCreatePayload): Promise<UserAdminResponse> => {

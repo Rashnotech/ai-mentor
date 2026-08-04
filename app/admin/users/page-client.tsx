@@ -55,6 +55,7 @@ export function UsersManagementView() {
   const [selectedUser, setSelectedUser] = useState<UserAdminResponse | null>(null)
   const [selectedUserLearning, setSelectedUserLearning] = useState<AdminUserLearningResponse | null>(null)
   const [isLoadingUserLearning, setIsLoadingUserLearning] = useState(false)
+  const [enrollmentToDelete, setEnrollmentToDelete] = useState<AdminUserEnrollmentCourse | null>(null)
   const [certificateForm, setCertificateForm] = useState({
     enrollmentKey: "",
     certificate_url: "",
@@ -205,6 +206,16 @@ export function UsersManagementView() {
     },
   })
 
+  const deleteEnrollmentMutation = useMutation({
+    mutationFn: ({ userId, enrollmentId }: { userId: string; enrollmentId: number }) =>
+      userAdminApi.deleteEnrollment(userId, enrollmentId),
+    onError: (error) => {
+      toast.error("Failed to delete enrollment", {
+        description: getApiErrorMessage(error),
+      })
+    },
+  })
+
   // ============================================================================
   // HANDLERS
   // ============================================================================
@@ -259,6 +270,27 @@ export function UsersManagementView() {
     setCertificateForm({ enrollmentKey: "", certificate_url: "" })
     setShowViewUserModal(true)
     void loadUserLearning(user)
+  }
+
+  const handleDeleteEnrollment = (enrollment: AdminUserEnrollmentCourse) => {
+    setEnrollmentToDelete(enrollment)
+  }
+
+  const handleConfirmDeleteEnrollment = async () => {
+    if (!selectedUser || !enrollmentToDelete) return
+    try {
+      await deleteEnrollmentMutation.mutateAsync({
+        userId: selectedUser.id,
+        enrollmentId: enrollmentToDelete.enrollment_id,
+      })
+      toast.success("Enrollment deleted", {
+        description: `${enrollmentToDelete.course_title} was removed from this student's account.`,
+      })
+      setEnrollmentToDelete(null)
+      await loadUserLearning(selectedUser)
+    } catch {
+      // onError already surfaced a toast; keep the confirmation dialog open so the admin can retry.
+    }
   }
 
   const handleEditUser = (user: UserAdminResponse) => {
@@ -847,6 +879,16 @@ export function UsersManagementView() {
                               ) : (
                                 <span className="text-sm text-gray-400">No certificate yet</span>
                               )}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                                onClick={() => handleDeleteEnrollment(course)}
+                              >
+                                <Trash2 className="w-3.5 h-3.5 mr-1" />
+                                Delete
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -1172,6 +1214,52 @@ export function UsersManagementView() {
                       <>
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete User
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Delete Enrollment Confirmation Modal */}
+      {enrollmentToDelete && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setEnrollmentToDelete(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Enrollment?</h3>
+                <p className="text-gray-500 mb-2">
+                  Remove <span className="font-medium text-gray-900">{selectedUser?.full_name}</span>&apos;s enrollment in{" "}
+                  <span className="font-medium text-gray-900">{enrollmentToDelete.course_title}</span>?
+                </p>
+                <p className="text-sm text-red-600 mb-6">
+                  This action cannot be undone. It also permanently deletes any payment records tied to this enrollment. Course progress is not affected.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Button variant="outline" onClick={() => setEnrollmentToDelete(null)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    className="bg-red-600 hover:bg-red-700"
+                    onClick={handleConfirmDeleteEnrollment}
+                    disabled={deleteEnrollmentMutation.isPending}
+                  >
+                    {deleteEnrollmentMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Enrollment
                       </>
                     )}
                   </Button>

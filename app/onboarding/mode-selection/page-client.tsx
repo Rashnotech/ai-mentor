@@ -285,7 +285,7 @@ export default function ModeSelectionPage() {
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-6 h-6 text-blue-600" />
-            <span className="text-xl font-bold tracking-tight text-gray-900">LearnTech</span>
+            <span className="text-xl font-bold tracking-tight text-gray-900">Rashnotech</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <span className="hidden sm:inline">Step 2 of 4</span>

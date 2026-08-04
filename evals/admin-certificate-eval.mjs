@@ -52,6 +52,22 @@ const checks = [
       adminUsersPage.includes("handleSaveCertificate") &&
       adminRoutes.includes("certificate.certificate_url = request.certificate_url.strip()"),
   ],
+  [
+    "admin can delete a student's course enrollment",
+    apiClient.includes("deleteEnrollment") &&
+      adminRoutes.includes('@router.delete("/{user_id}/enrollments/{enrollment_id}"') &&
+      adminRoutes.includes("UserCourseEnrollment.enrollment_id == enrollment_id") &&
+      adminRoutes.includes("UserCourseEnrollment.user_id == user_id") &&
+      adminUsersPage.includes("handleDeleteEnrollment") &&
+      adminUsersPage.includes("userAdminApi.deleteEnrollment"),
+  ],
+  [
+    "delete-enrollment is gated behind a confirmation dialog that discloses the payment cascade",
+    adminUsersPage.includes("Delete Enrollment?") &&
+      adminUsersPage.includes("enrollmentToDelete") &&
+      /permanently deletes any payment records/.test(adminUsersPage) &&
+      adminUsersPage.includes("handleConfirmDeleteEnrollment"),
+  ],
 ]
 
 const passed = checks.filter(([, condition]) => condition).length
