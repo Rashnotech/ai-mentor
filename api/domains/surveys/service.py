@@ -47,6 +47,7 @@ FIRST_CHECKIN_LESSONS = 3
 MONTHLY_CYCLE_DAYS = 30
 SUPPORT_CHECKIN_DAYS = 10
 URGENT_SUPPORT_DAYS = 14
+COMPLETION_SURVEY_DAYS = 3  # Show survey within 3 days of course completion
 
 CHOICE_TYPES = {"single_choice", "multiple_choice", "rating"}
 TEXT_TYPES = {"short_text", "long_text"}
@@ -92,6 +93,21 @@ DEFAULT_SURVEYS: tuple[dict[str, Any], ...] = (
             ("help_needed", "What do you need help with?", "single_choice", ["Understanding lessons", "Completing project", "Setting up tools", "Motivation/accountability", "Other"], True),
             ("mentor_support", "Would you like mentor support?", "single_choice", ["Yes", "Not now"], True),
             ("blocking_details", "Explain briefly what is blocking you.", "short_text", [], False),
+        ),
+    },
+    {
+        "slug": "job-readiness",
+        "title": "You're nearly done! How ready do you feel?",
+        "description": "Help us understand your confidence level and what would help you succeed in your next role.",
+        "survey_type": "job_readiness",
+        "trigger_type": "course_completion",
+        "priority": 50,
+        "questions": (
+            ("job_readiness", "How ready do you feel to tackle a real-world job in this field?", "rating", ["Very unprepared", "Unprepared", "Somewhat prepared", "Prepared", "Very prepared"], True),
+            ("confidence_areas", "Which areas do you feel most confident in?", "multiple_choice", ["Core concepts", "Building projects", "Problem-solving", "Writing clean code", "Collaboration", "Learning on my own"], True),
+            ("skill_gaps", "Where do you still need improvement?", "multiple_choice", ["Core concepts", "Building projects", "Problem-solving", "Writing clean code", "Collaboration", "Learning on my own"], True),
+            ("support_needed", "What support would help you most in your career journey?", "single_choice", ["Mock interviews", "Portfolio guidance", "Job search tips", "Continued mentorship", "Networking help", "Other"], True),
+            ("additional_feedback", "Any other feedback or concerns?", "short_text", [], False),
         ),
     },
 )
@@ -206,6 +222,9 @@ class SurveyService:
 
         candidates: list[SurveyCandidate] = []
         for enrollment in enrollments:
+            completion = await self._completion_candidate(user_id, enrollment, surveys.get("course_completion"), now)
+            if completion:
+                candidates.append(completion)
             support = await self._support_candidate(user_id, enrollment, surveys.get("learning_inactivity"), now)
             if support:
                 candidates.append(support)
@@ -215,6 +234,9 @@ class SurveyService:
             learning = await self._learning_candidate(user_id, enrollment, surveys.get("learning_timeline"), now)
             if learning:
                 candidates.append(learning)
+            job_outcome = await self._job_outcome_candidate(user_id, enrollment, surveys.get("course_completion"), now)
+            if job_outcome:
+                candidates.append(job_outcome)
 
         candidates.sort(key=lambda item: (item.urgent, item.survey.priority), reverse=True)
         for candidate in candidates:
@@ -254,6 +276,33 @@ class SurveyService:
                 ),
             )
         return None
+
+    async def _completion_candidate(
+        self,
+        user_id: str,
+        enrollment: UserCourseEnrollment,
+        survey: Optional[Survey],
+        now: datetime,
+    ) -> Optional[SurveyCandidate]:
+        """Trigger survey when student completes course within 3 days."""
+        if survey is None or enrollment.completed_at is None:
+            return None
+        # Show survey within 3 days of course completion
+        days_since_completion = _days_since(enrollment.completed_at, now)
+        if days_since_completion > COMPLETION_SURVEY_DAYS:
+            return None
+        # Only show once per enrollment
+        cycle_key = f"completion:{enrollment.enrollment_id}"
+        already_shown = await self._cycle_completed(user_id, survey.id, enrollment.enrollment_id, cycle_key)
+        if already_shown:
+            return None
+        return SurveyCandidate(
+            survey,
+            enrollment,
+            cycle_key,
+            "course_completion",
+            urgent=True,  # High priority completion survey
+        )
 
     async def _learning_candidate(
         self,
