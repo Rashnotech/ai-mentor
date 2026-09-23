@@ -245,7 +245,7 @@ export default function MyStudentsPage() {
             <div className="space-y-4">
               <div className="space-y-3 sm:hidden">
                 {students.map((student) => (
-                  <div key={student.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div key={`${student.id}-${student.course_id}`} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <div className="flex items-start gap-3">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-purple-600 text-lg font-semibold text-white">
                         {student.name?.charAt(0) || "?"}
@@ -319,7 +319,7 @@ export default function MyStudentsPage() {
                 </thead>
                 <tbody>
                   {students.map((student) => (
-                    <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <tr key={`${student.id}-${student.course_id}`} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">

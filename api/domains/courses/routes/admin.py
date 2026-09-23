@@ -332,7 +332,7 @@ async def get_mentor_students(
         # 2. UserCourseEnrollment table
         
         students_data = []
-        seen_user_ids = set()
+        seen_student_courses = set()
         
         # Method 1: Get students from UserProfile.selected_course_id
         for course in mentor_courses:
@@ -359,8 +359,9 @@ async def get_mentor_students(
             
             profile_result = await db_session.execute(profile_stmt)
             for profile, user in profile_result.fetchall():
-                if user.id not in seen_user_ids:
-                    seen_user_ids.add(user.id)
+                student_course_key = (user.id, course.course_id)
+                if student_course_key not in seen_student_courses:
+                    seen_student_courses.add(student_course_key)
                     students_data.append({
                         "id": user.id,
                         "name": user.full_name,
@@ -394,8 +395,9 @@ async def get_mentor_students(
         try:
             enrollment_result = await db_session.execute(enrollment_stmt)
             for enrollment, user in enrollment_result.fetchall():
-                if user.id not in seen_user_ids:
-                    seen_user_ids.add(user.id)
+                student_course_key = (user.id, enrollment.course_id)
+                if student_course_key not in seen_student_courses:
+                    seen_student_courses.add(student_course_key)
                     # Find the course
                     course = next((c for c in mentor_courses if c.course_id == enrollment.course_id), None)
                     students_data.append({
