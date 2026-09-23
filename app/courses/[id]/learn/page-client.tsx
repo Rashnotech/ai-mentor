@@ -666,6 +666,9 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
   const [guidance, setGuidance] = useState<{ title: string; message: string } | null>(null)
   const [isLoadingGuidance, setIsLoadingGuidance] = useState(!previewMode)
   const [showGuidance, setShowGuidance] = useState(true)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState("")
+  const [isUpdating, setIsUpdating] = useState(false)
 
   const handleSubmit = async () => {
     if (!linkValue.trim()) return
@@ -674,6 +677,27 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
       await onSubmit(linkValue)
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleUpdateUrl = async () => {
+    if (!editValue.trim()) return
+    setIsUpdating(true)
+    try {
+      await studentCoursesApi.updateProjectSubmissionUrl(
+        project.submission_id,
+        editValue.trim(),
+        project.module_id
+      )
+      toast.success("Project link updated successfully!")
+      setIsEditing(false)
+      // The component will rerender with new data when parent fetches
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.detail || "Failed to update project link"
+      toast.error(errorMsg)
+      console.error("Error updating project URL:", error)
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -866,29 +890,31 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
             project.submission_status === 'in_review' ? 'bg-yellow-50 border-yellow-200' :
             'bg-blue-50 border-blue-200'
           }`}>
-            <div className="mb-2 flex items-center gap-2">
-              {project.submission_status === 'approved' ? (
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
-              ) : project.submission_status === 'rejected' ? (
-                <XCircle className="w-5 h-5 text-red-600" />
-              ) : project.submission_status === 'in_review' ? (
-                <Clock className="w-5 h-5 text-yellow-600" />
-              ) : (
-                <FileCheck className="w-5 h-5 text-blue-600" />
-              )}
-              <span className={`font-medium ${
-                project.submission_status === 'approved' ? 'text-green-700' :
-                project.submission_status === 'rejected' ? 'text-red-700' :
-                project.submission_status === 'in_review' ? 'text-yellow-700' :
-                'text-blue-700'
-              }`}>
-                {project.submission_status === 'approved' ? 'Project Approved' :
-                 project.submission_status === 'rejected' ? 'Revision Requested' :
-                 project.submission_status === 'in_review' ? 'Under Review' :
-                 'Submitted'}
-              </span>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {project.submission_status === 'approved' ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                ) : project.submission_status === 'rejected' ? (
+                  <XCircle className="w-5 h-5 text-red-600" />
+                ) : project.submission_status === 'in_review' ? (
+                  <Clock className="w-5 h-5 text-yellow-600" />
+                ) : (
+                  <FileCheck className="w-5 h-5 text-blue-600" />
+                )}
+                <span className={`font-medium ${
+                  project.submission_status === 'approved' ? 'text-green-700' :
+                  project.submission_status === 'rejected' ? 'text-red-700' :
+                  project.submission_status === 'in_review' ? 'text-yellow-700' :
+                  'text-blue-700'
+                }`}>
+                  {project.submission_status === 'approved' ? 'Project Approved' :
+                   project.submission_status === 'rejected' ? 'Revision Requested' :
+                   project.submission_status === 'in_review' ? 'Under Review' :
+                   'Submitted'}
+                </span>
+              </div>
               {project.points_earned !== null && project.points_earned > 0 && (
-                <span className="ml-auto text-sm font-semibold text-green-600">
+                <span className="text-sm font-semibold text-green-600">
                   +{project.points_earned} points
                 </span>
               )}
@@ -916,6 +942,14 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
                 Submitted on {new Date(project.submitted_at).toLocaleDateString()} at {new Date(project.submitted_at).toLocaleTimeString()}
               </p>
             )}
+
+            {/* Lock message if reviewed */}
+            {project.reviewed_at && (
+              <p className="text-xs text-gray-600 mt-3 p-2 bg-gray-100 rounded flex items-center gap-2">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                This submission has been reviewed and cannot be updated. 
+              </p>
+            )}
           </div>
 
           {/* Mentor Review Section */}
@@ -939,6 +973,73 @@ function ProjectContentView({ project, onSubmit, onNext, hasNext, previewMode = 
                   <p className="text-gray-700 whitespace-pre-wrap">{project.reviewer_feedback}</p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Edit URL Section (only if not reviewed) */}
+          {!project.reviewed_at && project.is_submitted && (
+            <div className="p-4 bg-white rounded-xl border border-gray-200">
+              {isEditing ? (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-900 text-sm">Update Your Submission Link</h4>
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Link2 className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="url"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      placeholder="https://github.com/username/project"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleUpdateUrl}
+                      disabled={!editValue.trim() || isUpdating}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                      size="sm"
+                    >
+                      {isUpdating ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <Check className="w-4 h-4 mr-2" />
+                      )}
+                      Update Link
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setIsEditing(false)
+                        setEditValue("")
+                      }}
+                      disabled={isUpdating}
+                      variant="outline"
+                      size="sm"
+                      className="px-4"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">
+                    Need to fix something? You can update your submission link before it's reviewed.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setEditValue(project.submission_url || "")
+                      setIsEditing(true)
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                  >
+                    Edit Link
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>

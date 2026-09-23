@@ -891,6 +891,45 @@ export function UsersManagementView() {
                               </Button>
                             </div>
                           </div>
+                          <div className="mt-4 border-t border-gray-100 pt-3">
+                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                              Module Assessment Scores
+                            </p>
+                            {course.assessment_scores.length ? (
+                              <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                <table className="w-full text-left text-xs">
+                                  <thead className="bg-gray-50 text-gray-500">
+                                    <tr>
+                                      <th className="px-3 py-2 font-medium">Module</th>
+                                      <th className="px-3 py-2 font-medium">Answered</th>
+                                      <th className="px-3 py-2 font-medium">Correct</th>
+                                      <th className="px-3 py-2 text-right font-medium">Score</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {course.assessment_scores.map((assessment) => (
+                                      <tr key={assessment.module_id} className="border-t border-gray-100">
+                                        <td className="px-3 py-2 font-medium text-gray-700">
+                                          {assessment.module_title}
+                                        </td>
+                                        <td className="px-3 py-2 text-gray-600">
+                                          {assessment.answered_questions}/{assessment.total_questions}
+                                        </td>
+                                        <td className="px-3 py-2 text-gray-600">
+                                          {assessment.correct_questions}/{assessment.total_questions}
+                                        </td>
+                                        <td className="px-3 py-2 text-right font-semibold text-gray-900">
+                                          {assessment.score_percent === null ? "In progress" : `${assessment.score_percent}%`}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-400">No assessments have been added to this course yet.</p>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

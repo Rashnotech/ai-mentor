@@ -779,6 +779,8 @@ export interface LessonContent {
 
 export interface ProjectContent {
   project_id: number
+  submission_id: number | null  // ID needed for updating the URL
+  module_id: number
   title: string
   description: string | null
   order: number
@@ -1181,6 +1183,17 @@ export interface AdminUserEnrollmentCourse {
   is_active: boolean
   enrolled_at: string | null
   certificate: AdminUserCertificate | null
+  assessment_scores: AdminModuleAssessmentScore[]
+}
+
+export interface AdminModuleAssessmentScore {
+  module_id: number
+  module_title: string
+  module_order: number
+  total_questions: number
+  answered_questions: number
+  correct_questions: number
+  score_percent: number | null
 }
 
 export interface AdminUserLearningResponse {
@@ -2238,6 +2251,18 @@ export const studentCoursesApi = {
       module_id: moduleId,
       solution_url: solutionUrl,
       description: description || null,
+    })
+    return response.data
+  },
+
+  /**
+   * Update a project submission URL (before mentor review)
+   * Students can only update the submission URL if it hasn't been reviewed yet.
+   */
+  updateProjectSubmissionUrl: async (submissionId: number | null, solutionUrl: string, moduleId: number): Promise<any> => {
+    const response = await apiClient.put(`/enrollments/progress/projects/${submissionId}/update-url`, {
+      solution_url: solutionUrl,
+      module_id: moduleId,
     })
     return response.data
   },

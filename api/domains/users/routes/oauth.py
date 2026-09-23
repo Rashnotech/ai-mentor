@@ -7,8 +7,6 @@ Endpoints:
   POST  /auth/{provider}/callback  — Exchange code for JWT, set HttpOnly cookies
 """
 import logging
-from typing import Literal
-
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse, JSONResponse
 from pydantic import BaseModel

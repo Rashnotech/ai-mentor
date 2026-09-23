@@ -576,6 +576,8 @@ async def get_learning_content_by_slug(
                 is_submitted = submission is not None
                 projects_data.append({
                     "project_id": project.project_id,
+                    "submission_id": submission.submission_id if submission else None,  # Add submission_id for updates
+                    "module_id": module.module_id,
                     "title": project.title,
                     "description": project.description,
                     "order": project.order,
@@ -1199,6 +1201,79 @@ async def submit_project(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error submitting project",
+        )
+
+
+@progress_router.put(
+    "/projects/{submission_id}/update-url",
+    response_model=ProjectSubmissionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update project submission URL",
+    description="Update the solution URL for a submitted project (before mentor review)",
+)
+async def update_project_submission_url(
+    submission_id: int,
+    request: ProjectSubmissionRequest,
+    current_user: User = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """
+    Update a project submission URL.
+
+    **Path Parameters:**
+    - submission_id: ID of the submission to update
+
+    **Request Body:**
+    - solution_url: New URL to your solution (GitHub, Google Drive, etc.)
+    - module_id: Module ID (required but not used for update)
+    - description: Optional new description (not updated, provided for request body compatibility)
+
+    **Restrictions:**
+    - Can only update BEFORE mentor has reviewed the submission
+    - Once `reviewed_at` is set, the submission is locked for edits
+    - You can only update your own submissions
+
+    **Returns:**
+    - Updated submission details
+
+    **Error Cases:**
+    - 403 if submission already reviewed
+    - 403 if you don't own the submission
+    - 404 if submission not found
+    """
+    try:
+        from domains.users.services.activity_service import touch_last_active
+
+        user_id = current_user.get("user_id")
+        await touch_last_active(db_session, user_id)
+
+        service = ProgressService(db_session)
+        submission = await service.update_project_submission_url(
+            submission_id=submission_id,
+            new_solution_url=request.solution_url,
+            user_id=user_id,
+        )
+
+        return ProjectSubmissionResponse(
+            submission_id=submission.submission_id,
+            project_id=submission.project_id,
+            module_id=submission.module_id,
+            solution_url=submission.solution_url,
+            status=submission.status,
+            is_approved=submission.is_approved,
+            deadline_status=submission.deadline_status.value,
+            points_earned=submission.points_earned,
+            submitted_at=submission.submitted_at.isoformat(),
+            reviewed_at=submission.reviewed_at.isoformat() if submission.reviewed_at else None,
+        )
+
+    except AppError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.error(f"Error updating project submission URL: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating submission",
         )
 
 

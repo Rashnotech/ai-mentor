@@ -8,13 +8,17 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.dependencies import get_user_service, get_current_user, require_role, get_db_session
+from auth.dependencies import get_current_user, get_db_session
 from domains.courses.models.certification import Certificate
-from domains.courses.models.course import Course, LearningPath
+from domains.courses.models.assessment import (
+    AssessmentQuestion,
+    AssessmentResponse,
+)
+from domains.courses.models.course import Course, LearningPath, Module
 from domains.courses.models.progress import UserCourseEnrollment
 from domains.users.models.user import User
 from domains.users.models.onboarding import MentorProfile
-from domains.users.services.user_service import UserService, UserRole
+from domains.users.services.user_service import UserRole
 from domains.users.schemas.admin_schema import (
     AdminCertificateUploadRequest,
     AdminUserCertificateResponse,
@@ -40,6 +44,44 @@ def _enum_value(value) -> str:
     if hasattr(value, "value"):
         return value.value
     return str(value) if value is not None else "unknown"
+
+
+def _serialize_module_assessment_score(
+    module,
+    questions,
+    responses_by_question,
+):
+    total_questions = len(questions)
+    answered_questions = sum(
+        1 for question in questions if question.question_id in responses_by_question
+    )
+    correct_questions = sum(
+        1
+        for question in questions
+        if responses_by_question.get(question.question_id)
+        and responses_by_question[question.question_id].is_correct
+    )
+    total_points = sum(question.points or 0 for question in questions)
+    earned_points = sum(
+        question.points or 0
+        for question in questions
+        if responses_by_question.get(question.question_id)
+        and responses_by_question[question.question_id].is_correct
+    )
+
+    return {
+        "module_id": module.module_id,
+        "module_title": module.title,
+        "module_order": module.order,
+        "total_questions": total_questions,
+        "answered_questions": answered_questions,
+        "correct_questions": correct_questions,
+        "score_percent": (
+            round(earned_points / total_points * 100, 2)
+            if answered_questions == total_questions and total_points
+            else None
+        ),
+    }
 
 
 def _serialize_admin_certificate(
@@ -106,6 +148,64 @@ async def _get_user_learning_response(
         certificate = certificates_by_exact_key.get(
             (enrollment.course_id, enrollment.path_id)
         ) or certificates_by_course.get(enrollment.course_id)
+        assessment_scores = []
+        assessment_path_id = enrollment.path_id
+        if assessment_path_id is None:
+            default_path_result = await session.execute(
+                select(LearningPath.path_id).where(
+                    LearningPath.course_id == enrollment.course_id,
+                    LearningPath.is_default.is_(True),
+                )
+            )
+            assessment_path_id = default_path_result.scalar_one_or_none()
+
+        if assessment_path_id is not None:
+            module_result = await session.execute(
+                select(Module)
+                .where(Module.path_id == assessment_path_id)
+                .order_by(Module.order)
+            )
+            modules = module_result.scalars().all()
+            module_ids = [module.module_id for module in modules]
+            questions_by_module = {}
+            responses_by_question = {}
+            if module_ids:
+                question_result = await session.execute(
+                    select(AssessmentQuestion).where(
+                        AssessmentQuestion.module_id.in_(module_ids)
+                    )
+                )
+                for question in question_result.scalars().all():
+                    questions_by_module.setdefault(
+                        question.module_id, []
+                    ).append(question)
+
+                response_result = await session.execute(
+                    select(AssessmentResponse)
+                    .join(
+                        AssessmentQuestion,
+                        AssessmentQuestion.question_id == AssessmentResponse.question_id,
+                    )
+                    .where(
+                        AssessmentResponse.user_id == user_id,
+                        AssessmentQuestion.module_id.in_(module_ids),
+                    )
+                )
+                responses_by_question = {
+                    response.question_id: response
+                    for response in response_result.scalars().all()
+                }
+
+            assessment_scores = [
+                _serialize_module_assessment_score(
+                    module,
+                    questions_by_module.get(module.module_id, []),
+                    responses_by_question,
+                )
+                for module in modules
+                if questions_by_module.get(module.module_id)
+            ]
+
         enrolled_courses.append(
             AdminUserEnrollmentResponse(
                 enrollment_id=enrollment.enrollment_id,
@@ -118,6 +218,7 @@ async def _get_user_learning_response(
                 is_active=bool(enrollment.is_active),
                 enrolled_at=enrollment.enrolled_at,
                 certificate=certificate,
+                assessment_scores=assessment_scores,
             )
         )
 

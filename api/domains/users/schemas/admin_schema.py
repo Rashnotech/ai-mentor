@@ -103,6 +103,19 @@ class AdminUserEnrollmentResponse(BaseModel):
     is_active: bool
     enrolled_at: Optional[datetime] = None
     certificate: Optional[AdminUserCertificateResponse] = None
+    assessment_scores: List["AdminModuleAssessmentScore"] = []
+
+
+class AdminModuleAssessmentScore(BaseModel):
+    """Assessment score for one module in an enrolled course."""
+
+    module_id: int
+    module_title: str
+    module_order: int
+    total_questions: int
+    answered_questions: int
+    correct_questions: int
+    score_percent: Optional[float] = None
 
 
 class AdminUserLearningResponse(BaseModel):

@@ -414,6 +414,76 @@ class ProgressService:
                 error_code="REJECTION_ERROR",
             )
 
+    async def update_project_submission_url(
+        self,
+        submission_id: int,
+        new_solution_url: str,
+        user_id: str,
+    ) -> ProjectSubmission:
+        """
+        Update a project submission URL.
+
+        Students can only update the URL if the submission has NOT been reviewed yet.
+        Once a mentor/admin has reviewed the submission (checked on reviewed_at timestamp),
+        the student cannot update the URL.
+
+        Args:
+            submission_id: Submission ID to update
+            new_solution_url: New solution URL
+            user_id: User ID (to verify ownership)
+
+        Returns:
+            Updated ProjectSubmission
+
+        Raises:
+            AppError: If submission not found, user doesn't own it, or if already reviewed
+        """
+        try:
+            submission = await self._get_project_submission_by_id(submission_id)
+            if not submission:
+                raise AppError(
+                    status_code=404,
+                    detail="Submission not found",
+                    error_code="SUBMISSION_NOT_FOUND",
+                )
+
+            # Verify user owns this submission
+            if submission.user_id != user_id:
+                raise AppError(
+                    status_code=403,
+                    detail="You can only update your own submissions",
+                    error_code="UNAUTHORIZED_UPDATE",
+                )
+
+            # Check if submission has been reviewed
+            # Once reviewed_at is set, the mentor has started reviewing
+            if submission.reviewed_at:
+                raise AppError(
+                    status_code=403,
+                    detail="Cannot update submission after it has been reviewed. Please wait for feedback or contact your mentor.",
+                    error_code="SUBMISSION_ALREADY_REVIEWED",
+                )
+
+            # Update the URL
+            submission.solution_url = new_solution_url
+            self.db_session.add(submission)
+            await self.db_session.commit()
+            await self.db_session.refresh(submission)
+
+            logger.info(f"Project submission {submission_id} URL updated by user {user_id}")
+            return submission
+
+        except AppError:
+            raise
+        except Exception as e:
+            await self.db_session.rollback()
+            logger.error(f"Error updating project submission URL: {str(e)}")
+            raise AppError(
+                status_code=500,
+                detail="Error updating submission",
+                error_code="UPDATE_ERROR",
+            )
+
     async def get_user_progress(
         self,
         user_id: str,
