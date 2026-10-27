@@ -1,10 +1,13 @@
 import assert from "node:assert/strict"
 import fs from "node:fs"
+import { readSurveyDefaults, assertSurveyDefaults, assertSurveyMigrationHistory } from "./helpers/survey-defaults.mjs"
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8")
 
 const models = read("api/domains/surveys/models.py")
 const service = read("api/domains/surveys/service.py")
+assertSurveyDefaults(readSurveyDefaults(service))
+
 const routes = read("api/domains/surveys/routes.py")
 const migration = read("api/alembic/versions/e4f5a6b7c8d9_add_learning_surveys.py")
 const modal = read("components/learning-survey-modal.tsx")
@@ -22,8 +25,7 @@ const revisionGraph = fs.readdirSync(migrationDirectory)
     return { revision, downRevisions }
   })
   .filter((entry) => entry.revision)
-const referencedRevisions = new Set(revisionGraph.flatMap((entry) => entry.downRevisions))
-const migrationHeads = revisionGraph.map((entry) => entry.revision).filter((revision) => !referencedRevisions.has(revision))
+assertSurveyMigrationHistory(revisionGraph)
 
 const checks = [
   ["four durable survey tables", ["class Survey(", "class SurveyQuestion(", "class SurveyResponse(", "class UserSurveyEvent("].every((value) => models.includes(value))],
@@ -38,13 +40,11 @@ const checks = [
   ["support trigger", service.includes("SUPPORT_CHECKIN_DAYS = 10") && service.includes("URGENT_SUPPORT_DAYS = 14") && service.includes("low_learning_progress")],
   ["global frequency cap", service.includes("GLOBAL_SURVEY_COOLDOWN_DAYS = 7")],
   ["dismiss and skip cooldowns", service.includes("DISMISSED_COOLDOWN_DAYS = 5") && service.includes("SKIPPED_COOLDOWN_DAYS = 7")],
-  ["three default templates", (service.match(/"slug":/g) ?? []).length === 3],
   ["eligible endpoint", routes.includes('@router.get("/surveys/eligible"')],
   ["submit endpoint", routes.includes('"/surveys/{survey_id}/responses"')],
   ["dismiss endpoint", routes.includes('@router.post("/surveys/{survey_id}/dismiss"')],
   ["admin CRUD and analytics", routes.includes('"/admin/surveys/analytics"') && routes.includes('"/admin/surveys/responses"') && routes.includes("add_survey_question")],
   ["migration creates all tables", ["surveys", "survey_questions", "survey_responses", "user_survey_events"].every((table) => migration.includes(`"${table}"`))],
-  ["survey migration is the only Alembic head", migrationHeads.length === 1 && migrationHeads[0] === "e4f5a6b7c8d9"],
   ["dashboard renders modal", dashboard.includes("<LearningSurveyModal />")],
   ["modal uses backend eligibility and cycle", modal.includes("surveyApi.getEligible") && modal.includes("current.cycle_key") && modal.includes("surveyApi.dismiss")],
   ["non-blocking survey actions", modal.includes("Maybe later") && modal.includes("Close") && modal.includes("Submit feedback")],
@@ -53,4 +53,4 @@ const checks = [
 ]
 
 for (const [name, passed] of checks) assert.equal(passed, true, name)
-console.log(`Learning survey contract: ${checks.length}/${checks.length} checks passed`)
+console.log(`Learning survey contract: ${checks.length + 2}/${checks.length + 2} checks passed`)

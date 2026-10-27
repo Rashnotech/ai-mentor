@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import fs from "node:fs"
+import { readSurveyDefaults, assertSurveyDefaults, assertSurveyMigrationHistory } from "../tests/helpers/survey-defaults.mjs"
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8")
 const service = read("api/domains/surveys/service.py")
@@ -33,3 +34,40 @@ const acceptance = {
 
 for (const [name, passed] of Object.entries(acceptance)) assert.equal(passed, true, name)
 console.log(`Learning survey eval: ${Object.keys(acceptance).length}/${Object.keys(acceptance).length} acceptance checks passed`)
+
+
+const defaults = readSurveyDefaults(service)
+const scenarios = [
+  ["current four defaults", () => assertSurveyDefaults(defaults)],
+  ["registry order does not matter", () => assertSurveyDefaults([...defaults].reverse())],
+  ["unrelated slug dictionaries do not affect defaults", () => assertSurveyDefaults(readSurveyDefaults(service + '\nUNRELATED = {"slug": "not-a-survey"}\n'))],
+  ["equivalent Python quote formatting is accepted", () => assertSurveyDefaults(readSurveyDefaults(service.replaceAll('"slug":', "'slug':")))],
+  ["missing registry is rejected", () => assert.throws(() => readSurveyDefaults('OTHER = ()'), /Cannot read DEFAULT_SURVEYS/)],
+  ["missing fourth default is rejected", () => assert.throws(() => assertSurveyDefaults(defaults.slice(0, 3)), /four default templates/)],
+  ["duplicate default is rejected even with four entries", () => assert.throws(() => assertSurveyDefaults([...defaults.slice(0, 3), defaults[0]]), /must be unique/)],
+  ["unexpected replacement is rejected", () => assert.throws(() => assertSurveyDefaults(defaults.map(t => t.slug === "job-readiness" ? {...t, slug: "unrelated"} : t)), /Missing default survey: job-readiness/)],
+  ["incorrect completion trigger is rejected", () => assert.throws(() => assertSurveyDefaults(defaults.map(t => t.slug === "job-readiness" ? {...t, trigger_type: "learning_timeline"} : t)), /job-readiness trigger type/)],
+  ["incorrect survey type is rejected", () => assert.throws(() => assertSurveyDefaults(defaults.map(t => t.slug === "job-readiness" ? {...t, survey_type: "learning_experience"} : t)), /job-readiness survey type/)],
+  ["empty questions are rejected", () => assert.throws(() => assertSurveyDefaults(defaults.map(t => t.slug === "job-readiness" ? {...t, questions: []} : t)), /job-readiness needs questions/)],
+]
+for (const [name, evaluate] of scenarios) {
+  evaluate()
+  console.log(`PASS ${name}`)
+}
+console.log(`Default survey regression eval: ${scenarios.length}/${scenarios.length} passed; threshold 100%`)
+
+
+const surveyMigration = { revision: "e4f5a6b7c8d9", downRevisions: [] }
+const laterMigration = { revision: "later", downRevisions: [surveyMigration.revision] }
+const migrationScenarios = [
+  ["survey migration can itself be the head", () => assertSurveyMigrationHistory([surveyMigration])],
+  ["later migrations can advance the head", () => assertSurveyMigrationHistory([surveyMigration, laterMigration])],
+  ["multiple migration heads are rejected", () => assert.throws(() => assertSurveyMigrationHistory([surveyMigration, laterMigration, {revision: "branch", downRevisions: [surveyMigration.revision]}]), /one Alembic head/)],
+  ["missing survey migration is rejected", () => assert.throws(() => assertSurveyMigrationHistory([laterMigration]), /current head history/)],
+  ["survey disconnected from current head is rejected", () => assert.throws(() => assertSurveyMigrationHistory([{...surveyMigration, downRevisions: [surveyMigration.revision]}, {revision: "other", downRevisions: []}]), /current head history/)],
+]
+for (const [name, evaluate] of migrationScenarios) {
+  evaluate()
+  console.log(`PASS ${name}`)
+}
+console.log(`Survey migration regression eval: ${migrationScenarios.length}/${migrationScenarios.length} passed; threshold 100%`)

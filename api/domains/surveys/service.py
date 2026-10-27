@@ -141,7 +141,7 @@ class SurveyService:
         self.session = session
 
     async def ensure_default_surveys(self) -> None:
-        """Seed the three standard templates without overwriting admin edits."""
+        """Seed the four standard templates without overwriting admin edits."""
         changed = False
         for definition in DEFAULT_SURVEYS:
             result = await self.session.execute(select(Survey).where(Survey.slug == definition["slug"]))

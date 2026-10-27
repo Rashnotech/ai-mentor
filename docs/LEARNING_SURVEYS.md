@@ -29,19 +29,21 @@ Both responses and events have a unique `(user_id, survey_id, enrollment_id, cyc
 | First learning check-in | Enrollment is at least 7 days old or 3 lessons are complete | Once per enrollment before day 30 |
 | Monthly feedback | Every 30 days from enrollment | Enrollment plus cycle number |
 | Course difficulty | Module completion evidence or a project submission within 30 days | Enrollment plus module |
+| Job readiness | Within three days after course completion | Once per enrollment |
 | Support/progress | No progress for 10 days, or actual progress trails expected progress after day 14 | Enrollment plus 14-day period |
 
 Normal surveys respect a seven-day global frequency cap. Fourteen days of inactivity is treated as urgent support and may bypass that cap. A Close action waits five days; Maybe later waits seven days. A passive shown event waits three days, covering refreshes or closed browser tabs.
 
 ## Default templates
 
-The API seeds three templates on startup when their slugs do not exist:
+The API seeds four templates on startup when their slugs do not exist:
 
 - Learning experience
 - Course difficulty
 - Support/progress
+- Job readiness
 
-Each popup contains three or four questions. Admin edits are retained across restarts.
+Each popup contains three to five questions. Admin edits are retained across restarts.
 
 ## Admin workflow
 
