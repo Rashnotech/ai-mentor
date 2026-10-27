@@ -2,6 +2,7 @@
 
 import { useState, use, useEffect } from "react"
 import Link from "next/link"
+import { CourseCover } from "@/components/course-cover"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
@@ -618,12 +619,7 @@ export default function CourseDetailsPage({ params, initialCourse }: { params: P
               {/* Enrollment Card */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
                 <div className="relative h-48 bg-gradient-to-br from-blue-600 to-indigo-700 group cursor-pointer">
-                  {/* Video Placeholder */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Play className="w-6 h-6 text-white fill-current ml-1" />
-                    </div>
-                  </div>
+                  <CourseCover src={course.cover_image_url} title={course.title} />
                 </div>
                 <div className="p-6">
                   {course.learning_paths && course.learning_paths.length > 0 && (

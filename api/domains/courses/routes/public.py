@@ -113,6 +113,7 @@ async def list_public_courses_brief(
                 course_id=course.course_id,
                 title=course.title,
                 description=course.description,
+                cover_image_url=course.cover_image_url,
             )
             for course in courses
         ]
@@ -197,6 +198,7 @@ async def list_public_courses(
                 title=course.title,
                 slug=course.slug,
                 description=course.description,
+                cover_image_url=course.cover_image_url,
                 estimated_hours=course.estimated_hours,
                 difficulty_level=course.difficulty_level,
                 is_active=course.is_active,
@@ -284,6 +286,7 @@ async def get_public_course_by_slug(
             title=course.title,
             slug=course.slug,
             description=course.description,
+            cover_image_url=course.cover_image_url,
             estimated_hours=course.estimated_hours,
             difficulty_level=course.difficulty_level,
             is_active=course.is_active,
@@ -614,6 +617,7 @@ async def get_public_course(
             title=course.title,
             slug=course.slug,
             description=course.description,
+            cover_image_url=course.cover_image_url,
             estimated_hours=course.estimated_hours,
             difficulty_level=course.difficulty_level,
             is_active=course.is_active,

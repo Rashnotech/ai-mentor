@@ -884,7 +884,7 @@ export function CoursesManagementView() {
       slug: courseForm.slug.toLowerCase().trim(),
       estimated_hours: courseForm.estimated_hours,
       difficulty_level: courseForm.difficulty_level,
-      cover_image_url: courseForm.cover_image_url || undefined,
+      cover_image_url: courseForm.cover_image_url.trim() || undefined,
       prerequisites: prerequisitesArray.length > 0 ? prerequisitesArray : undefined,
       what_youll_learn: whatYoullLearnArray.length > 0 ? whatYoullLearnArray : undefined,
       certificate_on_completion: courseForm.certificate_on_completion,
@@ -902,7 +902,7 @@ export function CoursesManagementView() {
       estimated_hours: course.estimated_hours,
       difficulty_level: course.difficulty_level as DifficultyLevel,
       is_active: course.is_active,
-      cover_image_url: "",
+      cover_image_url: course.cover_image_url || "",
       prerequisites: course.prerequisites?.join(", ") || "",
       what_youll_learn: course.what_youll_learn?.join(", ") || "",
       certificate_on_completion: course.certificate_on_completion || false,
@@ -947,6 +947,7 @@ export function CoursesManagementView() {
       estimated_hours: courseForm.estimated_hours,
       difficulty_level: courseForm.difficulty_level,
       is_active: courseForm.is_active,
+      cover_image_url: courseForm.cover_image_url.trim(),
       prerequisites: prerequisitesArray.length > 0 ? prerequisitesArray : undefined,
       what_youll_learn: whatYoullLearnArray.length > 0 ? whatYoullLearnArray : undefined,
       certificate_on_completion: courseForm.certificate_on_completion,
@@ -1497,6 +1498,17 @@ export function CoursesManagementView() {
                       <option value="ADVANCED">Advanced</option>
                     </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Cover Image URL (optional)</label>
+                  <input
+                    type="url"
+                    value={courseForm.cover_image_url}
+                    onChange={(e) => setCourseForm({ ...courseForm, cover_image_url: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://example.com/cover.jpg"
+                  />
                 </div>
 
                 <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">

@@ -675,6 +675,7 @@ export interface CourseUpdatePayload {
 }
 
 export interface CourseResponse {
+  cover_image_url?: string | null
   course_id: number
   title: string
   slug: string

@@ -34,6 +34,7 @@ class CourseResponse(BaseModel):
     title: str = Field(description="Course title")
     slug: str = Field(description="URL-friendly identifier")
     description: str = Field(description="Course description")
+    cover_image_url: Optional[str] = Field(None, description="Cover image URL")
     estimated_hours: int = Field(description="Estimated completion hours")
     difficulty_level: str = Field(description="Difficulty level")
     is_active: bool = Field(description="Whether course is active")
@@ -83,6 +84,7 @@ class CourseBriefResponse(BaseModel):
     course_id: int = Field(description="Course ID")
     title: str = Field(description="Course title")
     description: str = Field(description="Course description")
+    cover_image_url: Optional[str] = Field(None, description="Cover image URL")
 
     class Config:
         from_attributes = True
@@ -95,6 +97,7 @@ class CourseListResponse(BaseModel):
     title: str = Field(description="Course title")
     slug: str = Field(description="URL-friendly identifier")
     description: str = Field(description="Course description")
+    cover_image_url: Optional[str] = Field(None, description="Cover image URL")
     estimated_hours: int = Field(description="Estimated completion hours")
     difficulty_level: str = Field(description="Difficulty level")
     is_active: bool = Field(description="Whether course is active")

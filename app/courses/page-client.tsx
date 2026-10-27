@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
+import { CourseCover } from "@/components/course-cover"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { Search, ChevronDown, Clock, Layers, Layout, CheckCircle2, Star, Loader2, LogOut, User, Menu, X } from "lucide-react"
@@ -333,6 +334,7 @@ export default function CoursesPage({ initialCourses = [] }: { initialCourses?: 
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-200 transition-all hover:shadow-lg hover:shadow-blue-900/5 h-full flex flex-col">
                     {/* Card Image */}
                     <div className={`h-40 w-full ${GRADIENTS[index % GRADIENTS.length]} relative p-4 shrink-0`}>
+                      <CourseCover src={course.cover_image_url} title={course.title} />
                       <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-all" />
                       <div className="flex gap-2 relative z-10">
                         <span

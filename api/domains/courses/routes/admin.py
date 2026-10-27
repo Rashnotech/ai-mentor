@@ -93,6 +93,7 @@ async def create_course(
             title=course.title,
             slug=course.slug,
             description=course.description,
+            cover_image_url=course.cover_image_url,
             estimated_hours=course.estimated_hours,
             difficulty_level=course.difficulty_level,
             is_active=course.is_active,
@@ -216,6 +217,7 @@ async def list_courses(
                 title=course.title,
                 slug=course.slug,
                 description=course.description,
+                cover_image_url=course.cover_image_url,
                 estimated_hours=course.estimated_hours,
                 difficulty_level=course.difficulty_level,
                 is_active=course.is_active,
@@ -590,6 +592,7 @@ async def assign_course_mentor(
             title=course.title,
             slug=course.slug,
             description=course.description,
+            cover_image_url=course.cover_image_url,
             estimated_hours=course.estimated_hours,
             difficulty_level=course.difficulty_level,
             is_active=course.is_active,
@@ -667,6 +670,7 @@ async def get_course(
             title=course.title,
             slug=course.slug,
             description=course.description,
+            cover_image_url=course.cover_image_url,
             estimated_hours=course.estimated_hours,
             difficulty_level=course.difficulty_level,
             is_active=course.is_active,
@@ -758,7 +762,7 @@ async def update_course(
             course.difficulty_level = request.difficulty_level
         if request.is_active is not None:
             course.is_active = request.is_active
-        if request.cover_image_url is not None:
+        if "cover_image_url" in request.model_fields_set:
             course.cover_image_url = request.cover_image_url
         if request.prerequisites is not None:
             course.prerequisites = request.prerequisites
@@ -777,6 +781,7 @@ async def update_course(
             title=course.title,
             slug=course.slug,
             description=course.description,
+            cover_image_url=course.cover_image_url,
             estimated_hours=course.estimated_hours,
             difficulty_level=course.difficulty_level,
             is_active=course.is_active,
