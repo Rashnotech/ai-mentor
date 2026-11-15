@@ -28,7 +28,7 @@ const workforceSection = workforceSectionStart >= 0 && coursesSectionStart > wor
 const checks = [
   ["footer includes the requested technical programmes", ["Python Programming", "Web Development", "Software Engineering", "AI Engineering"].every((label) => page.includes(label))],
   ["removed old academy labels", !["Content Creation", "Freelancer Academy", "Founder Academy"].some((label) => page.includes(label))],
-  ["impact stats headline replaced", page.includes("Why choose Rashnotech") && !page.includes("More Opportunity. More Impact.")],
+  ["reviews section displays What people say and fans out from a grouped deck on scroll", page.includes("What people say") && page.includes("Thousands of career pivots, one common factor") && !page.includes("Why choose Rashnotech") && !page.includes("More Opportunity. More Impact.") && page.includes("const [reviewsSpreadProgress, setReviewsSpreadProgress] = useState<number>(0)") && page.includes("translate3d(${stackedTranslateXPercent}%, ${stackedTranslateYPx}px, 0) rotate(${stackedRotateDeg}deg) scale(${stackedScale})")],
   ["company logo strip replaced by four reviews", page.includes("studentReviews.slice(0, 4).map") && !page.includes("Explore the Companies Investing in our Talent")],
   ["review section uses dark background", page.includes('className="py-20 bg-[#071c2d]"')],
   ["reviews use four-card grid layout", page.includes("grid gap-6 md:grid-cols-2 xl:grid-cols-4")],

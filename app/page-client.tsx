@@ -169,6 +169,8 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeWorkforceCard, setActiveWorkforceCard] = useState<number>(0)
   const [mentorScrollOffset, setMentorScrollOffset] = useState<number>(0)
+  const [reviewsSpreadProgress, setReviewsSpreadProgress] = useState<number>(0)
+  const reviewsSectionRef = useRef<HTMLElement | null>(null)
   const mentorsSectionRef = useRef<HTMLElement | null>(null)
   const mentorViewportRef = useRef<HTMLDivElement | null>(null)
   const mentorTrackRef = useRef<HTMLDivElement | null>(null)
@@ -213,6 +215,20 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
 
   useEffect(() => {
     const updateMentorScroll = () => {
+      // Update Student Reviews grouped -> opened spread progress on scroll
+      const reviewsSection = reviewsSectionRef.current
+      if (reviewsSection) {
+        const revRect = reviewsSection.getBoundingClientRect()
+        const vpHeight = window.innerHeight || 1
+        // Starts grouped (0) when section enters lower viewport (0.72 * vpHeight) and opens fully (1) by 0.25 * vpHeight
+        const startTrigger = vpHeight * 0.72
+        const endTrigger = vpHeight * 0.25
+        const rawSpread = (startTrigger - revRect.top) / Math.max(1, startTrigger - endTrigger)
+        const clampedSpread = Math.min(1, Math.max(0, rawSpread))
+        const easedSpread = Number((1 - Math.pow(1 - clampedSpread, 3)).toFixed(3))
+        setReviewsSpreadProgress(easedSpread)
+      }
+
       const section = mentorsSectionRef.current
       if (!section) return
 
@@ -646,56 +662,81 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       </section>
 
       {/* Student Reviews Section */}
-      <section className="py-20 bg-[#071c2d]">
+      <section ref={reviewsSectionRef} className="py-20 bg-[#071c2d]">
         <div className="container mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-16">
-            Why choose Rashnotech
-          </h2>
+          <div className="mb-16 flex flex-col items-center text-center">
+            <div className="relative inline-flex items-center rounded-lg border border-white/25 bg-[#142235] px-5 py-2 text-xs font-semibold tracking-wide text-white sm:text-sm">
+              <Sparkles className="-ml-1 mr-2 h-4 w-4 text-sky-300" />
+              <span>What people say</span>
+            </div>
+
+            <h2 className="mt-5 max-w-2xl text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.12] text-white">
+              Thousands of career pivots, one common factor
+            </h2>
+          </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {studentReviews.slice(0, 4).map((review, index) => (
-              <article
-                key={review.name}
-                className="rounded-2xl border border-white/10 bg-[#142235] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.22)]"
-              >
-                <div className="mb-5 flex items-center gap-1 text-amber-300" aria-label="5 star review">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="h-4 w-4 fill-current" />
-                  ))}
-                </div>
-                <p className="line-clamp-3 text-lg font-semibold leading-relaxed text-white">
-                  &ldquo;{review.quote}&rdquo;
-                </p>
-                <Link
-                  href="https://www.google.com/search?q=Rashnotech+Solutions+reviews"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-4 inline-flex text-sm font-bold text-blue-200 hover:text-white"
+            {studentReviews.slice(0, 4).map((review, index) => {
+              const collapseFactor = 1 - reviewsSpreadProgress
+              const stackedTranslateXPercent = (1.5 - index) * 104 * collapseFactor
+              const stackedTranslateYPx = [14, 4, -6, -14][index] * collapseFactor
+              const stackedRotateDeg = [-4, -1, 2.5, 6][index] * collapseFactor
+              const stackedScale = 1 - index * 0.025 * collapseFactor
+              const detailsOpacity = index === 0 ? 1 : Number((0.25 + 0.75 * reviewsSpreadProgress).toFixed(2))
+
+              return (
+                <article
+                  key={review.name}
+                  style={{
+                    transform: `translate3d(${stackedTranslateXPercent}%, ${stackedTranslateYPx}px, 0) rotate(${stackedRotateDeg}deg) scale(${stackedScale})`,
+                    zIndex: 40 - index * 10,
+                  }}
+                  className="relative rounded-2xl border border-white/10 bg-[#142235] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.22)] transition-transform duration-300 ease-out will-change-transform"
                 >
-                  Read more
-                </Link>
-                <div className="mt-6 flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-sm font-bold text-white">
-                    {review.name
-                      .split(" ")
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .map((part) => part[0])
-                      .join("")
-                      .toUpperCase()}
+                  <div
+                    style={{ opacity: detailsOpacity }}
+                    className="transition-opacity duration-300"
+                  >
+                    <div className="mb-5 flex items-center gap-1 text-amber-300" aria-label="5 star review">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star key={star} className="h-4 w-4 fill-current" />
+                      ))}
+                    </div>
+                    <p className="line-clamp-3 text-lg font-semibold leading-relaxed text-white">
+                      &ldquo;{review.quote}&rdquo;
+                    </p>
+                    <Link
+                      href="https://www.google.com/search?q=Rashnotech+Solutions+reviews"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-4 inline-flex text-sm font-bold text-blue-200 hover:text-white"
+                    >
+                      Read more
+                    </Link>
+                    <div className="mt-6 flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-sm font-bold text-white">
+                        {review.name
+                          .split(" ")
+                          .filter(Boolean)
+                          .slice(0, 2)
+                          .map((part) => part[0])
+                          .join("")
+                          .toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-white">{review.name}</p>
+                        <p className="text-sm text-blue-100/80">student</p>
+                      </div>
+                    </div>
+                    {index === 0 && (
+                      <div className="mt-5 inline-flex rounded-full bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-100">
+                        Verified student review
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <p className="font-semibold text-white">{review.name}</p>
-                    <p className="text-sm text-blue-100/80">student</p>
-                  </div>
-                </div>
-                {index === 0 && (
-                  <div className="mt-5 inline-flex rounded-full bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-100">
-                    Verified student review
-                  </div>
-                )}
-              </article>
-            ))}
+                </article>
+              )
+            })}
           </div>
 
           <div className="mt-12 text-center">

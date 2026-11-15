@@ -31,7 +31,14 @@ for (const removed of [
   assert.doesNotMatch(page, new RegExp(removed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
 }
 
-assert.match(page, /Why choose Rashnotech/)
+assert.match(page, /What people say/)
+assert.match(page, /Thousands of career pivots, one common factor/)
+assert.doesNotMatch(page, /Why choose Rashnotech/)
+assert.match(page, /const \[reviewsSpreadProgress, setReviewsSpreadProgress\] = useState<number>\(0\)/)
+assert.match(
+  page,
+  /translate3d\(\$\{stackedTranslateXPercent\}%, \$\{stackedTranslateYPx\}px, 0\) rotate\(\$\{stackedRotateDeg\}deg\) scale\(\$\{stackedScale\}\)/
+)
 assert.match(page, /const studentReviews = \[/)
 assert.match(page, /studentReviews\.slice\(0, 4\)\.map/)
 assert.match(page, /className="py-20 bg-\[#071c2d\]"/)
