@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { readFile } from "node:fs/promises"
-import { courseJsonLd, courseListJsonLd } from "../lib/site.ts"
+import { courseJsonLd, courseListJsonLd, courseShareImageUrl, SITE_URL } from "../lib/site.ts"
 
 const root = new URL("../", import.meta.url)
 const read = (path: string) => readFile(new URL(path, root), "utf8")
@@ -11,7 +11,7 @@ const fixture = {
   description: "Learn frontend, backend, testing, and deployment through practical projects.",
   difficulty_level: "BEGINNER",
   estimated_hours: 80,
-  cover_image_url: null,
+  cover_image_url: "https://cdn.example.com/covers/full-stack.jpg",
   min_price: 0,
   learning_paths: [],
 } as never
@@ -54,9 +54,10 @@ record("manifest exposes square brand icon", manifest.includes('src: "/mylogo.pn
 record("crawler policy", robots.includes("sitemap:") && robots.includes("/dashboard/"))
 record("dynamic course sitemap", sitemap.includes("courseUrl(course.slug)"))
 record("LLM-readable public index", llms.includes("## Courses") && llms.includes("Public course pages"))
-record("dynamic course metadata", coursePage.includes("generateMetadata") && coursePage.includes("courseJsonLd"))
-record("course list structured data", listSchema["@type"] === "ItemList" && listSchema.itemListElement.length === 1)
-record("course detail structured data", detailSchema["@type"] === "Course" && detailSchema.provider.name === "Rashnotech")
+record("dynamic course metadata", coursePage.includes("generateMetadata") && coursePage.includes("courseJsonLd") && coursePage.includes("courseShareImageUrl(course.cover_image_url)") && coursePage.includes("images: [shareImage]") && !coursePage.includes('images: [{ url: "/bg_hero.png"'))
+record("course share preview resolves cover image for WhatsApp and OpenGraph", courseShareImageUrl(fixture.cover_image_url) === "https://cdn.example.com/covers/full-stack.jpg" && courseShareImageUrl("/covers/rel.png") === `${SITE_URL}/covers/rel.png` && courseShareImageUrl(null) === `${SITE_URL}/bg_hero.png`)
+record("course list structured data", listSchema["@type"] === "ItemList" && listSchema.itemListElement.length === 1 && listSchema.itemListElement[0].item.image === "https://cdn.example.com/covers/full-stack.jpg")
+record("course detail structured data", detailSchema["@type"] === "Course" && detailSchema.provider.name === "Rashnotech" && detailSchema.image === "https://cdn.example.com/covers/full-stack.jpg")
 record("durable paid onboarding", paymentService.includes("await self._complete_self_paced_onboarding("))
 record("selected course guard", paymentService.includes("selected_course_id != course_id"))
 record("existing paid payment grants access", paymentService.includes("_build_existing_access_response") && paymentService.includes("Existing successful payment found. Course access granted.") && paymentService.includes('"checkout_link": None'))

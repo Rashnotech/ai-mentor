@@ -273,12 +273,13 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       if (reviewsSection) {
         const revRect = reviewsSection.getBoundingClientRect()
         const vpHeight = window.innerHeight || 1
-        // Starts grouped (0) when section enters lower viewport (0.72 * vpHeight) and opens fully (1) by 0.25 * vpHeight
-        const startTrigger = vpHeight * 0.72
-        const endTrigger = vpHeight * 0.25
+        // Hold at 0 (grouped like a card deck waiting to be shuffled/spread) while entering and centered in the lower/middle viewport,
+        // then smoothly spread open (0 -> 1) as the user scrolls deeper through the section
+        const startTrigger = vpHeight * 0.28
+        const endTrigger = -vpHeight * 0.08
         const rawSpread = (startTrigger - revRect.top) / Math.max(1, startTrigger - endTrigger)
         const clampedSpread = Math.min(1, Math.max(0, rawSpread))
-        const easedSpread = Number((1 - Math.pow(1 - clampedSpread, 3)).toFixed(3))
+        const easedSpread = Number((clampedSpread * clampedSpread * (3 - 2 * clampedSpread)).toFixed(3))
         setReviewsSpreadProgress(easedSpread)
       }
 
@@ -784,14 +785,16 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
             </h2>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-4">
             {studentReviews.slice(0, 4).map((review, index) => {
               const collapseFactor = 1 - reviewsSpreadProgress
-              const stackedTranslateXPercent = (1.5 - index) * 104 * collapseFactor
-              const stackedTranslateYPx = [14, 4, -6, -14][index] * collapseFactor
-              const stackedRotateDeg = [-4, -1, 2.5, 6][index] * collapseFactor
-              const stackedScale = 1 - index * 0.025 * collapseFactor
-              const detailsOpacity = index === 0 ? 1 : Number((0.25 + 0.75 * reviewsSpreadProgress).toFixed(2))
+              const stackedTranslateXPercent = Number(((1.5 - index) * 103.5 * collapseFactor).toFixed(2))
+              const stackedTranslateYPx = Number(([18, 6, -8, -22][index] * collapseFactor).toFixed(2))
+              const stackedRotateDeg = Number(([-7, -2.5, 3, 8][index] * collapseFactor).toFixed(2))
+              const stackedScale = Number((1 - index * 0.02 * collapseFactor).toFixed(3))
+              const detailsOpacity =
+                index === 0 ? 1 : Number(Math.min(1, Math.max(0, (reviewsSpreadProgress - 0.15) / 0.85)).toFixed(2))
+              const deckBgTone = ["bg-[#142235]", "bg-[#182940]", "bg-[#1c304b]", "bg-[#213856]"][index]
 
               return (
                 <article
@@ -800,7 +803,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                     transform: `translate3d(${stackedTranslateXPercent}%, ${stackedTranslateYPx}px, 0) rotate(${stackedRotateDeg}deg) scale(${stackedScale})`,
                     zIndex: 40 - index * 10,
                   }}
-                  className="relative rounded-2xl border border-white/10 bg-[#142235] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.22)] transition-transform duration-300 ease-out will-change-transform"
+                  className={`relative rounded-2xl border border-white/15 ${deckBgTone} p-6 shadow-[0_24px_60px_rgba(0,0,0,0.42)] transition-transform duration-300 ease-out will-change-transform`}
                 >
                   <div
                     style={{ opacity: detailsOpacity }}
@@ -850,17 +853,10 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
 
           <div className="mt-12 text-center">
             <Link
-              href="/signup"
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-all hover:bg-blue-500"
-            >
-              Start learning with Rashnotech
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
               href="https://www.google.com/search?q=Rashnotech+Solutions+reviews"
               target="_blank"
               rel="noreferrer"
-              className="ml-0 mt-4 inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-6 py-3 font-semibold text-white transition-all hover:border-white/30 hover:bg-white/10 sm:ml-3 sm:mt-0"
+              className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-6 py-3 font-semibold text-white transition-all hover:border-white/30 hover:bg-white/10"
             >
               See more reviews
               <ArrowRight className="h-4 w-4" />

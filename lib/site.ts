@@ -28,8 +28,19 @@ export async function getPublicCourse(slug: string): Promise<PublicCourseSummary
       `${apiBaseUrl()}/public/courses/by-slug/${encodeURIComponent(slug)}`,
       { next: { revalidate: 300 } },
     )
-    if (!response.ok) return null
-    return (await response.json()) as PublicCourseSummary
+    if (response.ok) {
+      return (await response.json()) as PublicCourseSummary
+    }
+    if (/^\d+$/.test(slug)) {
+      const byIdResponse = await fetch(
+        `${apiBaseUrl()}/public/courses/${encodeURIComponent(slug)}`,
+        { next: { revalidate: 300 } },
+      )
+      if (byIdResponse.ok) {
+        return (await byIdResponse.json()) as PublicCourseSummary
+      }
+    }
+    return null
   } catch {
     return null
   }
@@ -37,6 +48,13 @@ export async function getPublicCourse(slug: string): Promise<PublicCourseSummary
 
 export function courseUrl(slug: string): string {
   return `${SITE_URL}/courses/${encodeURIComponent(slug)}`
+}
+
+export function courseShareImageUrl(coverImageUrl?: string | null): string {
+  const trimmed = coverImageUrl?.trim()
+  if (!trimmed) return `${SITE_URL}/bg_hero.png`
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `${SITE_URL}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`
 }
 
 export function courseListJsonLd(courses: PublicCourseSummary[]) {
@@ -52,6 +70,7 @@ export function courseListJsonLd(courses: PublicCourseSummary[]) {
         name: course.title,
         description: course.description,
         url: courseUrl(course.slug),
+        image: courseShareImageUrl(course.cover_image_url),
         provider: {
           "@type": "Organization",
           name: SITE_NAME,
@@ -70,6 +89,7 @@ export function courseJsonLd(course: PublicCourseSummary) {
     name: course.title,
     description: course.description,
     url: courseUrl(course.slug),
+    image: courseShareImageUrl(course.cover_image_url),
     provider: {
       "@type": "Organization",
       name: SITE_NAME,
