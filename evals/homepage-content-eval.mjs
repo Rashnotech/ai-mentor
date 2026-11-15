@@ -21,8 +21,17 @@ const abdulrasheedBlock = abdulrasheedStart >= 0 && iniStart > abdulrasheedStart
   : ""
 const workforceSectionStart = page.indexOf("{/* Modern Workforce Section */}")
 const coursesSectionStart = page.indexOf("{/* Courses Section */}")
+const reviewsSectionStart = page.indexOf("{/* Student Reviews Section */}")
+const faqSectionStart = page.indexOf("{/* Frequently Asked Questions Section */}")
+const footerStart = page.indexOf("{/* Footer */}")
 const workforceSection = workforceSectionStart >= 0 && coursesSectionStart > workforceSectionStart
   ? page.slice(workforceSectionStart, coursesSectionStart)
+  : ""
+const coursesSection = coursesSectionStart >= 0 && reviewsSectionStart > coursesSectionStart
+  ? page.slice(coursesSectionStart, reviewsSectionStart)
+  : ""
+const faqSection = faqSectionStart >= 0 && footerStart > faqSectionStart
+  ? page.slice(faqSectionStart, footerStart)
   : ""
 
 const checks = [
@@ -51,6 +60,8 @@ const checks = [
   ["modern workforce cards support interactive hover and micro-animation", workforceSection.includes("onMouseEnter={() => setActiveWorkforceCard(index)}") && workforceSection.includes("hover:-translate-y-3.5") && workforceSection.includes("animate-card-float") && workforceSection.includes("animate-ring-pulse") && workforceSection.includes("group-hover:-rotate-6") && workforceSection.includes("group-hover:scale-110") && globalsCss.includes("@keyframes card-float")],
   ["hero secondary CTA displays AI for Business and links to courses", page.includes("AI for Business") && !page.includes("AI-mentor for Business") && page.includes('href="/courses"')],
   ["tech logos scroll across the screen in a continuous marquee", page.includes("animate-marquee") && page.includes("[...techLogos, ...techLogos].map") && globalsCss.includes("@keyframes marquee")],
+  ["courses section replaces A path for every goal and filter tabs with horizontal cover-image cards on white background", coursesSection.includes('id="courses" className="py-24 bg-white text-gray-900"') && coursesSection.includes("Our Popular Courses") && coursesSection.includes("Expert-led course. Global Skills") && coursesSection.includes("<CourseCover src={course.cover_image_url} title={course.title} />") && coursesSection.includes("Enroll now") && coursesSection.includes("Find your perfect fit") && !coursesSection.includes("A path for every goal") && !coursesSection.includes("Top Courses") && !coursesSection.includes("Explore Catalog")],
+  ["FAQ section is placed before footer with support cards and five interactive questions", faqSectionStart > 0 && footerStart > faqSectionStart && faqSection.includes("FAQs") && faqSection.includes("Frequently Asked Questions") && faqSection.includes("Do you have more questions?") && faqSection.includes("Contact us") && faqSection.includes("For enquiries contact") && ["What is the minimum age or qualification required?", "Is there a community for students?", "How long are the programs to run for?", "Can I take more than one course at a time?", "Which of your programs is the highest paid tech job?"].every((q) => page.includes(q))],
 ]
 
 const passed = checks.filter(([, condition]) => condition).length

@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { publicCourseApi, CourseListResponse } from "@/lib/api"
+import { CourseCover } from "@/components/course-cover"
 import TawkTo from "@/components/tawk-to"
 import {
   ArrowRight,
@@ -20,14 +21,14 @@ import {
   LogIn,
   UserCheck,
   Presentation,
+  Plus,
+  Minus,
+  Phone,
+  MessageSquare,
+  Users,
+  TrendingUp,
+  Award,
 } from "lucide-react"
-
-const tabs = [
-  { id: "top", label: "Top Courses" },
-  { id: "ai", label: "AI" },
-  { id: "career", label: "Career Tracks" },
-  { id: "skill", label: "Skill Tracks" },
-]
 
 const footerLinks = {
   programmes: [
@@ -165,9 +166,61 @@ const workforcePillars = [
   },
 ] as const
 
+const faqItems = [
+  {
+    question: "What is the minimum age or qualification required?",
+    answer:
+      "No prior degree or coding qualification is required. Our beginner-friendly tracks start from the ground up and guide you step by step into industry-ready projects.",
+  },
+  {
+    question: "Is there a community for students?",
+    answer:
+      "Yes. Every enrolled learner joins our active Rashnotech peer and mentor community for code reviews, project collaboration, and career support.",
+  },
+  {
+    question: "How long are the programs to run for?",
+    answer:
+      "Programs are self-paced with structured milestones, typically taking between 4 to 12 weeks depending on the learning path and weekly hours you commit.",
+  },
+  {
+    question: "Can I take more than one course at a time?",
+    answer:
+      "Yes, you can enroll in multiple courses. However, we recommend focusing on one core career track at a time so you can complete all hands-on projects thoroughly.",
+  },
+  {
+    question: "Which of your programs is the highest paid tech job?",
+    answer:
+      "Data Science, AI Engineering, Cybersecurity, and Software Engineering consistently rank among the highest-compensated global tech roles.",
+  },
+] as const
+
+const courseCoverThemes = [
+  {
+    bg: "bg-[#0b253a]",
+    badge: "Bestseller",
+    badgeIcon: Award,
+  },
+  {
+    bg: "bg-[#065f46]",
+    badge: "Trending",
+    badgeIcon: TrendingUp,
+  },
+  {
+    bg: "bg-[#2a1818]",
+    badge: "Bestseller",
+    badgeIcon: Award,
+  },
+  {
+    bg: "bg-[#0f292e]",
+    badge: "Popular",
+    badgeIcon: Star,
+  },
+] as const
+
 export default function LandingPage({ initialCourses = [] }: { initialCourses?: CourseListResponse[] }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeWorkforceCard, setActiveWorkforceCard] = useState<number>(0)
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0)
   const [mentorScrollOffset, setMentorScrollOffset] = useState<number>(0)
   const [reviewsSpreadProgress, setReviewsSpreadProgress] = useState<number>(0)
   const reviewsSectionRef = useRef<HTMLElement | null>(null)
@@ -582,30 +635,17 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       {/* Courses Section */}
       <section id="courses" className="py-24 bg-white text-gray-900">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">A path for every goal</h2>
+          <div className="mb-14 flex flex-col items-center text-center">
+            <div className="relative inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-5 py-2 text-xs font-bold tracking-wide text-[#071c2d] sm:text-sm">
+              <Sparkles className="-ml-1 mr-2 h-4 w-4 text-[#1d4ed8]" />
+              <span>Our Popular Courses</span>
+            </div>
+
+            <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-[#071c2d] sm:text-4xl lg:text-5xl">
+              Expert-led course. Global Skills
+            </h2>
           </div>
-          
-          {/* Tabs */}
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
-            {tabs.map((tab, i) => (
-              <button
-                key={tab.id}
-                className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
-                  i === 0
-                    ? "bg-gray-900 text-white"
-                    : "bg-white text-gray-700 border border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-            <button className="px-6 py-2.5 rounded-full text-sm font-medium bg-white text-gray-700 border border-gray-200 hover:border-gray-300 flex items-center gap-2">
-              Explore Catalog
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-          
+
           {/* Course Cards */}
           {isLoadingCourses ? (
             <div className="flex items-center justify-center py-16">
@@ -617,47 +657,116 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
               <p className="text-gray-500">No courses available at the moment.</p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses.map((course, i) => (
-                <div
-                  key={course.course_id}
-                  className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-gray-300 transition-all group relative overflow-hidden"
-                >
-                  {/* Colored bottom border */}
-                  <div className={`absolute bottom-0 left-0 right-0 h-1 ${
-                    i % 3 === 0 ? 'bg-cyan-500' : i % 3 === 1 ? 'bg-blue-500' : 'bg-purple-500'
-                  }`} />
-                  
-                  <h3 className="text-lg font-bold mb-3 text-gray-900">{course.title}</h3>
-                  
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-                    <div className="flex items-center gap-1.5">
-                      <BarChart3 className="w-4 h-4" />
-                      {getDifficultyLabel(course.difficulty_level)}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="w-4 h-4" />
-                      {course.estimated_hours} hr
-                    </div>
-                  </div>
-                  
-                  <p className="text-gray-600 text-sm leading-relaxed mb-6 line-clamp-3">
-                    {course.description}
-                  </p>
-                  
-                  <div className="flex items-center justify-between">
-                    <Link
-                      href={`/courses/${course.slug}`}
-                      className="ml-auto inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 group-hover:gap-3 transition-all"
+            <div className="mx-auto max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+              {courses.map((course, i) => {
+                const theme = courseCoverThemes[i % courseCoverThemes.length]
+                const BadgeIcon = theme.badgeIcon
+                const formattedPrice =
+                  course.min_price && course.min_price > 0
+                    ? course.min_price.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "NGN",
+                        maximumFractionDigits: 0,
+                      })
+                    : "Free"
+
+                return (
+                  <article
+                    key={course.course_id}
+                    className="group flex flex-col sm:flex-row overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_14px_34px_rgba(7,28,45,0.06)] transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-[0_22px_50px_rgba(7,28,45,0.12)]"
+                  >
+                    {/* Left Cover Image Panel */}
+                    <div
+                      className={`relative flex min-h-[210px] w-full flex-col justify-between overflow-hidden p-5 text-white sm:min-h-[240px] sm:w-[42%] shrink-0 ${theme.bg}`}
                     >
-                      See Details
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                      <CourseCover src={course.cover_image_url} title={course.title} />
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 bg-[#071c2d]/45 transition-opacity duration-300 group-hover:bg-[#071c2d]/30"
+                      />
+
+                      {/* Top Tag Badge */}
+                      <div className="relative z-10 inline-flex w-fit items-center gap-1.5 rounded-full bg-black/35 px-3 py-1 text-[11px] font-bold tracking-wide text-white backdrop-blur-xs">
+                        <BadgeIcon className="h-3.5 w-3.5 text-amber-300" />
+                        <span>{theme.badge}</span>
+                      </div>
+
+                      {/* Center Fallback Emblem */}
+                      <div className="relative z-10 my-4 flex items-center justify-center">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white shadow-inner backdrop-blur-xs transition-transform duration-300 group-hover:scale-110">
+                          {i % 2 === 0 ? (
+                            <BarChart3 className="h-8 w-8" />
+                          ) : (
+                            <Code2 className="h-8 w-8" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bottom Track Label */}
+                      <p className="relative z-10 line-clamp-1 text-xs font-bold tracking-wide text-white/95">
+                        Become a {course.title} Pro
+                      </p>
+                    </div>
+
+                    {/* Right Course Information Panel */}
+                    <div className="flex flex-1 flex-col justify-between bg-white p-6">
+                      <div>
+                        <h3 className="line-clamp-2 text-lg font-extrabold tracking-tight text-[#071c2d] transition-colors group-hover:text-[#1d4ed8]">
+                          {course.title}
+                        </h3>
+
+                        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-slate-600">
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-[#1d4ed8]">
+                              <Clock className="h-3.5 w-3.5" />
+                            </span>
+                            <span>{course.estimated_hours} hrs duration</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-[#071c2d]">
+                              <Users className="h-3.5 w-3.5" />
+                            </span>
+                            <span>Over 100+ Enrolled</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3.5 py-2 text-xs">
+                          <span className="font-medium text-slate-500">
+                            {getDifficultyLabel(course.difficulty_level)} Level
+                          </span>
+                          <span className="font-bold text-[#1d4ed8]">
+                            {course.modules_count || 1} Modules
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+                        <span className="text-base font-extrabold text-[#071c2d]">
+                          {formattedPrice}
+                        </span>
+                        <Link
+                          href={`/courses/${course.slug}`}
+                          className="inline-flex items-center justify-center rounded-lg border border-[#1d4ed8] px-4 py-2 text-xs font-bold text-[#1d4ed8] transition-all duration-200 hover:bg-[#1d4ed8] hover:text-white"
+                        >
+                          Enroll now
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
             </div>
           )}
+
+          <div className="mt-12 text-center">
+            <Link
+              href="/courses"
+              className="inline-flex items-center gap-2.5 rounded-xl bg-[#071c2d] px-7 py-3.5 text-sm font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1d4ed8]"
+            >
+              <Presentation className="h-4 w-4" />
+              <span>Find your perfect fit</span>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -950,6 +1059,98 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
             >
               Explore the Platform
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Frequently Asked Questions Section */}
+      <section id="faqs" className="border-t border-slate-200/80 bg-[#f8fafc] py-24 text-[#071c2d]">
+        <div className="container mx-auto px-6">
+          <div className="mb-14 flex flex-col items-center text-center">
+            <div className="relative inline-flex items-center rounded-lg border border-slate-300 bg-white px-5 py-1.5 text-xs font-bold tracking-wide text-[#071c2d] sm:text-sm">
+              <Sparkles className="-ml-1 mr-2 h-4 w-4 text-[#1d4ed8]" />
+              <span>FAQs</span>
+            </div>
+
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-[#071c2d] sm:text-4xl">
+              Frequently Asked Questions
+            </h2>
+          </div>
+
+          <div className="mx-auto grid max-w-5xl grid-cols-1 items-start gap-8 lg:grid-cols-12">
+            {/* Left Support & Enquiries Column */}
+            <div className="space-y-5 lg:col-span-5">
+              <div className="rounded-2xl bg-[#1d4ed8] p-8 text-center text-white shadow-[0_18px_45px_rgba(29,78,216,0.2)]">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/10">
+                  <MessageSquare className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="mt-5 text-lg font-extrabold tracking-tight text-white">
+                  Do you have more questions?
+                </h3>
+                <p className="mx-auto mt-2 max-w-xs text-xs leading-relaxed text-blue-100 sm:text-sm">
+                  Our team will answer all your questions. Reach out to us for any enquiries.
+                </p>
+                <Link
+                  href="/contact"
+                  className="mt-6 inline-flex items-center justify-center rounded-xl bg-white px-7 py-3 text-xs font-bold text-[#071c2d] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-100 sm:text-sm"
+                >
+                  Contact us
+                </Link>
+              </div>
+
+              <div className="flex items-center justify-center gap-4 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-[0_12px_32px_rgba(7,28,45,0.06)]">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1d4ed8] text-white">
+                  <Phone className="h-5 w-5" />
+                </div>
+                <div className="text-left">
+                  <p className="text-xs font-medium text-slate-500">For enquiries contact</p>
+                  <a
+                    href="mailto:rashnotech@gmail.com"
+                    className="mt-0.5 block text-sm font-extrabold text-[#071c2d] hover:text-[#1d4ed8]"
+                  >
+                    rashnotech@gmail.com
+                  </a>
+                  <Link
+                    href="/contact"
+                    className="mt-0.5 inline-block text-xs font-medium text-slate-500 hover:text-[#1d4ed8]"
+                  >
+                    www.rashnotech.tech/contact
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Right FAQ Accordion Column */}
+            <div className="space-y-3.5 lg:col-span-7">
+              {faqItems.map((faq, index) => {
+                const isOpen = openFaqIndex === index
+                return (
+                  <div
+                    key={faq.question}
+                    className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_6px_20px_rgba(7,28,45,0.04)] transition-all duration-200 hover:border-blue-200"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                      aria-expanded={isOpen}
+                      className="flex w-full items-center gap-4 px-6 py-5 text-left"
+                    >
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center text-[#1d4ed8]">
+                        {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                      </span>
+                      <span className="text-sm font-bold text-[#071c2d] sm:text-base">
+                        {faq.question}
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <div className="border-t border-slate-100 px-6 pb-5 pt-3 pl-16 text-xs leading-relaxed text-slate-600 sm:text-sm">
+                        {faq.answer}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       </section>

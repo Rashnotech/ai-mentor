@@ -193,4 +193,41 @@ for (const pillar of [
   assert.match(page, new RegExp(pillar.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
 }
 
+// Courses Section contract
+const reviewsSectionStart = page.indexOf("{/* Student Reviews Section */}")
+assert.notEqual(reviewsSectionStart, -1)
+const coursesSection = page.slice(coursesSectionStart, reviewsSectionStart)
+assert.match(coursesSection, /id="courses" className="py-24 bg-white text-gray-900"/)
+assert.match(coursesSection, /Our Popular Courses/)
+assert.match(coursesSection, /Expert-led course\. Global Skills/)
+assert.match(coursesSection, /<CourseCover src=\{course\.cover_image_url\} title=\{course\.title\} \/>/)
+assert.match(coursesSection, /Enroll now/)
+assert.match(coursesSection, /Find your perfect fit/)
+assert.doesNotMatch(coursesSection, /A path for every goal/)
+assert.doesNotMatch(coursesSection, /Top Courses/)
+assert.doesNotMatch(coursesSection, /Explore Catalog/)
+
+// Frequently Asked Questions Section contract
+const faqSectionStart = page.indexOf("{/* Frequently Asked Questions Section */}")
+const footerStart = page.indexOf("{/* Footer */}")
+assert.notEqual(faqSectionStart, -1)
+assert.notEqual(footerStart, -1)
+assert.ok(faqSectionStart < footerStart, "FAQ section must appear before Footer")
+const faqSection = page.slice(faqSectionStart, footerStart)
+assert.match(faqSection, /FAQs/)
+assert.match(faqSection, /Frequently Asked Questions/)
+assert.match(faqSection, /Do you have more questions\?/)
+assert.match(faqSection, /Contact us/)
+assert.match(faqSection, /For enquiries contact/)
+
+for (const question of [
+  "What is the minimum age or qualification required?",
+  "Is there a community for students?",
+  "How long are the programs to run for?",
+  "Can I take more than one course at a time?",
+  "Which of your programs is the highest paid tech job?",
+]) {
+  assert.match(page, new RegExp(question.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+}
+
 console.log("Homepage content contract: PASS")
