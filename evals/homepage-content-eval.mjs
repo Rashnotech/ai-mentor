@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { readFile } from "node:fs/promises"
 
 const page = await readFile("app/page-client.tsx", "utf8")
+const globalsCss = await readFile("app/globals.css", "utf8")
 
 const reviewsStart = page.indexOf("const studentReviews = [")
 const mentorsStart = page.indexOf("const mentors = [")
@@ -46,7 +47,9 @@ const checks = [
   ["modern workforce section includes heading, copy, and CTA", workforceSection.includes("Skills for the") && workforceSection.includes("Modern Workforce") && workforceSection.includes("Start Where You Are. Build Skills That Actually Pay.") && workforceSection.includes("Explore Courses")],
   ["modern workforce section includes all three feature cards", ["Easy Registration", "Expert Facilitator", "Online Courses"].every((title) => page.includes(title))],
   ["modern workforce section uses real Lucide icons without emojis or gradients", !workforceSection.includes("bg-gradient-") && !workforceSection.includes("<svg") && !/[\u{1F300}-\u{1FAFF}]/u.test(workforceSection) && ["icon: LogIn", "icon: UserCheck", "icon: Presentation"].every((icon) => page.includes(icon)) && workforceSection.includes("<IconComponent")],
-  ["modern workforce cards support interactive hover and micro-animation", workforceSection.includes("onMouseEnter={() => setActiveWorkforceCard(index)}") && workforceSection.includes("hover:-translate-y-3.5") && workforceSection.includes("group-hover:scale-110")],
+  ["modern workforce cards support interactive hover and micro-animation", workforceSection.includes("onMouseEnter={() => setActiveWorkforceCard(index)}") && workforceSection.includes("hover:-translate-y-3.5") && workforceSection.includes("animate-card-float") && workforceSection.includes("animate-ring-pulse") && workforceSection.includes("group-hover:-rotate-6") && workforceSection.includes("group-hover:scale-110") && globalsCss.includes("@keyframes card-float")],
+  ["hero secondary CTA displays AI for Business and links to courses", page.includes("AI for Business") && !page.includes("AI-mentor for Business") && page.includes('href="/courses"')],
+  ["tech logos scroll across the screen in a continuous marquee", page.includes("animate-marquee") && page.includes("[...techLogos, ...techLogos].map") && globalsCss.includes("@keyframes marquee")],
 ]
 
 const passed = checks.filter(([, condition]) => condition).length

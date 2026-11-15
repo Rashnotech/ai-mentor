@@ -336,7 +336,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
         </div>
         
         <div className="container mx-auto px-6 relative">
-          <div className="max-w-3xl space-y-6">
+          <div className="max-w-3xl space-y-6 animate-fade-up">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.15] text-white">
               Learn data and AI skills
             </h1>
@@ -348,15 +348,17 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
               <Link
                 href="/signup"
-                className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+                className="group px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(37,99,235,0.35)] active:translate-y-0 flex items-center justify-center gap-2"
               >
-                Start Learning for Free
+                <span>Start Learning for Free</span>
+                <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
               <Link
                 href="/courses"
-                className="px-8 py-4 bg-transparent hover:bg-white/5 text-white border border-white/30 font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+                className="group px-8 py-4 bg-transparent hover:bg-white/5 text-white border border-white/30 hover:border-white/60 font-semibold rounded-lg transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
               >
-                AI-mentor for Business
+                <span>AI for Business</span>
+                <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
             </div>
             
@@ -366,9 +368,9 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                 <span className="text-white font-semibold text-sm">4.8</span>
                 <div className="flex items-center">
                   {[1, 2, 3, 4].map((i) => (
-                    <Star key={i} className="w-4 h-4 fill-gray-400 text-gray-400 gap-4" />
+                    <Star key={i} className="w-4 h-4 fill-gray-400 text-gray-400 gap-4 transition-transform duration-300 hover:scale-125" />
                   ))}
-                  <Star className="w-4 h-4 fill-gray-400/50 text-gray-400" />
+                  <Star className="w-4 h-4 fill-gray-400/50 text-gray-400 transition-transform duration-300 hover:scale-125" />
                 </div>
               </div>
             </div>
@@ -377,13 +379,14 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       </section>
       
       {/* Tech Logos Section */}
-      <section className="py-8 border-y border-white/5 bg-[#151923]">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-wrap lg:flex-nowrap justify-center items-center gap-2">
-            {techLogos.map((logo, i) => (
+      <section className="relative overflow-hidden py-8 border-y border-white/5 bg-[#151923]">
+        <div className="flex w-full overflow-hidden">
+          <div className="animate-marquee flex items-center gap-16 pr-16">
+            {[...techLogos, ...techLogos].map((logo, i) => (
               <div 
-                key={i} 
-                className="text-gray-500 hover:text-gray-300 transition-colors [&_svg]:h-6 [&_svg]:w-auto"
+                key={`${logo.name}-${i}`} 
+                aria-label={logo.name}
+                className="shrink-0 text-gray-500 hover:text-white transition-all duration-300 hover:scale-110 [&_svg]:h-6 [&_svg]:w-auto"
                 dangerouslySetInnerHTML={{ __html: logo.svg }}
               />
             ))}
@@ -440,7 +443,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                       index > 0 ? "lg:-ml-5" : ""
                     } ${
                       isHighlighted
-                        ? "z-30 border border-slate-200/90 bg-white text-[#071c2d] shadow-[0_24px_60px_rgba(7,28,45,0.14)] lg:-translate-y-2.5 lg:scale-[1.02]"
+                        ? "z-30 animate-card-float border border-slate-200/90 bg-white text-[#071c2d] shadow-[0_24px_60px_rgba(7,28,45,0.14)] lg:-translate-y-2.5 lg:scale-[1.02]"
                         : "z-10 border border-[#1e40af] bg-[#1d4ed8] text-white shadow-[0_16px_36px_rgba(29,78,216,0.22)] hover:z-30"
                     } ${
                       isRightCard
@@ -459,9 +462,9 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                     <div className="relative z-10">
                       {/* Concentric Double-Ring Icon Badge */}
                       <div
-                        className={`inline-flex rounded-full p-1.5 transition-transform duration-300 ease-out group-hover:-translate-y-0.5 group-hover:scale-105 ${
+                        className={`inline-flex rounded-full p-1.5 transition-transform duration-300 ease-out group-hover:-translate-y-1 group-hover:scale-105 ${
                           isHighlighted
-                            ? "border border-slate-200 bg-white shadow-[0_8px_20px_rgba(7,28,45,0.08)]"
+                            ? "animate-ring-pulse border border-slate-200 bg-white shadow-[0_8px_20px_rgba(7,28,45,0.08)]"
                             : "border border-white/35 bg-white/10"
                         }`}
                       >
@@ -472,7 +475,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                               : "border border-white/70 bg-white/15 text-white"
                           }`}
                         >
-                          <IconComponent className="h-6 w-6 transition-transform duration-300 group-hover:scale-110" />
+                          <IconComponent className="h-6 w-6 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110" />
                         </div>
                       </div>
 
@@ -494,13 +497,20 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                     </div>
 
                     {/* Micro-animated bottom indicator bar */}
-                    <div className="relative z-10 mt-6 pt-2">
+                    <div className="relative z-10 mt-6 flex items-center justify-between pt-2">
                       <span
                         aria-hidden="true"
                         className={`block h-1 rounded-full transition-all duration-300 ease-out ${
                           isHighlighted
                             ? "w-12 bg-[#1d4ed8] group-hover:w-20"
                             : "w-6 bg-white/35 group-hover:w-12"
+                        }`}
+                      />
+                      <ArrowRight
+                        className={`h-4 w-4 transition-all duration-300 ${
+                          isHighlighted
+                            ? "translate-x-0 text-[#1d4ed8] opacity-100 group-hover:translate-x-1"
+                            : "-translate-x-2 text-white/70 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"
                         }`}
                       />
                     </div>
@@ -804,7 +814,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
             
             {/* Right - AI Code Hint Card */}
             <div className="lg:w-1/2 relative">
-              <div className="absolute -top-8 -right-8 z-10">
+              <div className="absolute -top-8 -right-8 z-10 animate-card-float">
                 <button className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg shadow-xl font-medium text-sm hover:bg-gray-50 transition-all">
                   <Sparkles className="w-4 h-4 text-purple-600" />
                   Get AI Help

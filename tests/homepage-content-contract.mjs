@@ -2,6 +2,15 @@ import assert from "node:assert/strict"
 import { readFile } from "node:fs/promises"
 
 const page = await readFile("app/page-client.tsx", "utf8")
+const globalsCss = await readFile("app/globals.css", "utf8")
+
+assert.match(page, /AI for Business/)
+assert.doesNotMatch(page, /AI-mentor for Business/)
+assert.match(page, /animate-marquee/)
+assert.match(page, /\[\.\.\.techLogos, \.\.\.techLogos\]\.map/)
+assert.match(globalsCss, /@keyframes marquee/)
+assert.match(globalsCss, /@keyframes card-float/)
+assert.match(globalsCss, /@keyframes ring-pulse/)
 
 for (const programme of [
   "Python Programming",
@@ -141,6 +150,9 @@ assert.match(workforceSection, /Explore Courses/)
 assert.match(workforceSection, /href="\/courses"/)
 assert.match(workforceSection, /onMouseEnter=\{\(\) => setActiveWorkforceCard\(index\)\}/)
 assert.match(workforceSection, /hover:-translate-y-3\.5/)
+assert.match(workforceSection, /animate-card-float/)
+assert.match(workforceSection, /animate-ring-pulse/)
+assert.match(workforceSection, /group-hover:-rotate-6/)
 assert.doesNotMatch(workforceSection, /<svg/)
 assert.doesNotMatch(workforceSection, /bg-gradient-/)
 assert.doesNotMatch(workforceSection, /[\u{1F300}-\u{1FAFF}]/u)
