@@ -18,6 +18,11 @@ const iniStart = page.indexOf('name: "Mr. Ini Ebong"')
 const abdulrasheedBlock = abdulrasheedStart >= 0 && iniStart > abdulrasheedStart
   ? page.slice(abdulrasheedStart, iniStart)
   : ""
+const workforceSectionStart = page.indexOf("{/* Modern Workforce Section */}")
+const coursesSectionStart = page.indexOf("{/* Courses Section */}")
+const workforceSection = workforceSectionStart >= 0 && coursesSectionStart > workforceSectionStart
+  ? page.slice(workforceSectionStart, coursesSectionStart)
+  : ""
 
 const checks = [
   ["footer includes the requested technical programmes", ["Python Programming", "Web Development", "Software Engineering", "AI Engineering"].every((label) => page.includes(label))],
@@ -38,6 +43,10 @@ const checks = [
   ["mentor roster is represented", ["Mr. Abdulrasheed Aliyu", "CEO/Founder", "Mr. Ini Ebong", "Software Engineer", "Dr. Callistus Ikwuazom", "Cybersecurity", "Mr Badru Aliyu", "Graphic Designer"].every((label) => page.includes(label))],
   ["mentor topics are represented", ["Leadership and product strategy", "Modern software engineering", "Cybersecurity and digital safety", "Visual design and branding"].every((label) => page.includes(label))],
   ["section has a conversion action", page.includes("Start learning with Rashnotech")],
+  ["modern workforce section includes heading, copy, and CTA", workforceSection.includes("Skills for the") && workforceSection.includes("Modern Workforce") && workforceSection.includes("Start Where You Are. Build Skills That Actually Pay.") && workforceSection.includes("Explore Courses")],
+  ["modern workforce section includes all three feature cards", ["Easy Registration", "Expert Facilitator", "Online Courses"].every((title) => page.includes(title))],
+  ["modern workforce section uses SVG icons without emojis or gradients", !workforceSection.includes("bg-gradient-") && !/[\u{1F300}-\u{1FAFF}]/u.test(workforceSection) && page.includes("const renderWorkforceIcon")],
+  ["modern workforce cards support interactive hover and micro-animation", workforceSection.includes("onMouseEnter={() => setActiveWorkforceCard(index)}") && workforceSection.includes("hover:-translate-y-3.5") && page.includes("group-hover:scale-110")],
 ]
 
 const passed = checks.filter(([, condition]) => condition).length

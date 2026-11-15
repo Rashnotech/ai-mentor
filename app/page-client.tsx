@@ -138,8 +138,105 @@ const mentors = [
   },
 ]
 
+const workforcePillars = [
+  {
+    id: "registration",
+    title: "Easy Registration",
+    description:
+      "Start your data journey in seconds. Our seamless registration process gets you into the classroom without the administrative headache.",
+  },
+  {
+    id: "facilitator",
+    title: "Expert Facilitator",
+    description:
+      "Learn from the pros. Our facilitators are world-class data experts currently leading teams at top global tech firms.",
+  },
+  {
+    id: "courses",
+    title: "Online Courses",
+    description:
+      "Master the right tools and gain expertise through hands-on projects designed to mirror real-world business challenges from anywhere in the world.",
+  },
+] as const
+
 export default function LandingPage({ initialCourses = [] }: { initialCourses?: CourseListResponse[] }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [activeWorkforceCard, setActiveWorkforceCard] = useState<number>(2)
+
+  const renderWorkforceIcon = (id: (typeof workforcePillars)[number]["id"]) => {
+    switch (id) {
+      case "registration":
+        return (
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-6 w-6 transition-transform duration-300 group-hover:scale-110"
+            fill="none"
+          >
+            <path
+              d="M5 4.75A1.75 1.75 0 0 1 6.75 3h5.5A1.75 1.75 0 0 1 14 4.75v14.5A1.75 1.75 0 0 1 12.25 21h-5.5A1.75 1.75 0 0 1 5 19.25V4.75Z"
+              fill="currentColor"
+            />
+            <circle cx="11.25" cy="12" r="1" className="fill-current opacity-30" />
+            <path
+              d="M14 6h3.25A1.75 1.75 0 0 1 19 7.75v8.5A1.75 1.75 0 0 1 17.25 18H14"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+            <path
+              d="M19.5 12h-4m0 0 1.5-1.5M15.5 12l1.5 1.5"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )
+      case "facilitator":
+        return (
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-6 w-6 transition-transform duration-300 group-hover:scale-110"
+            fill="currentColor"
+          >
+            <circle cx="12" cy="8.25" r="3.5" />
+            <path d="M6.5 18.25c0-2.62 2.46-4.75 5.5-4.75s5.5 2.13 5.5 4.75v.5a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-.5Z" />
+          </svg>
+        )
+      case "courses":
+        return (
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-6 w-6 transition-transform duration-300 group-hover:scale-110"
+            fill="none"
+          >
+            <rect
+              x="3.5"
+              y="5"
+              width="17"
+              height="14"
+              rx="2"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <circle cx="10" cy="11" r="2.2" fill="currentColor" />
+            <path
+              d="M6.6 16.5c.45-1.75 1.8-2.8 3.4-2.8s2.95 1.05 3.4 2.8"
+              fill="currentColor"
+            />
+            <path
+              d="M14.5 9.5h3M15.5 12.5h2"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
+        )
+    }
+  }
 
   // Fetch courses from the public API
   const { data: courses = [], isLoading: isLoadingCourses } = useQuery({
@@ -310,6 +407,144 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                 dangerouslySetInnerHTML={{ __html: logo.svg }}
               />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Modern Workforce Section */}
+      <section className="relative overflow-hidden border-b border-slate-200/80 bg-[#f8fafc] py-20 text-[#071c2d] lg:py-28">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col items-start justify-between gap-12 lg:flex-row lg:items-center lg:gap-10">
+            {/* Left Copy Column */}
+            <div className="relative w-full lg:w-[36%] lg:pr-4">
+              <h2 className="text-3xl font-extrabold tracking-tight leading-[1.15] text-[#071c2d] sm:text-4xl">
+                Skills for the
+                <br />
+                Modern Workforce
+              </h2>
+
+              <p className="mt-6 max-w-md text-base leading-[1.75] text-slate-600">
+                Start Where You Are. Build Skills That Actually Pay. You&apos;ll gain hands-on
+                experience, real-world projects, and career support to compete confidently in
+                UK, US, and global tech roles.
+              </p>
+
+              <div className="mt-8">
+                <Link
+                  href="/courses"
+                  className="group inline-flex items-center gap-3 text-lg font-bold text-[#1d4ed8] transition-colors duration-200 hover:text-[#071c2d]"
+                >
+                  <span>Explore Courses</span>
+                  <ArrowRight className="h-5 w-5 transition-transform duration-300 ease-out group-hover:translate-x-1.5" />
+                </Link>
+              </div>
+
+              {/* Subtle architectural smile mark */}
+              <div className="mt-8 hidden pl-24 text-slate-300 lg:block" aria-hidden="true">
+                <svg
+                  viewBox="0 0 120 56"
+                  className="h-12 w-24"
+                  fill="none"
+                >
+                  <circle cx="48" cy="18" r="4" fill="currentColor" />
+                  <circle cx="72" cy="12" r="4" fill="currentColor" />
+                  <path
+                    d="M22 34c18 14 54 12 72-14"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            {/* Right Interactive Cards Deck */}
+            <div
+              className="grid w-full grid-cols-1 gap-6 md:grid-cols-3 lg:w-[64%] lg:flex lg:items-stretch lg:gap-0"
+              onMouseLeave={() => setActiveWorkforceCard(2)}
+            >
+              {workforcePillars.map((pillar, index) => {
+                const isHighlighted = activeWorkforceCard === index
+                const isRightCard = index === workforcePillars.length - 1
+
+                return (
+                  <article
+                    key={pillar.id}
+                    tabIndex={0}
+                    onMouseEnter={() => setActiveWorkforceCard(index)}
+                    onFocus={() => setActiveWorkforceCard(index)}
+                    className={`group relative flex flex-1 flex-col justify-between rounded-[24px] p-8 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1d4ed8] lg:min-h-[370px] ${
+                      index > 0 ? "lg:-ml-5" : ""
+                    } ${
+                      isHighlighted
+                        ? "z-30 border border-slate-200/90 bg-white text-[#071c2d] shadow-[0_24px_60px_rgba(7,28,45,0.14)] lg:-translate-y-2.5 lg:scale-[1.02]"
+                        : "z-10 border border-[#1e40af] bg-[#1d4ed8] text-white shadow-[0_16px_36px_rgba(29,78,216,0.22)] hover:z-30"
+                    } ${
+                      isRightCard
+                        ? "hover:-translate-y-3.5 hover:shadow-[0_30px_70px_rgba(7,28,45,0.18)]"
+                        : ""
+                    }`}
+                  >
+                    {/* Subtle architectural line frame on solid cards (no gradients) */}
+                    <div
+                      aria-hidden="true"
+                      className={`pointer-events-none absolute inset-4 rounded-[18px] border transition-opacity duration-300 ${
+                        isHighlighted ? "border-slate-100 opacity-100" : "border-white/10 opacity-100"
+                      }`}
+                    />
+
+                    <div className="relative z-10">
+                      {/* Concentric Double-Ring Icon Badge */}
+                      <div
+                        className={`inline-flex rounded-full p-1.5 transition-transform duration-300 ease-out group-hover:-translate-y-0.5 group-hover:scale-105 ${
+                          isHighlighted
+                            ? "border border-slate-200 bg-white shadow-[0_8px_20px_rgba(7,28,45,0.08)]"
+                            : "border border-white/35 bg-white/10"
+                        }`}
+                      >
+                        <div
+                          className={`flex h-14 w-14 items-center justify-center rounded-full transition-colors duration-300 ${
+                            isHighlighted
+                              ? "border-2 border-[#071c2d] bg-white text-[#071c2d]"
+                              : "border border-white/70 bg-white/15 text-white"
+                          }`}
+                        >
+                          {renderWorkforceIcon(pillar.id)}
+                        </div>
+                      </div>
+
+                      <h3
+                        className={`mt-8 text-xl font-bold tracking-tight transition-colors duration-300 ${
+                          isHighlighted ? "text-[#071c2d]" : "text-white"
+                        }`}
+                      >
+                        {pillar.title}
+                      </h3>
+
+                      <p
+                        className={`mt-4 text-sm leading-[1.75] transition-colors duration-300 ${
+                          isHighlighted ? "text-slate-600" : "text-blue-50/90"
+                        }`}
+                      >
+                        {pillar.description}
+                      </p>
+                    </div>
+
+                    {/* Micro-animated bottom indicator bar */}
+                    <div className="relative z-10 mt-6 pt-2">
+                      <span
+                        aria-hidden="true"
+                        className={`block h-1 rounded-full transition-all duration-300 ease-out ${
+                          isHighlighted
+                            ? "w-12 bg-[#1d4ed8] group-hover:w-20"
+                            : "w-6 bg-white/35 group-hover:w-12"
+                        }`}
+                      />
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
           </div>
         </div>
       </section>

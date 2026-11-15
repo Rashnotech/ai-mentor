@@ -113,4 +113,33 @@ for (const topic of [
   assert.match(page, new RegExp(topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
 }
 
+// Modern Workforce Section contract
+const workforceSectionStart = page.indexOf("{/* Modern Workforce Section */}")
+const coursesSectionStart = page.indexOf("{/* Courses Section */}")
+assert.notEqual(workforceSectionStart, -1)
+assert.notEqual(coursesSectionStart, -1)
+const workforceSection = page.slice(workforceSectionStart, coursesSectionStart)
+
+assert.match(page, /const workforcePillars = \[/)
+assert.match(workforceSection, /Skills for the/)
+assert.match(workforceSection, /Modern Workforce/)
+assert.match(workforceSection, /Start Where You Are\. Build Skills That Actually Pay\./)
+assert.match(workforceSection, /Explore Courses/)
+assert.match(workforceSection, /href="\/courses"/)
+assert.match(workforceSection, /onMouseEnter=\{\(\) => setActiveWorkforceCard\(index\)\}/)
+assert.match(workforceSection, /hover:-translate-y-3\.5/)
+assert.doesNotMatch(workforceSection, /bg-gradient-/)
+assert.doesNotMatch(workforceSection, /[\u{1F300}-\u{1FAFF}]/u)
+
+for (const pillar of [
+  "Easy Registration",
+  "Start your data journey in seconds. Our seamless registration process gets you into the classroom without the administrative headache.",
+  "Expert Facilitator",
+  "Learn from the pros. Our facilitators are world-class data experts currently leading teams at top global tech firms.",
+  "Online Courses",
+  "Master the right tools and gain expertise through hands-on projects designed to mirror real-world business challenges from anywhere in the world.",
+]) {
+  assert.match(page, new RegExp(pillar.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+}
+
 console.log("Homepage content contract: PASS")
