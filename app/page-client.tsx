@@ -17,6 +17,9 @@ import {
   Loader2,
   Menu,
   X,
+  LogIn,
+  UserCheck,
+  Presentation,
 } from "lucide-react"
 
 const tabs = [
@@ -144,18 +147,21 @@ const workforcePillars = [
     title: "Easy Registration",
     description:
       "Start your data journey in seconds. Our seamless registration process gets you into the classroom without the administrative headache.",
+    icon: LogIn,
   },
   {
     id: "facilitator",
     title: "Expert Facilitator",
     description:
       "Learn from the pros. Our facilitators are world-class data experts currently leading teams at top global tech firms.",
+    icon: UserCheck,
   },
   {
     id: "courses",
     title: "Online Courses",
     description:
       "Master the right tools and gain expertise through hands-on projects designed to mirror real-world business challenges from anywhere in the world.",
+    icon: Presentation,
   },
 ] as const
 
@@ -164,20 +170,42 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
   const [activeWorkforceCard, setActiveWorkforceCard] = useState<number>(2)
   const [mentorScrollOffset, setMentorScrollOffset] = useState<number>(0)
   const mentorsSectionRef = useRef<HTMLElement | null>(null)
+  const mentorViewportRef = useRef<HTMLDivElement | null>(null)
+  const mentorTrackRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const updateMentorScroll = () => {
       const section = mentorsSectionRef.current
       if (!section) return
 
+      const navHeight = 64
       const rect = section.getBoundingClientRect()
       const viewportHeight = window.innerHeight || 1
-      const totalTravel = viewportHeight + rect.height
-      const rawProgress = (viewportHeight - rect.top) / totalTravel
-      const clampedProgress = Math.min(1, Math.max(0, rawProgress))
-      const maxHorizontalShift = 440
+      const stickyViewportHeight = Math.max(1, viewportHeight - navHeight)
+      const totalStickyRunway = Math.max(1, section.offsetHeight - stickyViewportHeight)
 
-      setMentorScrollOffset(Math.round(clampedProgress * maxHorizontalShift))
+      // Before reaching the sticky lock position, keep mentors completely static at 0px
+      const scrolledIntoRunway = navHeight - rect.top
+      if (scrolledIntoRunway <= 0) {
+        setMentorScrollOffset(0)
+        return
+      }
+
+      const rawStickyProgress = Math.min(1, Math.max(0, scrolledIntoRunway / totalStickyRunway))
+      // Hold static for the first 12% upon arrival and last 12% after exhausting the mentor list
+      const dwellStart = 0.12
+      const dwellEnd = 0.88
+      const activeProgress = Math.min(
+        1,
+        Math.max(0, (rawStickyProgress - dwellStart) / (dwellEnd - dwellStart))
+      )
+
+      const measuredOverflow =
+        mentorTrackRef.current && mentorViewportRef.current
+          ? Math.max(0, mentorTrackRef.current.scrollWidth - mentorViewportRef.current.clientWidth + 24)
+          : 540
+
+      setMentorScrollOffset(Math.round(activeProgress * measuredOverflow))
     }
 
     updateMentorScroll()
@@ -189,81 +217,6 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       window.removeEventListener("resize", updateMentorScroll)
     }
   }, [])
-
-  const renderWorkforceIcon = (id: (typeof workforcePillars)[number]["id"]) => {
-    switch (id) {
-      case "registration":
-        return (
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="h-6 w-6 transition-transform duration-300 group-hover:scale-110"
-            fill="none"
-          >
-            <path
-              d="M5 4.75A1.75 1.75 0 0 1 6.75 3h5.5A1.75 1.75 0 0 1 14 4.75v14.5A1.75 1.75 0 0 1 12.25 21h-5.5A1.75 1.75 0 0 1 5 19.25V4.75Z"
-              fill="currentColor"
-            />
-            <circle cx="11.25" cy="12" r="1" className="fill-current opacity-30" />
-            <path
-              d="M14 6h3.25A1.75 1.75 0 0 1 19 7.75v8.5A1.75 1.75 0 0 1 17.25 18H14"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-            <path
-              d="M19.5 12h-4m0 0 1.5-1.5M15.5 12l1.5 1.5"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )
-      case "facilitator":
-        return (
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="h-6 w-6 transition-transform duration-300 group-hover:scale-110"
-            fill="currentColor"
-          >
-            <circle cx="12" cy="8.25" r="3.5" />
-            <path d="M6.5 18.25c0-2.62 2.46-4.75 5.5-4.75s5.5 2.13 5.5 4.75v.5a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-.5Z" />
-          </svg>
-        )
-      case "courses":
-        return (
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="h-6 w-6 transition-transform duration-300 group-hover:scale-110"
-            fill="none"
-          >
-            <rect
-              x="3.5"
-              y="5"
-              width="17"
-              height="14"
-              rx="2"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <circle cx="10" cy="11" r="2.2" fill="currentColor" />
-            <path
-              d="M6.6 16.5c.45-1.75 1.8-2.8 3.4-2.8s2.95 1.05 3.4 2.8"
-              fill="currentColor"
-            />
-            <path
-              d="M14.5 9.5h3M15.5 12.5h2"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
-        )
-    }
-  }
 
   // Fetch courses from the public API
   const { data: courses = [], isLoading: isLoadingCourses } = useQuery({
@@ -284,7 +237,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
   }
 
   return (
-    <div className="min-h-screen bg-[#1a1f2e] text-white font-sans selection:bg-blue-500/30 overflow-x-hidden">
+    <div className="min-h-screen bg-[#1a1f2e] text-white font-sans selection:bg-blue-500/30 overflow-x-clip">
       <TawkTo />
 
       {/* Navigation */}
@@ -465,24 +418,6 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                   <ArrowRight className="h-5 w-5 transition-transform duration-300 ease-out group-hover:translate-x-1.5" />
                 </Link>
               </div>
-
-              {/* Subtle architectural smile mark */}
-              <div className="mt-8 hidden pl-24 text-slate-300 lg:block" aria-hidden="true">
-                <svg
-                  viewBox="0 0 120 56"
-                  className="h-12 w-24"
-                  fill="none"
-                >
-                  <circle cx="48" cy="18" r="4" fill="currentColor" />
-                  <circle cx="72" cy="12" r="4" fill="currentColor" />
-                  <path
-                    d="M22 34c18 14 54 12 72-14"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
             </div>
 
             {/* Right Interactive Cards Deck */}
@@ -493,6 +428,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
               {workforcePillars.map((pillar, index) => {
                 const isHighlighted = activeWorkforceCard === index
                 const isRightCard = index === workforcePillars.length - 1
+                const IconComponent = pillar.icon
 
                 return (
                   <article
@@ -536,7 +472,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                               : "border border-white/70 bg-white/15 text-white"
                           }`}
                         >
-                          {renderWorkforceIcon(pillar.id)}
+                          <IconComponent className="h-6 w-6 transition-transform duration-300 group-hover:scale-110" />
                         </div>
                       </div>
 
@@ -735,109 +671,100 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       {/* Mentors Section */}
       <section
         ref={mentorsSectionRef}
-        className="relative overflow-hidden bg-[#070b14] py-20 text-white md:py-28"
+        className="relative bg-[#070b14] text-white lg:h-[230vh]"
       >
-        {/* Top-left architectural diagonal stripe accent */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 z-30 hidden h-36 w-10 opacity-45 md:block"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(45deg, rgba(255,255,255,0.45) 0px, rgba(255,255,255,0.45) 2px, transparent 2px, transparent 10px)",
-          }}
-        />
+        <div className="relative overflow-x-clip py-20 lg:sticky lg:top-16 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:py-0">
+          {/* Top-left architectural diagonal stripe accent */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-0 top-0 z-30 hidden h-36 w-10 opacity-45 md:block"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(45deg, rgba(255,255,255,0.45) 0px, rgba(255,255,255,0.45) 2px, transparent 2px, transparent 10px)",
+            }}
+          />
 
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="relative flex flex-col items-start gap-12 lg:flex-row lg:items-center lg:gap-0">
-            {/* Left Fixed Occlusion Mask Column: sits at z-20 so moving mentor portraits slide behind it */}
-            <div className="relative z-20 w-full shrink-0 bg-[#070b14] py-4 lg:w-[42%] lg:pr-12 before:pointer-events-none before:absolute before:inset-y-[-6rem] before:-left-[100vw] before:right-0 before:-z-10 before:bg-[#070b14] after:pointer-events-none after:absolute after:inset-y-[-6rem] after:right-0 after:hidden after:w-8 after:bg-[#070b14] after:shadow-[24px_0_36px_#070b14] lg:after:block">
-              {/* Pill Badge with Starburst SVG */}
-              <div className="relative inline-flex items-center rounded-full bg-[#1d4ed8] px-5 py-2 text-xs font-bold tracking-wide text-white sm:text-sm">
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className=" -mt-4 -ml-1 mr-1.5 h-5 w-5 text-sky-300"
-                  fill="none"
-                >
-                  <path
-                    d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93 4.93 19.07"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <span>Our Expert Facilitators</span>
+          <div className="mx-auto w-full max-w-7xl px-6">
+            <div className="relative flex flex-col items-start gap-12 lg:flex-row lg:items-center lg:gap-0">
+              {/* Left Fixed Occlusion Mask Column: sits at z-20 so moving mentor portraits slide behind it */}
+              <div className="relative z-20 w-full shrink-0 bg-[#070b14] py-4 lg:w-[42%] lg:pr-12 before:pointer-events-none before:absolute before:inset-y-[-6rem] before:-left-[100vw] before:right-0 before:-z-10 before:bg-[#070b14] after:pointer-events-none after:absolute after:inset-y-[-6rem] after:right-0 after:hidden after:w-8 after:bg-[#070b14] after:shadow-[24px_0_36px_#070b14] lg:after:block">
+                {/* Pill Badge with real Lucide Sparkles Icon */}
+                <div className="relative inline-flex items-center rounded-full bg-[#1d4ed8] px-5 py-2 text-xs font-bold tracking-wide text-white sm:text-sm">
+                  <Sparkles className="mr-2 h-4 w-4 text-sky-300" />
+                  <span>Our Expert Facilitators</span>
+                </div>
+
+                <h2 className="mt-6 text-3xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-5xl">
+                  Taught by
+                  <br />
+                  pros, not just
+                  <br />
+                  academics.
+                </h2>
+
+                <p className="mt-6 max-w-md text-sm leading-[1.8] text-slate-300 sm:text-base">
+                  Get coached by industry experts, from CV optimization to interview prep, we
+                  provide the end-to-end support needed to land your dream role.
+                </p>
               </div>
 
-              <h2 className="mt-6 text-3xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-5xl">
-                Taught by
-                <br />
-                pros, not just
-                <br />
-                academics.
-              </h2>
+              {/* Right Moving Portrait Track: sits at z-10 and translates left behind the z-20 text column on scroll */}
+              <div ref={mentorViewportRef} className="relative z-10 w-full lg:w-[58%]">
+                <div
+                  ref={mentorTrackRef}
+                  style={{
+                    transform: `translate3d(-${mentorScrollOffset}px, 0, 0)`,
+                  }}
+                  className="flex items-stretch gap-6 transition-transform duration-150 ease-out will-change-transform"
+                >
+                  {mentors.map((mentor) => {
+                    const initials = mentor.name
+                      .split(" ")
+                      .filter((part) => !["Mr.", "Mr", "Dr.", "Dr"].includes(part))
+                      .slice(0, 2)
+                      .map((part) => part[0])
+                      .join("")
+                      .toUpperCase()
 
-              <p className="mt-6 max-w-md text-sm leading-[1.8] text-slate-300 sm:text-base">
-                Get coached by industry experts, from CV optimization to interview prep, we
-                provide the end-to-end support needed to land your dream role.
-              </p>
-            </div>
-
-            {/* Right Moving Portrait Track: sits at z-10 and translates left behind the z-20 text column on scroll */}
-            <div className="relative z-10 w-full lg:w-[58%]">
-              <div
-                style={{
-                  transform: `translate3d(-${mentorScrollOffset}px, 0, 0)`,
-                }}
-                className="flex items-stretch gap-6 transition-transform duration-150 ease-out will-change-transform"
-              >
-                {mentors.map((mentor) => {
-                  const initials = mentor.name
-                    .split(" ")
-                    .filter((part) => !["Mr.", "Mr", "Dr.", "Dr"].includes(part))
-                    .slice(0, 2)
-                    .map((part) => part[0])
-                    .join("")
-                    .toUpperCase()
-
-                  return (
-                    <article
-                      key={mentor.name}
-                      className="group relative h-[380px] w-[260px] shrink-0 overflow-hidden rounded-[24px] border border-white/10 bg-[#161c2a] shadow-[0_24px_60px_rgba(0,0,0,0.45)] sm:h-[420px] sm:w-[285px]"
-                    >
-                      {/* Portrait Image or Studio Monogram Backdrop */}
-                      <div className="relative h-full w-full overflow-hidden bg-[#1b2232]">
-                        {mentor.image ? (
-                          <img
-                            src={mentor.image}
-                            alt={`${mentor.name}, ${mentor.role}`}
-                            className="h-full w-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full flex-col items-center justify-center bg-[#161c2a] pb-16">
-                            <div className="flex h-28 w-28 items-center justify-center rounded-full border border-white/15 bg-[#0f1522] text-3xl font-extrabold tracking-tight text-white shadow-inner transition-transform duration-500 ease-out group-hover:scale-105">
-                              {initials}
+                    return (
+                      <article
+                        key={mentor.name}
+                        className="group relative h-[380px] w-[260px] shrink-0 overflow-hidden rounded-[24px] border border-white/10 bg-[#161c2a] shadow-[0_24px_60px_rgba(0,0,0,0.45)] sm:h-[420px] sm:w-[285px]"
+                      >
+                        {/* Portrait Image or Studio Monogram Backdrop */}
+                        <div className="relative h-full w-full overflow-hidden bg-[#1b2232]">
+                          {mentor.image ? (
+                            <img
+                              src={mentor.image}
+                              alt={`${mentor.name}, ${mentor.role}`}
+                              className="h-full w-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full flex-col items-center justify-center bg-[#161c2a] pb-16">
+                              <div className="flex h-28 w-28 items-center justify-center rounded-full border border-white/15 bg-[#0f1522] text-3xl font-extrabold tracking-tight text-white shadow-inner transition-transform duration-500 ease-out group-hover:scale-105">
+                                {initials}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
 
-                      {/* Bottom Scrim Overlay for Name, Role, and Topic */}
-                      <div className=" inset-x-0 bottom-0 absolute bg-[#070b14]/90 p-6 pt-5 backdrop-blur-[2px] border-t border-white/5">
-                        <h3 className="text-lg font-bold tracking-tight text-white sm:text-xl">
-                          {mentor.name}
-                        </h3>
-                        <p className="mt-1 text-sm font-medium text-slate-300">
-                          {mentor.role}
-                        </p>
-                        <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400">
-                          <span>{mentor.topic}</span>
-                          <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-                        </p>
-                      </div>
-                    </article>
-                  )
-                })}
+                        {/* Bottom Scrim Overlay for Name, Role, and Topic */}
+                        <div className="inset-x-0 bottom-0 absolute bg-[#070b14]/90 p-6 pt-5 backdrop-blur-[2px] border-t border-white/5">
+                          <h3 className="text-lg font-bold tracking-tight text-white sm:text-xl">
+                            {mentor.name}
+                          </h3>
+                          <p className="mt-1 text-sm font-medium text-slate-300">
+                            {mentor.role}
+                          </p>
+                          <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400">
+                            <span>{mentor.topic}</span>
+                            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                          </p>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           </div>
