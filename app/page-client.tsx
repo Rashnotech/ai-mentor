@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { publicCourseApi, CourseListResponse } from "@/lib/api"
 import TawkTo from "@/components/tawk-to"
@@ -162,6 +162,33 @@ const workforcePillars = [
 export default function LandingPage({ initialCourses = [] }: { initialCourses?: CourseListResponse[] }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeWorkforceCard, setActiveWorkforceCard] = useState<number>(2)
+  const [mentorScrollOffset, setMentorScrollOffset] = useState<number>(0)
+  const mentorsSectionRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    const updateMentorScroll = () => {
+      const section = mentorsSectionRef.current
+      if (!section) return
+
+      const rect = section.getBoundingClientRect()
+      const viewportHeight = window.innerHeight || 1
+      const totalTravel = viewportHeight + rect.height
+      const rawProgress = (viewportHeight - rect.top) / totalTravel
+      const clampedProgress = Math.min(1, Math.max(0, rawProgress))
+      const maxHorizontalShift = 440
+
+      setMentorScrollOffset(Math.round(clampedProgress * maxHorizontalShift))
+    }
+
+    updateMentorScroll()
+    window.addEventListener("scroll", updateMentorScroll, { passive: true })
+    window.addEventListener("resize", updateMentorScroll)
+
+    return () => {
+      window.removeEventListener("scroll", updateMentorScroll)
+      window.removeEventListener("resize", updateMentorScroll)
+    }
+  }, [])
 
   const renderWorkforceIcon = (id: (typeof workforcePillars)[number]["id"]) => {
     switch (id) {
@@ -706,45 +733,113 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       </section>
 
       {/* Mentors Section */}
-      <section className="bg-[#f6f8ff] py-16 md:py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <h2 className="mx-auto mb-12 max-w-4xl text-center text-2xl font-bold leading-tight tracking-tight text-[#071c2d] md:text-3xl lg:text-4xl">
-            Learn from experts
-          </h2>
+      <section
+        ref={mentorsSectionRef}
+        className="relative overflow-hidden bg-[#070b14] py-20 text-white md:py-28"
+      >
+        {/* Top-left architectural diagonal stripe accent */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-0 top-0 z-30 hidden h-36 w-10 opacity-45 md:block"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(45deg, rgba(255,255,255,0.45) 0px, rgba(255,255,255,0.45) 2px, transparent 2px, transparent 10px)",
+          }}
+        />
 
-          <div className="flex flex-col items-center justify-between gap-10 lg:flex-row lg:items-start lg:gap-6">
-            {mentors.map((mentor) => (
-              <article
-                key={mentor.name}
-                className="flex w-full max-w-[240px] flex-col items-center text-center"
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="relative flex flex-col items-start gap-12 lg:flex-row lg:items-center lg:gap-0">
+            {/* Left Fixed Occlusion Mask Column: sits at z-20 so moving mentor portraits slide behind it */}
+            <div className="relative z-20 w-full shrink-0 bg-[#070b14] py-4 lg:w-[42%] lg:pr-12 before:pointer-events-none before:absolute before:inset-y-[-6rem] before:-left-[100vw] before:right-0 before:-z-10 before:bg-[#070b14] after:pointer-events-none after:absolute after:inset-y-[-6rem] after:right-0 after:hidden after:w-8 after:bg-[#070b14] after:shadow-[24px_0_36px_#070b14] lg:after:block">
+              {/* Pill Badge with Starburst SVG */}
+              <div className="relative inline-flex items-center rounded-full bg-[#1d4ed8] px-5 py-2 text-xs font-bold tracking-wide text-white sm:text-sm">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className=" -mt-4 -ml-1 mr-1.5 h-5 w-5 text-sky-300"
+                  fill="none"
+                >
+                  <path
+                    d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93 4.93 19.07"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span>Our Expert Facilitators</span>
+              </div>
+
+              <h2 className="mt-6 text-3xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-5xl">
+                Taught by
+                <br />
+                pros, not just
+                <br />
+                academics.
+              </h2>
+
+              <p className="mt-6 max-w-md text-sm leading-[1.8] text-slate-300 sm:text-base">
+                Get coached by industry experts, from CV optimization to interview prep, we
+                provide the end-to-end support needed to land your dream role.
+              </p>
+            </div>
+
+            {/* Right Moving Portrait Track: sits at z-10 and translates left behind the z-20 text column on scroll */}
+            <div className="relative z-10 w-full lg:w-[58%]">
+              <div
+                style={{
+                  transform: `translate3d(-${mentorScrollOffset}px, 0, 0)`,
+                }}
+                className="flex items-stretch gap-6 transition-transform duration-150 ease-out will-change-transform"
               >
-                <div className={`mb-4 rounded-full bg-gradient-to-br ${mentor.accent} p-1.5 shadow-[0_18px_45px_rgba(6,182,212,0.22)]`}>
-                  <div className="flex h-36 w-36 items-center justify-center overflow-hidden rounded-full bg-[#0b2235] text-3xl font-extrabold text-white ring-[6px] ring-white md:h-44 md:w-44">
-                    {mentor.image ? (
-                      <img
-                        src={mentor.image}
-                        alt={`${mentor.name}, ${mentor.role}`}
-                        className="h-full w-full rounded-full object-cover"
-                      />
-                    ) : (
-                      mentor.name
-                        .split(" ")
-                        .filter((part) => !["Mr.", "Mr", "Dr.", "Dr"].includes(part))
-                        .slice(0, 2)
-                        .map((part) => part[0])
-                        .join("")
-                        .toUpperCase()
-                    )}
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-[#071c2d] md:text-xl">{mentor.name}</h3>
-                <p className="mt-2 text-xl font-bold text-[#071c2d]">{mentor.role}</p>
-                <p className="mt-2 inline-flex items-center gap-2 text-base font-bold text-blue-600">
-                  {mentor.topic}
-                  <ArrowRight className="h-4 w-4" />
-                </p>
-              </article>
-            ))}
+                {mentors.map((mentor) => {
+                  const initials = mentor.name
+                    .split(" ")
+                    .filter((part) => !["Mr.", "Mr", "Dr.", "Dr"].includes(part))
+                    .slice(0, 2)
+                    .map((part) => part[0])
+                    .join("")
+                    .toUpperCase()
+
+                  return (
+                    <article
+                      key={mentor.name}
+                      className="group relative h-[380px] w-[260px] shrink-0 overflow-hidden rounded-[24px] border border-white/10 bg-[#161c2a] shadow-[0_24px_60px_rgba(0,0,0,0.45)] sm:h-[420px] sm:w-[285px]"
+                    >
+                      {/* Portrait Image or Studio Monogram Backdrop */}
+                      <div className="relative h-full w-full overflow-hidden bg-[#1b2232]">
+                        {mentor.image ? (
+                          <img
+                            src={mentor.image}
+                            alt={`${mentor.name}, ${mentor.role}`}
+                            className="h-full w-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full flex-col items-center justify-center bg-[#161c2a] pb-16">
+                            <div className="flex h-28 w-28 items-center justify-center rounded-full border border-white/15 bg-[#0f1522] text-3xl font-extrabold tracking-tight text-white shadow-inner transition-transform duration-500 ease-out group-hover:scale-105">
+                              {initials}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bottom Scrim Overlay for Name, Role, and Topic */}
+                      <div className=" inset-x-0 bottom-0 absolute bg-[#070b14]/90 p-6 pt-5 backdrop-blur-[2px] border-t border-white/5">
+                        <h3 className="text-lg font-bold tracking-tight text-white sm:text-xl">
+                          {mentor.name}
+                        </h3>
+                        <p className="mt-1 text-sm font-medium text-slate-300">
+                          {mentor.role}
+                        </p>
+                        <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400">
+                          <span>{mentor.topic}</span>
+                          <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                        </p>
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </section>
