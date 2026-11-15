@@ -167,7 +167,7 @@ const workforcePillars = [
 
 export default function LandingPage({ initialCourses = [] }: { initialCourses?: CourseListResponse[] }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [activeWorkforceCard, setActiveWorkforceCard] = useState<number>(2)
+  const [activeWorkforceCard, setActiveWorkforceCard] = useState<number>(0)
   const [mentorScrollOffset, setMentorScrollOffset] = useState<number>(0)
   const mentorsSectionRef = useRef<HTMLElement | null>(null)
   const mentorViewportRef = useRef<HTMLDivElement | null>(null)
@@ -396,10 +396,10 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
 
       {/* Modern Workforce Section */}
       <section className="relative overflow-hidden border-b border-slate-200/80 bg-[#f8fafc] py-20 text-[#071c2d] lg:py-28">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col items-start justify-between gap-12 lg:flex-row lg:items-center lg:gap-10">
+        <div className="mx-auto w-full max-w-[1536px] px-6 lg:pl-12 lg:pr-6 xl:pr-8">
+          <div className="flex flex-col items-start justify-between gap-10 lg:flex-row lg:items-center lg:gap-10">
             {/* Left Copy Column */}
-            <div className="relative w-full lg:w-[36%] lg:pr-4">
+            <div className="relative w-full shrink-0 lg:w-[29%]">
               <h2 className="text-3xl font-extrabold tracking-tight leading-[1.15] text-[#071c2d] sm:text-4xl">
                 Skills for the
                 <br />
@@ -423,10 +423,10 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
               </div>
             </div>
 
-            {/* Right Interactive Cards Deck */}
+            {/* Right Interactive Cards Deck — uncompressed full-width 3-column grid */}
             <div
-              className="grid w-full grid-cols-1 gap-6 md:grid-cols-3 lg:w-[64%] lg:flex lg:items-stretch lg:gap-0"
-              onMouseLeave={() => setActiveWorkforceCard(2)}
+              className="grid w-full flex-1 grid-cols-1 gap-6 md:grid-cols-3 lg:w-[71%]"
+              onMouseLeave={() => setActiveWorkforceCard(0)}
             >
               {workforcePillars.map((pillar, index) => {
                 const isHighlighted = activeWorkforceCard === index
@@ -439,15 +439,13 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                     tabIndex={0}
                     onMouseEnter={() => setActiveWorkforceCard(index)}
                     onFocus={() => setActiveWorkforceCard(index)}
-                    className={`group relative flex flex-1 flex-col justify-between rounded-[24px] p-8 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1d4ed8] lg:min-h-[370px] ${
-                      index > 0 ? "lg:-ml-5" : ""
-                    } ${
+                    className={`group relative flex flex-col justify-between rounded-[24px] p-8 xl:p-9 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1d4ed8] lg:min-h-[390px] ${
                       isHighlighted
-                        ? "z-30 animate-card-float border border-slate-200/90 bg-white text-[#071c2d] shadow-[0_24px_60px_rgba(7,28,45,0.14)] lg:-translate-y-2.5 lg:scale-[1.02]"
-                        : "z-10 border border-[#1e40af] bg-[#1d4ed8] text-white shadow-[0_16px_36px_rgba(29,78,216,0.22)] hover:z-30"
+                        ? "z-30 animate-card-float border border-[#1e40af] bg-[#1d4ed8] text-white shadow-[0_24px_60px_rgba(29,78,216,0.28)] lg:-translate-y-2.5 lg:scale-[1.02]"
+                        : "z-10 border border-slate-200/90 bg-white text-[#071c2d] shadow-[0_14px_34px_rgba(7,28,45,0.08)] hover:z-30"
                     } ${
                       isRightCard
-                        ? "hover:-translate-y-3.5 hover:shadow-[0_30px_70px_rgba(7,28,45,0.18)]"
+                        ? "hover:-translate-y-3.5 hover:shadow-[0_30px_70px_rgba(29,78,216,0.3)]"
                         : ""
                     }`}
                   >
@@ -455,7 +453,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                     <div
                       aria-hidden="true"
                       className={`pointer-events-none absolute inset-4 rounded-[18px] border transition-opacity duration-300 ${
-                        isHighlighted ? "border-slate-100 opacity-100" : "border-white/10 opacity-100"
+                        isHighlighted ? "border-white/15 opacity-100" : "border-slate-100 opacity-100"
                       }`}
                     />
 
@@ -464,15 +462,15 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                       <div
                         className={`inline-flex rounded-full p-1.5 transition-transform duration-300 ease-out group-hover:-translate-y-1 group-hover:scale-105 ${
                           isHighlighted
-                            ? "animate-ring-pulse border border-slate-200 bg-white shadow-[0_8px_20px_rgba(7,28,45,0.08)]"
-                            : "border border-white/35 bg-white/10"
+                            ? "animate-ring-pulse border border-white/40 bg-white/10"
+                            : "border border-slate-200 bg-white shadow-[0_8px_20px_rgba(7,28,45,0.08)]"
                         }`}
                       >
                         <div
                           className={`flex h-14 w-14 items-center justify-center rounded-full transition-colors duration-300 ${
                             isHighlighted
-                              ? "border-2 border-[#071c2d] bg-white text-[#071c2d]"
-                              : "border border-white/70 bg-white/15 text-white"
+                              ? "border border-white/80 bg-white/15 text-white"
+                              : "border-2 border-[#071c2d] bg-white text-[#071c2d]"
                           }`}
                         >
                           <IconComponent className="h-6 w-6 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110" />
@@ -481,7 +479,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
 
                       <h3
                         className={`mt-8 text-xl font-bold tracking-tight transition-colors duration-300 ${
-                          isHighlighted ? "text-[#071c2d]" : "text-white"
+                          isHighlighted ? "text-white" : "text-[#071c2d]"
                         }`}
                       >
                         {pillar.title}
@@ -489,7 +487,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
 
                       <p
                         className={`mt-4 text-sm leading-[1.75] transition-colors duration-300 ${
-                          isHighlighted ? "text-slate-600" : "text-blue-50/90"
+                          isHighlighted ? "text-blue-50/95" : "text-slate-600"
                         }`}
                       >
                         {pillar.description}
@@ -502,15 +500,15 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                         aria-hidden="true"
                         className={`block h-1 rounded-full transition-all duration-300 ease-out ${
                           isHighlighted
-                            ? "w-12 bg-[#1d4ed8] group-hover:w-20"
-                            : "w-6 bg-white/35 group-hover:w-12"
+                            ? "w-12 bg-white group-hover:w-20"
+                            : "w-6 bg-slate-200 group-hover:w-12"
                         }`}
                       />
                       <ArrowRight
                         className={`h-4 w-4 transition-all duration-300 ${
                           isHighlighted
-                            ? "translate-x-0 text-[#1d4ed8] opacity-100 group-hover:translate-x-1"
-                            : "-translate-x-2 text-white/70 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"
+                            ? "translate-x-0 text-white opacity-100 group-hover:translate-x-1"
+                            : "-translate-x-2 text-[#1d4ed8] opacity-0 group-hover:translate-x-0 group-hover:opacity-100"
                         }`}
                       />
                     </div>

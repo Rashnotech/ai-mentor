@@ -148,6 +148,19 @@ assert.match(workforceSection, /Modern Workforce/)
 assert.match(workforceSection, /Start Where You Are\. Build Skills That Actually Pay\./)
 assert.match(workforceSection, /Explore Courses/)
 assert.match(workforceSection, /href="\/courses"/)
+assert.match(page, /const \[activeWorkforceCard, setActiveWorkforceCard\] = useState<number>\(0\)/)
+assert.match(workforceSection, /onMouseLeave=\{\(\) => setActiveWorkforceCard\(0\)\}/)
+assert.match(workforceSection, /max-w-\[1536px\]/)
+assert.match(workforceSection, /grid w-full flex-1 grid-cols-1 gap-6 md:grid-cols-3 lg:w-\[71%\]/)
+assert.doesNotMatch(workforceSection, /lg:-ml-5/)
+assert.match(
+  workforceSection,
+  /\? "z-30 animate-card-float border border-\[#1e40af\] bg-\[#1d4ed8\] text-white/
+)
+assert.match(
+  workforceSection,
+  /: "z-10 border border-slate-200\/90 bg-white text-\[#071c2d\]/
+)
 assert.match(workforceSection, /onMouseEnter=\{\(\) => setActiveWorkforceCard\(index\)\}/)
 assert.match(workforceSection, /hover:-translate-y-3\.5/)
 assert.match(workforceSection, /animate-card-float/)
