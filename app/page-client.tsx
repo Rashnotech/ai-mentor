@@ -172,11 +172,54 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
   const mentorsSectionRef = useRef<HTMLElement | null>(null)
   const mentorViewportRef = useRef<HTMLDivElement | null>(null)
   const mentorTrackRef = useRef<HTMLDivElement | null>(null)
+  const mentorTouchStartXRef = useRef<number | null>(null)
+  const mentorTouchStartOffsetRef = useRef<number>(0)
+
+  const handleMentorTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return
+    mentorTouchStartXRef.current = e.touches[0].clientX
+    mentorTouchStartOffsetRef.current = mentorScrollOffset
+  }
+
+  const handleMentorTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (mentorTouchStartXRef.current === null || e.touches.length !== 1) return
+    const deltaX = e.touches[0].clientX - mentorTouchStartXRef.current
+    // Swiping right (deltaX > 0) moves back toward 0 to reveal the previous mentor
+    const measuredOverflow =
+      mentorTrackRef.current && mentorViewportRef.current
+        ? Math.max(0, mentorTrackRef.current.scrollWidth - mentorViewportRef.current.clientWidth + 24)
+        : 540
+    const nextOffset = Math.min(
+      measuredOverflow,
+      Math.max(0, Math.round(mentorTouchStartOffsetRef.current - deltaX))
+    )
+    setMentorScrollOffset(nextOffset)
+  }
+
+  const handleMentorTouchEnd = () => {
+    mentorTouchStartXRef.current = null
+  }
+
+  const handleMentorWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
+    const measuredOverflow =
+      mentorTrackRef.current && mentorViewportRef.current
+        ? Math.max(0, mentorTrackRef.current.scrollWidth - mentorViewportRef.current.clientWidth + 24)
+        : 540
+    setMentorScrollOffset((prev) =>
+      Math.min(measuredOverflow, Math.max(0, Math.round(prev + e.deltaX)))
+    )
+  }
 
   useEffect(() => {
     const updateMentorScroll = () => {
       const section = mentorsSectionRef.current
       if (!section) return
+
+      // On mobile (< 1024px), preserve the user's touch-swipe offset so swiping left/right freely navigates next/previous mentors
+      if (window.innerWidth < 1024) {
+        return
+      }
 
       const navHeight = 64
       const rect = section.getBoundingClientRect()
@@ -693,11 +736,11 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
           />
 
           <div className="mx-auto w-full max-w-7xl px-6">
-            <div className="relative flex flex-col items-start gap-12 lg:flex-row lg:items-center lg:gap-0">
-              {/* Left Fixed Occlusion Mask Column: sits at z-20 so moving mentor portraits slide behind it */}
-              <div className="relative z-20 w-full shrink-0 bg-[#070b14] py-4 lg:w-[42%] lg:pr-12 before:pointer-events-none before:absolute before:inset-y-[-6rem] before:-left-[100vw] before:right-0 before:-z-10 before:bg-[#070b14] after:pointer-events-none after:absolute after:inset-y-[-6rem] after:right-0 after:hidden after:w-8 after:bg-[#070b14] after:shadow-[24px_0_36px_#070b14] lg:after:block">
+            <div className="relative flex flex-col items-start gap-0 lg:flex-row lg:items-stretch lg:gap-0">
+              {/* Left Fixed Occlusion Mask Column: exact same height (lg:h-[420px]) as right div on desktop; sits below images on mobile so mobile images lightly overlap above it */}
+              <div className="relative z-10 flex w-full shrink-0 flex-col justify-center rounded-2xl bg-[#070b14] pb-8 pt-4 lg:z-20 lg:h-[420px] lg:w-[42%] lg:rounded-none lg:py-0 lg:pr-12 lg:before:pointer-events-none lg:before:absolute lg:before:inset-y-0 lg:before:-left-[100vw] lg:before:right-0 lg:before:-z-10 lg:before:bg-[#070b14] lg:after:pointer-events-none lg:after:absolute lg:after:inset-y-0 lg:after:right-0 lg:after:block lg:after:w-8 lg:after:bg-[#070b14] lg:after:shadow-[24px_0_36px_#070b14]">
                 {/* Pill Badge with real Lucide Sparkles Icon */}
-                <div className="relative inline-flex items-center rounded-full bg-[#1d4ed8] px-5 py-2 text-xs font-bold tracking-wide text-white sm:text-sm">
+                <div className="relative inline-flex w-fit items-center rounded-full bg-[#1d4ed8] px-5 py-2 text-xs font-bold tracking-wide text-white sm:text-sm">
                   <Sparkles className="mr-2 h-4 w-4 text-sky-300" />
                   <span>Our Expert Facilitators</span>
                 </div>
@@ -716,14 +759,21 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                 </p>
               </div>
 
-              {/* Right Moving Portrait Track: sits at z-10 and translates left behind the z-20 text column on scroll */}
-              <div ref={mentorViewportRef} className="relative z-10 w-full lg:w-[58%]">
+              {/* Right Moving Portrait Track: lightly overlaps above the left div on mobile (-mt-3 z-30) with full left/right touch swipe; exact same height (lg:h-[420px]) and z-10 on desktop */}
+              <div
+                ref={mentorViewportRef}
+                onTouchStart={handleMentorTouchStart}
+                onTouchMove={handleMentorTouchMove}
+                onTouchEnd={handleMentorTouchEnd}
+                onWheel={handleMentorWheel}
+                className="relative z-30 -mt-3 w-full touch-pan-y pb-4 lg:z-10 lg:mt-0 lg:h-[420px] lg:w-[58%] lg:overflow-visible lg:pb-0"
+              >
                 <div
                   ref={mentorTrackRef}
                   style={{
                     transform: `translate3d(-${mentorScrollOffset}px, 0, 0)`,
                   }}
-                  className="flex items-stretch gap-6 transition-transform duration-150 ease-out will-change-transform"
+                  className="flex h-full items-stretch gap-6 transition-transform duration-150 ease-out will-change-transform"
                 >
                   {mentors.map((mentor) => {
                     const initials = mentor.name
@@ -737,7 +787,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                     return (
                       <article
                         key={mentor.name}
-                        className="group relative h-[380px] w-[260px] shrink-0 overflow-hidden rounded-[24px] border border-white/10 bg-[#161c2a] shadow-[0_24px_60px_rgba(0,0,0,0.45)] sm:h-[420px] sm:w-[285px]"
+                        className="group relative h-[380px] w-[260px] shrink-0 snap-center overflow-hidden rounded-[24px] border border-white/10 bg-[#161c2a] shadow-[0_24px_60px_rgba(0,0,0,0.45)] sm:h-[420px] sm:w-[285px]"
                       >
                         {/* Portrait Image or Studio Monogram Backdrop */}
                         <div className="relative h-full w-full overflow-hidden bg-[#1b2232]">
