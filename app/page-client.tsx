@@ -773,7 +773,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       <section ref={reviewsSectionRef} className="py-20 bg-[#070b14]">
         <div className="container mx-auto px-6">
           <div className="mb-16 flex flex-col items-center text-center">
-            <div className="relative inline-flex items-center rounded-lg border border-white/25 bg-[#142235] px-5 py-2 text-xs font-semibold tracking-wide text-white sm:text-sm">
+            <div className="relative inline-flex items-center rounded-lg border border-white/20 bg-white/10 px-5 py-2 text-xs font-semibold tracking-wide text-white backdrop-blur-md sm:text-sm">
               <Sparkles className="-ml-1 mr-2 h-4 w-4 text-sky-300" />
               <span>What people say</span>
             </div>
@@ -800,7 +800,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                     transform: `translate3d(${stackedTranslateXPercent}%, ${stackedTranslateYPx}px, 0) rotate(${stackedRotateDeg}deg) scale(${stackedScale})`,
                     zIndex: 40 - index * 10,
                   }}
-                  className="relative rounded-2xl border border-white/15 bg-[#142235] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.42)] transition-transform duration-300 ease-out will-change-transform"
+                  className="relative rounded-2xl border border-white/20 bg-white/10 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-transform duration-300 ease-out will-change-transform"
                 >
                   <div
                     style={{ opacity: detailsOpacity }}
@@ -818,12 +818,12 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                       href="https://www.google.com/search?q=Rashnotech+Solutions+reviews"
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-4 inline-flex text-sm font-bold text-blue-200 hover:text-white"
+                      className="mt-4 inline-flex text-sm font-bold text-white/80 underline decoration-white/30 underline-offset-4 hover:text-white"
                     >
                       Read more
                     </Link>
                     <div className="mt-6 flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1d4ed8] text-sm font-bold text-white">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/25 bg-white/15 text-sm font-bold text-white backdrop-blur-md">
                         {review.name
                           .split(" ")
                           .filter(Boolean)
@@ -834,11 +834,11 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                       </div>
                       <div>
                         <p className="font-semibold text-white">{review.name}</p>
-                        <p className="text-sm text-blue-100/80">student</p>
+                        <p className="text-sm text-white/75">student</p>
                       </div>
                     </div>
                     {index === 0 && (
-                      <div className="mt-5 inline-flex rounded-full bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-100">
+                      <div className="mt-5 inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
                         Verified student review
                       </div>
                     )}

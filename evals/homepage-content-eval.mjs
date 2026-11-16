@@ -44,7 +44,7 @@ const checks = [
   ["company logo strip replaced by four reviews", page.includes("studentReviews.slice(0, 4).map") && !page.includes("Explore the Companies Investing in our Talent")],
   ["review section uses single solid dark background without gradient", page.includes('className="py-20 bg-[#070b14]"') && !page.includes("deckBgTone") && !page.slice(reviewsSectionStart, mentorsSectionStart).includes("bg-gradient-")],
   ["reviews use four-card grid layout", page.includes("grid gap-6 md:grid-cols-4")],
-  ["reviews use single solid dark card background", page.includes("rounded-2xl border border-white/15 bg-[#142235]") && !page.includes("border border-blue-100 bg-white")],
+  ["reviews use glassmorphism cards so the background color shows through", page.includes("rounded-2xl border border-white/20 bg-white/10 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl") && !page.slice(reviewsSectionStart, mentorsSectionStart).includes("bg-[#142235]")],
   ["reviews are labelled as students", page.includes(">student<") && !page.includes("Rashnotech Student")],
   ["reviews show short preview plus more link", page.includes("line-clamp-3") && page.includes("Read more") && page.includes("See more reviews")],
   ["reviews show five-star context", page.includes('aria-label="5 star review"') && page.includes("Star key={star}")],
