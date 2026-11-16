@@ -117,14 +117,14 @@ const mentors = [
     role: "CEO/Founder",
     topic: "Leadership and product strategy",
     accent: "from-blue-500 via-cyan-400 to-sky-300",
-    image: "/funded.jpg",
+    image: "https://i.postimg.cc/TPNQgrwF/Gemini-Generated-Image-kvomw3kvomw3kvom.jpg",
   },
   {
     name: "Mr. Ini Ebong",
     role: "Software Engineer",
     topic: "Modern software engineering",
     accent: "from-indigo-500 via-blue-400 to-cyan-300",
-    image: null,
+    image: "https://i.postimg.cc/ZYdjvvSb/Whats-App-Image-2026-07-15-at-9-59-09-AM.jpg",
   },
   {
     name: "Dr. Callistus Ikwuazom",
