@@ -235,4 +235,43 @@ for (const question of [
   assert.match(page, new RegExp(question.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
 }
 
+// Navigation & Services Page contract
+const publicHeader = await readFile("components/public-site-header.tsx", "utf8")
+const servicesPage = await readFile("app/services/page-client.tsx", "utf8")
+const cookieBanner = await readFile("components/cookie-consent-banner.tsx", "utf8")
+const rootLayout = await readFile("app/layout.tsx", "utf8")
+
+assert.doesNotMatch(page, /AI Features/)
+assert.doesNotMatch(publicHeader, /AI Features/)
+assert.match(page, />[\s\r\n]*Research[\s\r\n]*</)
+assert.match(page, /href="\/services"/)
+assert.match(publicHeader, /label: "Research"/)
+assert.match(publicHeader, /label: "Services", href: "\/services"/)
+
+// Cookie consent & UX banner contract
+assert.match(rootLayout, /<CookieConsentBanner \/>/)
+assert.match(cookieBanner, /We use cookies to improve your experience/)
+assert.match(cookieBanner, /Accept All/)
+assert.match(cookieBanner, /Reject/)
+assert.match(cookieBanner, /Continue where you left off/)
+
+// Services page frame & catalog contract
+assert.match(servicesPage, /Elevate Your Brand With Us/)
+assert.match(servicesPage, /Empowering Your Success with Digital Expertise/)
+assert.match(servicesPage, /Boost Your Brand with Our Expertise/)
+assert.match(servicesPage, /Add Service/)
+for (const serviceName of [
+  "App Development",
+  "Product Design",
+  "Project Research",
+  "AI Automation",
+  "E-Commerce",
+  "Site Reliability Engineer",
+  "Cloud Architecture",
+  "Cybersecurity",
+  "Corporate & School Training",
+]) {
+  assert.match(servicesPage, new RegExp(serviceName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+}
+
 console.log("Homepage content contract: PASS")

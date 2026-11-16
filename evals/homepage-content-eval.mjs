@@ -3,6 +3,10 @@ import { readFile } from "node:fs/promises"
 
 const page = await readFile("app/page-client.tsx", "utf8")
 const globalsCss = await readFile("app/globals.css", "utf8")
+const publicHeader = await readFile("components/public-site-header.tsx", "utf8")
+const servicesPage = await readFile("app/services/page-client.tsx", "utf8")
+const cookieBanner = await readFile("components/cookie-consent-banner.tsx", "utf8")
+const rootLayout = await readFile("app/layout.tsx", "utf8")
 
 const reviewsStart = page.indexOf("const studentReviews = [")
 const mentorsStart = page.indexOf("const mentors = [")
@@ -62,6 +66,9 @@ const checks = [
   ["tech logos scroll across the screen in a continuous marquee", page.includes("animate-marquee") && page.includes("[...techLogos, ...techLogos].map") && globalsCss.includes("@keyframes marquee")],
   ["courses section replaces A path for every goal and filter tabs with horizontal cover-image cards on white background", coursesSection.includes('id="courses" className="py-24 bg-white text-gray-900"') && coursesSection.includes("Our Popular Courses") && coursesSection.includes("Expert-led course. Global Skills") && coursesSection.includes("<CourseCover src={course.cover_image_url} title={course.title} />") && coursesSection.includes("Enroll now") && coursesSection.includes("Find your perfect fit") && !coursesSection.includes("A path for every goal") && !coursesSection.includes("Top Courses") && !coursesSection.includes("Explore Catalog")],
   ["FAQ section is placed before footer with support cards and five interactive questions", faqSectionStart > 0 && footerStart > faqSectionStart && faqSection.includes("FAQs") && faqSection.includes("Frequently Asked Questions") && faqSection.includes("Do you have more questions?") && faqSection.includes("Contact us") && faqSection.includes("For enquiries contact") && ["What is the minimum age or qualification required?", "Is there a community for students?", "How long are the programs to run for?", "Can I take more than one course at a time?", "Which of your programs is the highest paid tech job?"].every((q) => page.includes(q))],
+  ["navigation replaces AI Features with Research and links Services to /services", !page.includes("AI Features") && !publicHeader.includes("AI Features") && page.includes("Research") && page.includes('href="/services"') && publicHeader.includes('label: "Research"') && publicHeader.includes('label: "Services", href: "/services"')],
+  ["cookie consent notification and UX quick-resume helper are wired into root layout", rootLayout.includes("<CookieConsentBanner />") && cookieBanner.includes("We use cookies to improve your experience") && cookieBanner.includes("Accept All") && cookieBanner.includes("Reject") && cookieBanner.includes("Continue where you left off")],
+  ["services page implements reference frame in brand colors with all requested services and Add Service capability", servicesPage.includes("Elevate Your Brand With Us") && servicesPage.includes("Empowering Your Success with Digital Expertise") && servicesPage.includes("Boost Your Brand with Our Expertise") && servicesPage.includes("Add Service") && ["App Development", "Product Design", "Project Research", "AI Automation", "E-Commerce", "Site Reliability Engineer", "Cloud Architecture", "Cybersecurity", "Corporate & School Training"].every((s) => servicesPage.includes(s))],
 ]
 
 const passed = checks.filter(([, condition]) => condition).length

@@ -368,14 +368,14 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                 Courses
               </a>
               <a href="#ai-features" className="hover:text-white transition-colors">
-                AI Features
+                Research
               </a>
               <Link href="/internship" className="hover:text-white transition-colors">
                 Internship
               </Link>
-              <a href="#" className="hover:text-white transition-colors">
+              <Link href="/services" className="hover:text-white transition-colors">
                 Services
-              </a>
+              </Link>
               <Link href="/contact" className="hover:text-white transition-colors">
                 Contact Us
               </Link>
@@ -412,14 +412,14 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                 Courses
               </a>
               <a href="#ai-features" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
-                AI Features
+                Research
               </a>
               <Link href="/internship" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 Internship
               </Link>
-              <a href="#" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+              <Link href="/services" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 Services
-              </a>
+              </Link>
               <Link href="/contact" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
                 Contact Us
               </Link>

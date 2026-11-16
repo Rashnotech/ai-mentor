@@ -2,7 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
 import { Providers } from "@/components/client-auth-provider"
-import { Analytics } from "@vercel/analytics/next"
+import CookieConsentBanner from "@/components/cookie-consent-banner"
 import { JsonLd } from "@/components/json-ld"
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site"
 
@@ -78,7 +78,7 @@ export default function RootLayout({
         }} />
         <Providers>
           {children}
-          <Analytics />
+          <CookieConsentBanner />
         </Providers>
       </body>
     </html>

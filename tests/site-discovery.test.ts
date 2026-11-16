@@ -2,6 +2,13 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import test from "node:test"
 import { courseJsonLd, courseListJsonLd, courseShareImageUrl, courseUrl, SITE_URL } from "../lib/site.ts"
+import {
+  createConsentState,
+  extractCookieValue,
+  parseCookieConsent,
+  parseUserExperienceProfile,
+  serializeCookieConsent,
+} from "../lib/cookie-consent.ts"
 
 const layoutSource = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8")
 const manifestSource = readFileSync(new URL("../app/manifest.ts", import.meta.url), "utf8")
@@ -61,4 +68,43 @@ test("site exposes a crawlable square favicon for search results", () => {
   assert.match(layoutSource, /logo: `\$\{SITE_URL\}\/mylogo\.png`/)
   assert.match(manifestSource, /src: "\/mylogo\.png", sizes: "619x619", type: "image\/png", purpose: "any"/)
   assert.match(manifestSource, /purpose: "maskable"/)
+})
+
+test("cookie consent state serializes, parses, and supports accept, reject, and custom UX preferences", () => {
+  const accepted = createConsentState("accepted", new Date("2026-11-16T00:00:00.000Z"))
+  assert.equal(accepted.status, "accepted")
+  assert.equal(accepted.essential, true)
+  assert.equal(accepted.analytics, true)
+  assert.equal(accepted.preferences, true)
+
+  const serialized = serializeCookieConsent(accepted)
+  const rawCookie = `other=1; rashnotech_cookie_consent=${serialized}; theme=dark`
+  const extracted = extractCookieValue(rawCookie, "rashnotech_cookie_consent")
+  const roundTrip = parseCookieConsent(extracted)
+  assert.deepEqual(roundTrip, accepted)
+
+  const rejected = createConsentState("rejected")
+  assert.equal(rejected.status, "rejected")
+  assert.equal(rejected.analytics, false)
+  assert.equal(rejected.preferences, false)
+
+  const custom = createConsentState({ analytics: false, preferences: true })
+  assert.equal(custom.status, "customized")
+  assert.equal(custom.analytics, false)
+  assert.equal(custom.preferences, true)
+
+  const uxProfile = parseUserExperienceProfile(
+    encodeURIComponent(
+      JSON.stringify({
+        lastVisitedPath: "/services",
+        lastVisitedLabel: "Rashnotech Services",
+        preferredServiceCategory: "Engineering & AI",
+        visitCount: 3,
+        updatedAt: "2026-11-16T00:00:00.000Z",
+      })
+    )
+  )
+  assert.equal(uxProfile?.lastVisitedPath, "/services")
+  assert.equal(uxProfile?.preferredServiceCategory, "Engineering & AI")
+  assert.equal(uxProfile?.visitCount, 3)
 })
