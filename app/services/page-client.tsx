@@ -1,6 +1,6 @@
 "use client"
 
-import { type FormEvent, useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import {
   ArrowRight,
@@ -16,7 +16,6 @@ import {
   Microscope,
   Palette,
   Phone,
-  Plus,
   ServerCog,
   ShieldCheck,
   ShoppingBag,
@@ -24,11 +23,6 @@ import {
   X,
 } from "lucide-react"
 import PublicSiteFooter from "@/components/public-site-footer"
-import {
-  CUSTOM_SERVICES_STORAGE_KEY,
-  readUserExperienceProfile,
-  recordUserExperienceVisit,
-} from "@/lib/cookie-consent"
 
 export interface ServiceItem {
   id: string
@@ -63,8 +57,8 @@ export const INITIAL_SERVICES: ServiceItem[] = [
     title: "Project Research",
     category: "Design & Research",
     description:
-      "Rigorous technical, academic, market, and applied AI project research backed by empirical data modeling, feasibility validation, and publication-ready documentation.",
-    highlights: ["Applied AI & data research", "Technical feasibility & prototyping", "Academic & industry whitepapers"],
+      "Applied AI, operational intelligence, academic, and technical project research that unifies real-world data streams, simulation models, and publication-grade validation.",
+    highlights: ["Applied AI & operational modeling", "Technical feasibility & prototyping", "Industry & academic research"],
     image: "/bg_hero.png",
   },
   {
@@ -72,8 +66,8 @@ export const INITIAL_SERVICES: ServiceItem[] = [
     title: "AI Automation",
     category: "Engineering & AI",
     description:
-      "Intelligent workflow automation, custom AI agents, and LLM-powered operations that eliminate repetitive bottlenecks and accelerate team output.",
-    highlights: ["Custom AI agents & copilots", "Workflow & CRM automation", "Document & data intelligence"],
+      "Intelligent workflow automation, autonomous decision layers, and custom LLM copilots that connect data visibility directly to real-world operational execution.",
+    highlights: ["Custom AI agents & copilots", "Workflow & CRM automation", "Predictive operational intelligence"],
     image: "/hub-4.jpg",
   },
   {
@@ -90,8 +84,8 @@ export const INITIAL_SERVICES: ServiceItem[] = [
     title: "Site Reliability Engineer",
     category: "Cloud & Security",
     description:
-      "24/7 production reliability, automated CI/CD delivery pipelines, observability dashboards, and zero-downtime incident engineering for mission-critical systems.",
-    highlights: ["SLO/SLA monitoring & alerting", "Automated CI/CD & GitOps", "Incident response & chaos testing"],
+      "24/7 production reliability, automated CI/CD delivery pipelines, observability dashboards, and zero-downtime incident engineering for critical infrastructure.",
+    highlights: ["SLO/SLA monitoring & alerting", "Automated CI/CD & GitOps", "Incident response & resilience testing"],
     image: "/bg_hero.png",
   },
   {
@@ -99,7 +93,7 @@ export const INITIAL_SERVICES: ServiceItem[] = [
     title: "Cloud Architecture",
     category: "Cloud & Security",
     description:
-      "Resilient multi-cloud infrastructure across AWS, Azure, and GCP using Kubernetes, Infrastructure-as-Code, and FinOps cost optimization.",
+      "Sovereign and resilient multi-cloud infrastructure across AWS, Azure, and GCP using Kubernetes, Infrastructure-as-Code, and FinOps cost optimization.",
     highlights: ["Kubernetes & container orchestration", "Terraform & IaC automation", "Cloud migration & cost tuning"],
     image: "/hub-4.jpg",
   },
@@ -108,8 +102,8 @@ export const INITIAL_SERVICES: ServiceItem[] = [
     title: "Cybersecurity",
     category: "Cloud & Security",
     description:
-      "Proactive security audits, penetration testing, zero-trust identity architecture, and compliance hardening to protect your infrastructure and customer data.",
-    highlights: ["Penetration testing & VAPT", "Zero-trust & cloud security", "Compliance & security training"],
+      "Proactive security audits, penetration testing, zero-trust identity architecture, and compliance hardening to protect mission-critical systems and data integrity.",
+    highlights: ["Penetration testing & VAPT", "Zero-trust & cloud security", "ISO-aligned security hardening"],
     image: "/funded.jpg",
   },
   {
@@ -117,7 +111,7 @@ export const INITIAL_SERVICES: ServiceItem[] = [
     title: "Corporate & School Training",
     category: "Training & Growth",
     description:
-      "Tailored corporate upskilling bootcamps, executive AI workshops, and practical school STEM, coding, and robotics programmes for institutions and teams.",
+      "Tailored corporate upskilling bootcamps, executive AI workshops, and practical school STEM, coding, and engineering programmes for institutions and enterprise teams.",
     highlights: ["Corporate engineering & AI bootcamps", "School coding & STEM academies", "Custom curriculum & mentorship"],
     image: "/bg_hero.png",
   },
@@ -133,7 +127,7 @@ const CATEGORIES = [
 
 const CAPABILITY_METRICS = [
   { label: "Software Engineering, App Development & AI Automation", percent: 95 },
-  { label: "Product Design, Project Research & Digital Strategy", percent: 90 },
+  { label: "Product Design, Project Research & Operational Intelligence", percent: 90 },
   { label: "Cloud Architecture, SRE, Cybersecurity & Training", percent: 92 },
 ]
 
@@ -169,110 +163,25 @@ function getServiceIcon(id: string) {
   }
 }
 
-function BrandDualDot({ light = false }: { light?: boolean }) {
-  return (
-    <span className="inline-flex items-center" aria-hidden="true">
-      <span className={`h-3.5 w-3.5 rounded-full ${light ? "bg-sky-400" : "bg-[#1d4ed8]"}`} />
-      <span
-        className={`-ml-1.5 h-3.5 w-3.5 rounded-full border ${
-          light ? "border-white/60 bg-[#071c2d]" : "border-[#071c2d] bg-sky-400"
-        }`}
-      />
-    </span>
-  )
-}
-
 export default function ServicesPageClient() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [services, setServices] = useState<ServiceItem[]>(INITIAL_SERVICES)
   const [selectedCategory, setSelectedCategory] = useState<string>("All")
   const [activeServiceId, setActiveServiceId] = useState<string>("product-design")
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [newTitle, setNewTitle] = useState("")
-  const [newCategory, setNewCategory] = useState<ServiceItem["category"]>("Engineering & AI")
-  const [newDescription, setNewDescription] = useState("")
-  const [newHighlights, setNewHighlights] = useState("")
-
-  // Load any saved custom services & preferred category from UX profile
-  useEffect(() => {
-    try {
-      const rawCustom = window.localStorage.getItem(CUSTOM_SERVICES_STORAGE_KEY)
-      if (rawCustom) {
-        const parsed = JSON.parse(rawCustom) as ServiceItem[]
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setServices([...INITIAL_SERVICES, ...parsed])
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    const uxProfile = readUserExperienceProfile()
-    if (uxProfile?.preferredServiceCategory && CATEGORIES.includes(uxProfile.preferredServiceCategory as never)) {
-      setSelectedCategory(uxProfile.preferredServiceCategory)
-    }
-  }, [])
-
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category)
-    recordUserExperienceVisit({
-      path: "/services",
-      label: "Rashnotech Services",
-      preferredServiceCategory: category,
-    })
-  }
-
-  const handleAddService = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const title = newTitle.trim()
-    const description = newDescription.trim()
-    if (!title || !description) return
-
-    const created: ServiceItem = {
-      id: title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      title,
-      category: newCategory,
-      description,
-      highlights: newHighlights
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean)
-        .slice(0, 3),
-      image: "/hub-4.jpg",
-    }
-
-    const nextServices = [...services, created]
-    setServices(nextServices)
-    setActiveServiceId(created.id)
-    setNewTitle("")
-    setNewDescription("")
-    setNewHighlights("")
-    setShowAddModal(false)
-
-    try {
-      const customOnly = nextServices.filter(
-        (item) => !INITIAL_SERVICES.some((initial) => initial.id === item.id)
-      )
-      window.localStorage.setItem(CUSTOM_SERVICES_STORAGE_KEY, JSON.stringify(customOnly))
-    } catch {
-      // ignore
-    }
-  }
 
   const filteredServices =
     selectedCategory === "All"
-      ? services
-      : services.filter((service) => service.category === selectedCategory)
+      ? INITIAL_SERVICES
+      : INITIAL_SERVICES.filter((service) => service.category === selectedCategory)
 
   return (
     <div className="min-h-screen bg-[#f4f7fb] font-sans text-[#071c2d] selection:bg-blue-600/20">
-      {/* Top Brand Contact Strip (matching reference frame in Rashnotech brand colors) */}
+      {/* Top Brand Contact Strip */}
       <div className="relative overflow-hidden bg-[#071c2d] text-xs text-slate-200">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            <a href="tel:+16462121626" className="inline-flex items-center gap-1.5 hover:text-sky-300">
+            <a href="tel:+2348172992396" className="inline-flex items-center gap-1.5 hover:text-sky-300">
               <Phone className="h-3.5 w-3.5 text-sky-400" />
-              <span>+1 (646) 212-1626</span>
+              <span>+234 8172992396</span>
             </a>
             <a href="mailto:rashnotech@gmail.com" className="inline-flex items-center gap-1.5 hover:text-sky-300">
               <Mail className="h-3.5 w-3.5 text-sky-400" />
@@ -280,12 +189,12 @@ export default function ServicesPageClient() {
             </a>
             <span className="hidden items-center gap-1.5 md:inline-flex">
               <MapPin className="h-3.5 w-3.5 text-sky-400" />
-              <span>Global Digital Innovation & Training Hub</span>
+              <span>Global Digital Innovation &amp; Research Hub</span>
             </span>
           </div>
 
           <div className="flex items-center gap-3 rounded-full bg-[#1d4ed8] px-4 py-1 font-bold text-white shadow-sm">
-            <span>Corporate, School & Enterprise Solutions</span>
+            <span>Enterprise, Research &amp; Institutional Solutions</span>
             <Link href="/contact" className="inline-flex items-center gap-1 text-sky-200 underline hover:text-white">
               <span>Book a Call</span>
               <ArrowUpRight className="h-3 w-3" />
@@ -377,7 +286,7 @@ export default function ServicesPageClient() {
         )}
       </header>
 
-      {/* Hero Section (matching top frame of reference image in Rashnotech brand colors) */}
+      {/* Hero Section */}
       <section className="relative overflow-hidden bg-[#f4f7fb] py-16 lg:py-24">
         <div
           className="pointer-events-none absolute inset-0 opacity-45"
@@ -390,8 +299,7 @@ export default function ServicesPageClient() {
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
           {/* Left Copy Column */}
           <div className="lg:col-span-6">
-            <div className="inline-flex items-center gap-2.5 rounded-full bg-white px-4 py-1.5 text-xs font-bold tracking-wide text-[#071c2d] shadow-sm ring-1 ring-slate-200/80 sm:text-sm">
-              <BrandDualDot />
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[#1d4ed8] shadow-sm">
               <span>Elevate Your Brand With Us</span>
             </div>
 
@@ -400,9 +308,9 @@ export default function ServicesPageClient() {
             </h1>
 
             <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              From custom App Development, Product Design, and Project Research to AI Automation, Cloud Architecture,
-              Site Reliability Engineering, Cybersecurity, and Corporate &amp; School Training, Rashnotech builds
-              solutions that scale.
+              We unify applied AI, project research, resilient cloud architecture, and full-cycle software engineering
+              to help enterprises, institutions, and high-growth teams move from complex data to real-world operational
+              execution.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-5">
@@ -478,10 +386,10 @@ export default function ServicesPageClient() {
         </div>
       </section>
 
-      {/* Scrolling Service Ribbon Band (matching dark ticker bar in reference frame) */}
+      {/* Scrolling Service Ribbon Band */}
       <div className="overflow-hidden border-y border-blue-400/20 bg-[#071c2d] py-4 text-white">
         <div className="animate-marquee flex w-max items-center gap-8 whitespace-nowrap px-4">
-          {[...services, ...services].map((service, idx) => (
+          {[...INITIAL_SERVICES, ...INITIAL_SERVICES].map((service, idx) => (
             <div key={`${service.id}-${idx}`} className="inline-flex items-center gap-8">
               <span className="text-sm font-extrabold tracking-wide text-white sm:text-base">
                 {service.title}
@@ -492,12 +400,11 @@ export default function ServicesPageClient() {
         </div>
       </div>
 
-      {/* About Us & Capability Progress Section (matching middle frame of reference image) */}
+      {/* About Us & Capability Progress Section */}
       <section className="bg-white py-20 lg:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-1.5 text-xs font-bold text-[#071c2d] sm:text-sm">
-              <BrandDualDot />
+            <div className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[#1d4ed8]">
               <span>About Us</span>
             </div>
             <h2 className="mt-4 text-3xl font-black leading-tight tracking-tight text-[#071c2d] sm:text-4xl lg:text-5xl">
@@ -537,9 +444,9 @@ export default function ServicesPageClient() {
             {/* Right Copy + 3 Progress Bars with Circular Knobs */}
             <div className="lg:col-span-6">
               <p className="text-base leading-relaxed text-slate-600 sm:text-lg">
-                We combine deep software engineering, applied project research, cloud resilience, and hands-on
-                corporate and school training to help organizations launch faster, operate securely, and upskill their
-                teams for the modern digital economy.
+                Inspired by mission-critical operational intelligence, we bridge applied research, sovereign cloud
+                engineering, and hands-on corporate and school training so organizations can deploy resilient digital
+                systems and upskill their workforce with confidence.
               </p>
 
               <div className="mt-8 space-y-6">
@@ -575,7 +482,7 @@ export default function ServicesPageClient() {
             </div>
           </div>
 
-          {/* 4-Column Stats Row with Dual-Circle Markers */}
+          {/* 4-Column Stats Row */}
           <div className="mt-16 grid grid-cols-2 gap-6 border-t border-slate-200 pt-12 md:grid-cols-4">
             {IMPACT_STATS.map((stat, index) => (
               <div
@@ -588,14 +495,13 @@ export default function ServicesPageClient() {
                   <p className="text-3xl font-black tracking-tight text-[#071c2d] sm:text-4xl">{stat.value}</p>
                   <p className="mt-1 text-xs font-semibold text-slate-500 sm:text-sm">{stat.label}</p>
                 </div>
-                <BrandDualDot />
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Our Services Section (matching bottom frame of reference image in Rashnotech brand colors) */}
+      {/* Our Services Section */}
       <section id="our-services" className="relative overflow-hidden bg-[#071c2d] py-20 text-white lg:py-24">
         {/* Top Diagonal Hatch Strip */}
         <div
@@ -609,8 +515,7 @@ export default function ServicesPageClient() {
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-[#0f2942] px-4 py-1.5 text-xs font-bold text-sky-300 sm:text-sm">
-                <BrandDualDot light />
+              <div className="inline-flex items-center rounded-full border border-white/15 bg-[#0f2942] px-4 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-sky-300">
                 <span>Our Services</span>
               </div>
               <h2 className="mt-4 max-w-xl text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
@@ -621,15 +526,7 @@ export default function ServicesPageClient() {
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={() => setShowAddModal((prev) => !prev)}
-                className="inline-flex items-center gap-2 rounded-full border border-sky-400/40 bg-[#0f2942] px-5 py-3 text-xs font-bold text-sky-300 transition hover:bg-[#1d4ed8] hover:text-white sm:text-sm"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Add Service</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleCategoryChange("All")}
+                onClick={() => setSelectedCategory("All")}
                 className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-bold text-[#071c2d] shadow-md transition hover:bg-sky-300 sm:text-sm"
               >
                 <span>View All Services</span>
@@ -646,7 +543,7 @@ export default function ServicesPageClient() {
                 <button
                   key={category}
                   type="button"
-                  onClick={() => handleCategoryChange(category)}
+                  onClick={() => setSelectedCategory(category)}
                   className={`rounded-full px-4 py-2 text-xs font-bold transition sm:text-sm ${
                     isSelected
                       ? "bg-[#1d4ed8] text-white shadow-md shadow-blue-950/50"
@@ -658,105 +555,6 @@ export default function ServicesPageClient() {
               )
             })}
           </div>
-
-          {/* Add Custom Service Drawer / Form so Rashnotech can add more services anytime */}
-          {showAddModal && (
-            <form
-              onSubmit={handleAddService}
-              className="mt-8 rounded-3xl border border-sky-400/30 bg-[#0f2942] p-6 shadow-2xl"
-            >
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <div>
-                  <h3 className="text-lg font-extrabold text-white">Add a New Service</h3>
-                  <p className="text-xs text-slate-300">
-                    Expand the Rashnotech services catalog with additional solutions, consulting tracks, or training programmes.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="rounded-lg p-1.5 text-slate-300 hover:bg-white/10 hover:text-white"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="mt-5 grid gap-4 md:grid-cols-3">
-                <div>
-                  <label htmlFor="service-title" className="mb-1.5 block text-xs font-bold text-slate-200">
-                    Service Title*
-                  </label>
-                  <input
-                    id="service-title"
-                    required
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="e.g. Data Engineering & BI"
-                    className="h-11 w-full rounded-xl border border-white/15 bg-[#071c2d] px-4 text-sm text-white outline-none focus:border-sky-400"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="service-category" className="mb-1.5 block text-xs font-bold text-slate-200">
-                    Category*
-                  </label>
-                  <select
-                    id="service-category"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value as ServiceItem["category"])}
-                    className="h-11 w-full rounded-xl border border-white/15 bg-[#071c2d] px-4 text-sm text-white outline-none focus:border-sky-400"
-                  >
-                    <option value="Engineering & AI">Engineering &amp; AI</option>
-                    <option value="Design & Research">Design &amp; Research</option>
-                    <option value="Cloud & Security">Cloud &amp; Security</option>
-                    <option value="Training & Growth">Training &amp; Growth</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="service-highlights" className="mb-1.5 block text-xs font-bold text-slate-200">
-                    Key Deliverables (comma-separated)
-                  </label>
-                  <input
-                    id="service-highlights"
-                    value={newHighlights}
-                    onChange={(e) => setNewHighlights(e.target.value)}
-                    placeholder="ETL pipelines, Warehousing, Dashboards"
-                    className="h-11 w-full rounded-xl border border-white/15 bg-[#071c2d] px-4 text-sm text-white outline-none focus:border-sky-400"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <label htmlFor="service-description" className="mb-1.5 block text-xs font-bold text-slate-200">
-                  Service Description*
-                </label>
-                <textarea
-                  id="service-description"
-                  required
-                  rows={2}
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Describe how this service helps clients succeed..."
-                  className="w-full rounded-xl border border-white/15 bg-[#071c2d] p-3.5 text-sm text-white outline-none focus:border-sky-400"
-                />
-              </div>
-
-              <div className="mt-4 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="rounded-xl border border-white/15 px-4 py-2 text-xs font-bold text-slate-200 hover:bg-white/10"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-xl bg-[#1d4ed8] px-5 py-2 text-xs font-bold text-white hover:bg-blue-500"
-                >
-                  Save &amp; Publish Service
-                </button>
-              </div>
-            </form>
-          )}
 
           {/* 3-Column Services Cards Grid (Active card uses bright brand blue with top-text/bottom-image just like reference middle card) */}
           <div className="mt-12 grid gap-7 md:grid-cols-2 lg:grid-cols-3">

@@ -1,7 +1,6 @@
 import assert from "node:assert/strict"
 import { readFile } from "node:fs/promises"
 import { courseJsonLd, courseListJsonLd, courseShareImageUrl, SITE_URL } from "../lib/site.ts"
-import { createConsentState, parseCookieConsent, serializeCookieConsent } from "../lib/cookie-consent.ts"
 
 const root = new URL("../", import.meta.url)
 const read = (path: string) => readFile(new URL(path, root), "utf8")
@@ -54,7 +53,6 @@ record("search favicon metadata", layout.includes('url: "/mylogo.png", sizes: "6
 record("manifest exposes square brand icon", manifest.includes('src: "/mylogo.png", sizes: "619x619", type: "image/png", purpose: "any"') && manifest.includes('purpose: "maskable"'))
 record("crawler policy", robots.includes("sitemap:") && robots.includes("/dashboard/"))
 record("dynamic course sitemap", sitemap.includes("courseUrl(course.slug)") && sitemap.includes("`${SITE_URL}/services`"))
-record("cookie consent serialization and round-trip", parseCookieConsent(serializeCookieConsent(createConsentState("accepted")))?.status === "accepted" && createConsentState("rejected").analytics === false)
 record("LLM-readable public index", llms.includes("## Courses") && llms.includes("Public course pages"))
 record("dynamic course metadata", coursePage.includes("generateMetadata") && coursePage.includes("courseJsonLd") && coursePage.includes("courseShareImageUrl(course.cover_image_url)") && coursePage.includes("images: [shareImage]") && !coursePage.includes('images: [{ url: "/bg_hero.png"'))
 record("course share preview resolves cover image for WhatsApp and OpenGraph", courseShareImageUrl(fixture.cover_image_url) === "https://cdn.example.com/covers/full-stack.jpg" && courseShareImageUrl("/covers/rel.png") === `${SITE_URL}/covers/rel.png` && courseShareImageUrl(null) === `${SITE_URL}/bg_hero.png`)

@@ -97,7 +97,7 @@ assert.match(
 assert.match(page, /mentors\.map/)
 assert.match(page, /translate3d\(-\$\{mentorScrollOffset\}px, 0, 0\)/)
 assert.match(page, /window\.addEventListener\("scroll", updateMentorScroll/)
-assert.match(page, /image: "\/funded\.jpg"/)
+assert.match(page, /image: "https:\/\/i\.postimg\.cc\/TPNQgrwF\/Gemini-Generated-Image-kvomw3kvomw3kvom\.jpg"/)
 assert.match(page, /mentor\.image \?/)
 assert.match(page, /src=\{mentor\.image\}/)
 assert.match(page, /alt=\{`\$\{mentor\.name\}, \$\{mentor\.role\}`\}/)
@@ -127,7 +127,7 @@ const iniStart = page.indexOf('name: "Mr. Ini Ebong"')
 assert.notEqual(abdulrasheedStart, -1)
 assert.notEqual(iniStart, -1)
 const abdulrasheedBlock = page.slice(abdulrasheedStart, iniStart)
-assert.match(abdulrasheedBlock, /image: "\/funded\.jpg"/)
+assert.match(abdulrasheedBlock, /image: "https:\/\/i\.postimg\.cc\/TPNQgrwF\/Gemini-Generated-Image-kvomw3kvomw3kvom\.jpg"/)
 
 for (const [mentor, role] of [
   ["Mr. Abdulrasheed Aliyu", "CEO/Founder"],
@@ -238,7 +238,6 @@ for (const question of [
 // Navigation & Services Page contract
 const publicHeader = await readFile("components/public-site-header.tsx", "utf8")
 const servicesPage = await readFile("app/services/page-client.tsx", "utf8")
-const cookieBanner = await readFile("components/cookie-consent-banner.tsx", "utf8")
 const rootLayout = await readFile("app/layout.tsx", "utf8")
 
 assert.doesNotMatch(page, /AI Features/)
@@ -248,18 +247,18 @@ assert.match(page, /href="\/services"/)
 assert.match(publicHeader, /label: "Research"/)
 assert.match(publicHeader, /label: "Services", href: "\/services"/)
 
-// Cookie consent & UX banner contract
-assert.match(rootLayout, /<CookieConsentBanner \/>/)
-assert.match(cookieBanner, /We use cookies to improve your experience/)
-assert.match(cookieBanner, /Accept All/)
-assert.match(cookieBanner, /Reject/)
-assert.match(cookieBanner, /Continue where you left off/)
+// Custom cookie banner removed in favor of external CMP provider
+assert.doesNotMatch(rootLayout, /CookieConsentBanner/)
 
 // Services page frame & catalog contract
+assert.match(servicesPage, /\+234 8172992396/)
+assert.match(servicesPage, /tel:\+2348172992396/)
+assert.doesNotMatch(servicesPage, /\+1 \(646\) 212-1626/)
+assert.doesNotMatch(servicesPage, /Add Service/)
+assert.doesNotMatch(servicesPage, /BrandDualDot/)
 assert.match(servicesPage, /Elevate Your Brand With Us/)
 assert.match(servicesPage, /Empowering Your Success with Digital Expertise/)
 assert.match(servicesPage, /Boost Your Brand with Our Expertise/)
-assert.match(servicesPage, /Add Service/)
 for (const serviceName of [
   "App Development",
   "Product Design",
