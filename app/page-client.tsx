@@ -358,9 +358,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
-              <div className="bg-blue-600 p-1 rounded-lg">
-                <img src="/mylogo.png" className="w-6 h-6 text-white" alt="Rashnotech" />
-              </div>
+              <img src="/mylogo.png" className="w-7 h-7 object-contain" alt="Rashnotech" />
               <span className="text-xl font-bold tracking-tight text-white">Rashnotech</span>
             </Link>
             <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-300">
@@ -772,7 +770,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
       </section>
 
       {/* Student Reviews Section */}
-      <section ref={reviewsSectionRef} className="py-20 bg-[#071c2d]">
+      <section ref={reviewsSectionRef} className="py-20 bg-[#070b14]">
         <div className="container mx-auto px-6">
           <div className="mb-16 flex flex-col items-center text-center">
             <div className="relative inline-flex items-center rounded-lg border border-white/25 bg-[#142235] px-5 py-2 text-xs font-semibold tracking-wide text-white sm:text-sm">
@@ -794,7 +792,6 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
               const stackedScale = Number((1 - index * 0.02 * collapseFactor).toFixed(3))
               const detailsOpacity =
                 index === 0 ? 1 : Number(Math.min(1, Math.max(0, (reviewsSpreadProgress - 0.15) / 0.85)).toFixed(2))
-              const deckBgTone = ["bg-[#142235]", "bg-[#182940]", "bg-[#1c304b]", "bg-[#213856]"][index]
 
               return (
                 <article
@@ -803,7 +800,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                     transform: `translate3d(${stackedTranslateXPercent}%, ${stackedTranslateYPx}px, 0) rotate(${stackedRotateDeg}deg) scale(${stackedScale})`,
                     zIndex: 40 - index * 10,
                   }}
-                  className={`relative rounded-2xl border border-white/15 ${deckBgTone} p-6 shadow-[0_24px_60px_rgba(0,0,0,0.42)] transition-transform duration-300 ease-out will-change-transform`}
+                  className="relative rounded-2xl border border-white/15 bg-[#142235] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.42)] transition-transform duration-300 ease-out will-change-transform"
                 >
                   <div
                     style={{ opacity: detailsOpacity }}
@@ -826,7 +823,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                       Read more
                     </Link>
                     <div className="mt-6 flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-sm font-bold text-white">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1d4ed8] text-sm font-bold text-white">
                         {review.name
                           .split(" ")
                           .filter(Boolean)
@@ -1225,9 +1222,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
               <span>© Copyright 2026</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="bg-blue-600 p-1 rounded-lg">
-                <img src="/mylogo.png" className="w-5 h-5 text-white" />
-              </div>
+              <img src="/mylogo.png" className="w-6 h-6 object-contain" alt="Rashnotech" />
               <span className="text-xl font-bold tracking-tight text-white">Rashnotech</span>
             </div>
           </div>

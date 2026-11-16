@@ -86,9 +86,7 @@ export default function PublicSiteFooter() {
             <span>© Copyright 2026</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-blue-600 p-1">
-              <img src="/mylogo.png" className="h-5 w-5" alt="Rashnotech" />
-            </div>
+            <img src="/mylogo.png" className="h-6 w-6 object-contain" alt="Rashnotech" />
             <span className="text-xl font-bold tracking-tight text-white">Rashnotech</span>
           </div>
         </div>

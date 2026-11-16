@@ -46,9 +46,10 @@ assert.match(
 )
 assert.match(page, /const studentReviews = \[/)
 assert.match(page, /studentReviews\.slice\(0, 4\)\.map/)
-assert.match(page, /className="py-20 bg-\[#071c2d\]"/)
+assert.match(page, /className="py-20 bg-\[#070b14\]"/)
 assert.match(page, /grid gap-6 md:grid-cols-4/)
-assert.match(page, /rounded-2xl border border-white\/15 \$\{deckBgTone\}/)
+assert.match(page, /rounded-2xl border border-white\/15 bg-\[#142235\]/)
+assert.doesNotMatch(page, /deckBgTone/)
 assert.doesNotMatch(page, /border border-blue-100 bg-white/)
 assert.match(page, />student</)
 assert.doesNotMatch(page, /Rashnotech Student/)
@@ -250,12 +251,20 @@ assert.match(publicHeader, /label: "Services", href: "\/services"/)
 // Custom cookie banner removed in favor of external CMP provider
 assert.doesNotMatch(rootLayout, /CookieConsentBanner/)
 
+// Logo rendered directly without blue background wrapper
+assert.doesNotMatch(page, /bg-blue-600[^>]*>[\s\r\n]*<img src="\/mylogo\.png"/)
+assert.doesNotMatch(publicHeader, /bg-blue-600[^>]*>[\s\r\n]*<img src="\/mylogo\.png"/)
+assert.doesNotMatch(servicesPage, /bg-\[#1d4ed8\][^>]*>[\s\r\n]*<img src="\/mylogo\.png"/)
+
 // Services page frame & catalog contract
 assert.match(servicesPage, /\+234 8172992396/)
 assert.match(servicesPage, /tel:\+2348172992396/)
 assert.doesNotMatch(servicesPage, /\+1 \(646\) 212-1626/)
 assert.doesNotMatch(servicesPage, /Add Service/)
 assert.doesNotMatch(servicesPage, /BrandDualDot/)
+assert.doesNotMatch(servicesPage, /gradient/)
+assert.doesNotMatch(servicesPage, /\/bg_hero\.png/)
+assert.match(servicesPage, /id="our-services" className="relative overflow-hidden bg-\[#070b14\]/)
 assert.match(servicesPage, /Elevate Your Brand With Us/)
 assert.match(servicesPage, /Empowering Your Success with Digital Expertise/)
 assert.match(servicesPage, /Boost Your Brand with Our Expertise/)

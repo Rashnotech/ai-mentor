@@ -59,7 +59,7 @@ export const INITIAL_SERVICES: ServiceItem[] = [
     description:
       "Applied AI, operational intelligence, academic, and technical project research that unifies real-world data streams, simulation models, and publication-grade validation.",
     highlights: ["Applied AI & operational modeling", "Technical feasibility & prototyping", "Industry & academic research"],
-    image: "/bg_hero.png",
+    image: "/hub-4.jpg",
   },
   {
     id: "ai-automation",
@@ -86,7 +86,7 @@ export const INITIAL_SERVICES: ServiceItem[] = [
     description:
       "24/7 production reliability, automated CI/CD delivery pipelines, observability dashboards, and zero-downtime incident engineering for critical infrastructure.",
     highlights: ["SLO/SLA monitoring & alerting", "Automated CI/CD & GitOps", "Incident response & resilience testing"],
-    image: "/bg_hero.png",
+    image: "/hub-4.jpg",
   },
   {
     id: "cloud-architecture",
@@ -113,7 +113,7 @@ export const INITIAL_SERVICES: ServiceItem[] = [
     description:
       "Tailored corporate upskilling bootcamps, executive AI workshops, and practical school STEM, coding, and engineering programmes for institutions and enterprise teams.",
     highlights: ["Corporate engineering & AI bootcamps", "School coding & STEM academies", "Custom curriculum & mentorship"],
-    image: "/bg_hero.png",
+    image: "/hub-4.jpg",
   },
 ]
 
@@ -207,9 +207,7 @@ export default function ServicesPageClient() {
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="rounded-lg bg-[#1d4ed8] p-1.5 shadow-sm">
-              <img src="/mylogo.png" className="h-6 w-6" alt="Rashnotech" />
-            </div>
+            <img src="/mylogo.png" className="h-7 w-7 object-contain" alt="Rashnotech" />
             <span className="text-xl font-black tracking-tight text-[#071c2d]">Rashnotech</span>
           </Link>
 
@@ -288,14 +286,6 @@ export default function ServicesPageClient() {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-[#f4f7fb] py-16 lg:py-24">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-45"
-          style={{
-            backgroundImage: "radial-gradient(rgba(29, 78, 216, 0.14) 1.5px, transparent 1.5px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
-
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
           {/* Left Copy Column */}
           <div className="lg:col-span-6">
@@ -350,9 +340,9 @@ export default function ServicesPageClient() {
                 </div>
                 <div className="overflow-hidden rounded-[28px] border-4 border-white bg-[#071c2d] shadow-xl">
                   <img
-                    src="/bg_hero.png"
+                    src="/funded.jpg"
                     alt="Digital product design and research"
-                    className="h-44 w-full object-cover sm:h-52"
+                    className="h-44 w-full object-cover object-top sm:h-52"
                   />
                 </div>
                 <div className="-mt-4 overflow-hidden rounded-[28px] border-4 border-white bg-[#071c2d] shadow-xl">
@@ -502,20 +492,11 @@ export default function ServicesPageClient() {
       </section>
 
       {/* Our Services Section */}
-      <section id="our-services" className="relative overflow-hidden bg-[#071c2d] py-20 text-white lg:py-24">
-        {/* Top Diagonal Hatch Strip */}
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-5 opacity-25"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(135deg, rgba(56,189,248,0.5) 0px, rgba(56,189,248,0.5) 2px, transparent 2px, transparent 10px)",
-          }}
-        />
-
+      <section id="our-services" className="relative overflow-hidden bg-[#070b14] py-20 text-white lg:py-24">
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div>
-              <div className="inline-flex items-center rounded-full border border-white/15 bg-[#0f2942] px-4 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-sky-300">
+              <div className="inline-flex items-center rounded-full border border-white/15 bg-[#142235] px-4 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-sky-300">
                 <span>Our Services</span>
               </div>
               <h2 className="mt-4 max-w-xl text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
@@ -547,7 +528,7 @@ export default function ServicesPageClient() {
                   className={`rounded-full px-4 py-2 text-xs font-bold transition sm:text-sm ${
                     isSelected
                       ? "bg-[#1d4ed8] text-white shadow-md shadow-blue-950/50"
-                      : "border border-white/10 bg-[#0f2942] text-slate-300 hover:border-white/25 hover:text-white"
+                      : "border border-white/10 bg-[#142235] text-slate-300 hover:border-white/25 hover:text-white"
                   }`}
                 >
                   {category}
@@ -571,18 +552,18 @@ export default function ServicesPageClient() {
                   className={`group flex cursor-pointer flex-col justify-between rounded-[28px] border p-5 transition-all duration-300 ${
                     isHighlighted
                       ? "-translate-y-1.5 border-sky-400/60 bg-[#1d4ed8] text-white shadow-[0_24px_60px_rgba(29,78,216,0.45)]"
-                      : "border-white/10 bg-[#0f2942] text-white hover:-translate-y-1 hover:border-white/25"
+                      : "border-white/10 bg-[#142235] text-white hover:-translate-y-1 hover:border-white/25"
                   }`}
                 >
                   {/* Non-highlighted card: Image on top, copy on bottom */}
                   {!isHighlighted && (
-                    <div className="relative mb-5 overflow-hidden rounded-2xl bg-[#071c2d]">
+                    <div className="relative mb-5 overflow-hidden rounded-2xl bg-[#070b14]">
                       <img
                         src={service.image}
                         alt={service.title}
                         className="h-48 w-full object-cover transition duration-500 group-hover:scale-105"
                       />
-                      <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-[#071c2d]/85 px-3 py-1 text-[11px] font-bold text-sky-300 backdrop-blur-md">
+                      <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-[#070b14]/90 px-3 py-1 text-[11px] font-bold text-sky-300">
                         <IconComponent className="h-3.5 w-3.5" />
                         <span>{service.category}</span>
                       </div>
@@ -645,13 +626,13 @@ export default function ServicesPageClient() {
 
                   {/* Highlighted card: Image on bottom (matching center card in the uploaded reference frame) */}
                   {isHighlighted && (
-                    <div className="relative mt-6 overflow-hidden rounded-2xl border border-white/20 bg-[#071c2d]">
+                    <div className="relative mt-6 overflow-hidden rounded-2xl border border-white/20 bg-[#070b14]">
                       <img
                         src={service.image}
                         alt={service.title}
                         className="h-48 w-full object-cover transition duration-500 group-hover:scale-105"
                       />
-                      <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-[#071c2d]/85 px-3 py-1 text-[11px] font-bold text-sky-300 backdrop-blur-md">
+                      <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-[#070b14]/90 px-3 py-1 text-[11px] font-bold text-sky-300">
                         <IconComponent className="h-3.5 w-3.5" />
                         <span>{service.category}</span>
                       </div>
@@ -662,15 +643,6 @@ export default function ServicesPageClient() {
             })}
           </div>
         </div>
-
-        {/* Bottom Diagonal Hatch Strip */}
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-5 opacity-25"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(135deg, rgba(56,189,248,0.5) 0px, rgba(56,189,248,0.5) 2px, transparent 2px, transparent 10px)",
-          }}
-        />
       </section>
 
       <PublicSiteFooter />

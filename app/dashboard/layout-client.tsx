@@ -106,9 +106,7 @@ export default function DashboardLayoutClient({
           <div className="h-full flex flex-col">
             <div className="p-6 border-b border-gray-100">
               <Link href="/dashboard" className="flex items-center gap-2 text-blue-600">
-                <div className="p-1 bg-blue-600 rounded-lg">
-                  <img src="/mylogo.png" className="w-5 h-5 text-white" />
-                </div>
+                <img src="/mylogo.png" className="w-6 h-6 object-contain" alt="Rashnotech" />
                 <span className="font-bold text-xl tracking-tight text-gray-900">Rashnotech</span>
               </Link>
             </div>

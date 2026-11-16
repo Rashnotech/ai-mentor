@@ -78,9 +78,7 @@ export default function MentorLayoutClient({
           <div className="h-full flex flex-col">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
               <Link href="/mentor" className="flex items-center gap-2 text-blue-600">
-                <div className="p-1 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg">
-                  <img src="/mylogo.png" className="w-6 h-6 text-white" />
-                </div>
+                <img src="/mylogo.png" className="w-6 h-6 object-contain" alt="Rashnotech" />
                 <span className="font-bold text-xl tracking-tight text-gray-900">Rashnotech</span>
               </Link>
               <Button variant="ghost" size="icon" onClick={() => setShowMobileMenu(false)}>

@@ -12,9 +12,7 @@ export default function InternshipHeader() {
       <div className="h-16 w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
-            <div className="bg-blue-600 p-1 rounded-lg">
-              <img src="/mylogo.png" className="w-6 h-6 text-white" alt="Rashnotech" />
-            </div>
+            <img src="/mylogo.png" className="w-7 h-7 object-contain" alt="Rashnotech" />
             <span className="text-xl font-bold tracking-tight text-white">Rashnotech</span>
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-300">

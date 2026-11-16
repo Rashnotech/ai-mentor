@@ -20,9 +20,7 @@ export default function PublicSiteHeader() {
       <div className="h-16 w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
-            <div className="rounded-lg bg-blue-600 p-1">
-              <img src="/mylogo.png" className="h-6 w-6" alt="Rashnotech" />
-            </div>
+            <img src="/mylogo.png" className="h-7 w-7 object-contain" alt="Rashnotech" />
             <span className="text-xl font-bold tracking-tight text-white">Rashnotech</span>
           </Link>
           <div className="hidden items-center gap-6 text-sm font-medium text-gray-300 md:flex">
