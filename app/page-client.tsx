@@ -453,7 +453,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
             </h1>
             
             <p className="text-base text-gray-400 leading-relaxed max-w-xl">
-             The world is changing rapidly, but learning often isn't. While technology, industries, and AI continue to evolve, many people still rely on outdated methods that focus on memorization rather than application. We believe education should develop critical thinking, problem-solving, and adaptability, because the real goal isn't just learning today's skills, but building the ability to learn tomorrow's.
+             Education should develop critical thinking, problem-solving, and adaptability, because the real goal isn't just learning today's skills, but building the ability to learn tomorrow's.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
