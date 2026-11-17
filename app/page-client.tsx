@@ -449,11 +449,11 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
         <div className="container mx-auto px-6 relative">
           <div className="max-w-3xl space-y-6 animate-fade-up">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.15] text-white">
-              Learn data and AI skills
+              Develop skills for the opportunities ahead
             </h1>
             
             <p className="text-base text-gray-400 leading-relaxed max-w-xl">
-              Master in-demand skills in Python, ChatGPT, Power BI, and more through interactive courses, real-world projects, and industry recognized certifications
+             The world is changing rapidly, but learning often isn't. While technology, industries, and AI continue to evolve, many people still rely on outdated methods that focus on memorization rather than application. We believe education should develop critical thinking, problem-solving, and adaptability, because the real goal isn't just learning today's skills, but building the ability to learn tomorrow's.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
