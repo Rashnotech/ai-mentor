@@ -180,7 +180,7 @@ export function ProjectsView() {
                 return (
                   <Link
                     key={project.project_id}
-                    href={`/courses/${project.course_slug}/learn`}
+                    href={`/dashboard/courses/${project.course_slug}/learn`}
                     className="block p-6 rounded-xl border border-gray-200 bg-white hover:border-blue-300 hover:shadow-md transition-all group"
                   >
                     <div className="flex items-center justify-between">

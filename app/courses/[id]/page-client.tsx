@@ -104,7 +104,7 @@ export default function CourseDetailsPage({ params, initialCourse }: { params: P
     onSuccess: () => {
       toast.success("Successfully enrolled! Redirecting to course...")
       queryClient.invalidateQueries({ queryKey: ["my-courses"] })
-      router.push(`/courses/${slug}/learn`)
+      router.push(`/dashboard/courses/${slug}/learn`)
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to enroll in course")
@@ -139,7 +139,7 @@ export default function CourseDetailsPage({ params, initialCourse }: { params: P
     // After verified payment, redirect to course learning page
     setShowPaymentModal(false)
     queryClient.invalidateQueries({ queryKey: ["my-courses"] })
-    router.push(`/courses/${slug}/learn`)
+    router.push(`/dashboard/courses/${slug}/learn`)
   }
 
   const handleLogout = async () => {

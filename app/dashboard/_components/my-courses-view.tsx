@@ -168,7 +168,7 @@ export function MyCoursesView() {
                       Rate
                     </button>
                     <Link 
-                      href={`/courses/${course.slug}/learn`} 
+                      href={`/dashboard/courses/${course.slug}/learn`} 
                       className="text-sm font-medium text-blue-600 hover:underline"
                     >
                       {course.progress_percent > 0 ? "Continue" : "Start"}

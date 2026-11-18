@@ -63,10 +63,21 @@ export default function DashboardLayoutClient({
     .toUpperCase()
     .slice(0, 2) || "U"
 
-  // Get skill level display
-  const skillLevel = user?.skill_level 
+  // Get user handle / subtitle display
+  const userHandle = user?.email
+    ? `@${user.email.split("@")[0]}`
+    : user?.skill_level
     ? user.skill_level.charAt(0).toUpperCase() + user.skill_level.slice(1) + " Level"
     : "Student"
+
+  const getHeaderTitle = () => {
+    if (pathname.startsWith("/dashboard/courses")) return "My Courses"
+    if (pathname.startsWith("/dashboard/sessions")) return "Sessions"
+    if (pathname.startsWith("/dashboard/projects")) return "Projects"
+    if (pathname.startsWith("/dashboard/community")) return "Community"
+    if (pathname.startsWith("/dashboard/profile")) return "Profile"
+    return "Dashboard"
+  }
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -91,7 +102,7 @@ export default function DashboardLayoutClient({
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 flex font-sans text-gray-900">
+      <div className="min-h-screen bg-[#FAFAFA] flex font-sans text-gray-900">
         {/* Mobile Sidebar Overlay */}
         {showMobileMenu && (
           <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setShowMobileMenu(false)} />
@@ -99,56 +110,65 @@ export default function DashboardLayoutClient({
 
         {/* Sidebar */}
         <aside
-          className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out ${
+          className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#F4F5F2] border-r border-gray-200/80 transform transition-transform duration-200 ease-in-out ${
             showMobileMenu ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }`}
         >
           <div className="h-full flex flex-col">
-            <div className="p-6 border-b border-gray-100">
-              <Link href="/dashboard" className="flex items-center gap-2 text-blue-600">
-                <img src="/mylogo.png" className="w-6 h-6 object-contain" alt="Rashnotech" />
-                <span className="font-bold text-xl tracking-tight text-gray-900">Rashnotech</span>
+            <div className="p-6">
+              <Link href="/dashboard" className="flex items-center gap-2.5 text-blue-600">
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                  <img src="/mylogo.png" className="w-5 h-5 object-contain" alt="Rashnotech" />
+                </div>
+                <span className="font-bold text-lg tracking-tight text-gray-900">Rashnotech</span>
               </Link>
             </div>
 
-            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+            <nav className="flex-1 px-4 py-2 space-y-1.5 overflow-y-auto">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon
                 const active = isActive(item.href)
                 return (
-                  <Link key={item.href} href={item.href}>
-                    <Button
-                      variant="ghost"
-                      className={`w-full justify-start gap-3 font-medium ${
+                  <Link key={item.href} href={item.href} className="block">
+                    <div
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm transition-all duration-200 cursor-pointer ${
                         active
-                          ? "text-blue-600 bg-blue-50 font-semibold"
-                          : "text-gray-600 hover:bg-gray-50"
+                          ? "text-blue-600 bg-[#EBF2FF] font-semibold"
+                          : "text-gray-500 hover:bg-gray-200/50 hover:text-gray-800 font-medium"
                       }`}
                       onClick={() => setShowMobileMenu(false)}
                     >
-                      <Icon className="w-5 h-5" />
-                      {item.label}
-                    </Button>
+                      <span className="flex items-center gap-3">
+                        <Icon className={`w-5 h-5 ${active ? "text-blue-600" : "text-gray-400"}`} />
+                        {item.label}
+                      </span>
+                      {active && <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />}
+                    </div>
                   </Link>
                 )
               })}
             </nav>
 
-            <div className="p-4 border-t border-gray-100">
-              <div className="p-4 rounded-xl bg-gray-900 text-white">
-                <p className="text-sm font-medium mb-1">Pro Plan</p>
-                <p className="text-xs text-gray-400 mb-3">Get unlimited AI access</p>
-                <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0">
-                  Upgrade
-                </Button>
+            <div className="p-4">
+              <div className="p-4 rounded-2xl bg-white border border-gray-200/70 shadow-xs">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <p className="text-sm font-semibold text-gray-900 mb-0.5">Keep Learning</p>
+                <p className="text-xs text-gray-500 mb-3">Track modules &amp; complete your projects</p>
+                <Link href="/dashboard/courses" className="block">
+                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0 rounded-xl">
+                    Explore Courses
+                  </Button>
+                </Link>
               </div>
               <div className="mt-4 flex items-center gap-3 px-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
                   {userInitials}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{user?.full_name || "User"}</p>
-                  <p className="text-xs text-gray-500 truncate">{skillLevel}</p>
+                  <p className="text-xs text-gray-500 truncate">{userHandle}</p>
                 </div>
               </div>
             </div>
@@ -156,10 +176,10 @@ export default function DashboardLayoutClient({
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen">
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen bg-white">
           {/* Header */}
-          <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6 shrink-0">
-            <div className="flex items-center gap-4">
+          <header className="h-20 border-b border-gray-100 bg-white flex items-center justify-between px-6 lg:px-10 shrink-0">
+            <div className="flex items-center gap-4 lg:gap-8 flex-1 min-w-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -168,13 +188,16 @@ export default function DashboardLayoutClient({
               >
                 <Menu className="w-6 h-6" />
               </Button>
-              <div className="hidden sm:flex relative w-64 lg:w-96">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <h1 className="text-xl font-bold text-gray-900 tracking-tight shrink-0">
+                {getHeaderTitle()}
+              </h1>
+              <div className="hidden sm:flex relative w-64 lg:w-96 max-w-md">
                 <input
                   type="text"
-                  placeholder="Search courses, projects..."
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  placeholder="Search Class..."
+                  className="w-full pl-4 pr-10 py-2.5 bg-[#F7F7F7] border border-transparent rounded-xl text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
                 />
+                <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -182,7 +205,7 @@ export default function DashboardLayoutClient({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                  className="relative text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
                   onClick={() => setShowNotifications(!showNotifications)}
                 >
                   <Bell className="w-5 h-5" />
@@ -216,12 +239,23 @@ export default function DashboardLayoutClient({
 
               {/* Profile Dropdown Menu */}
               <div className="relative">
-                <div
+                <button
+                  type="button"
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 border border-blue-200 flex items-center justify-center text-white font-bold text-xs cursor-pointer hover:opacity-90 transition-all"
+                  className="flex items-center gap-3 cursor-pointer hover:opacity-90 transition-all text-left"
                 >
-                  {userInitials}
-                </div>
+                  <div className="w-10 h-10 rounded-full bg-blue-600 border border-blue-200 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                    {userInitials}
+                  </div>
+                  <div className="hidden md:block min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 leading-tight truncate">
+                      {user?.full_name || "User"}
+                    </p>
+                    <p className="text-xs text-gray-400 leading-tight truncate mt-0.5">
+                      {userHandle}
+                    </p>
+                  </div>
+                </button>
 
                 {showProfileMenu && (
                   <>
@@ -265,7 +299,7 @@ export default function DashboardLayoutClient({
           </header>
 
           {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto p-6 lg:p-8">
+          <div className="flex-1 overflow-y-auto p-6 lg:px-10 lg:py-8">
             <div className="max-w-7xl mx-auto">{children}</div>
           </div>
         </main>

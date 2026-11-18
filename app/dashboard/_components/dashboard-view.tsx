@@ -126,7 +126,6 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
                   className="group p-4 rounded-xl border border-gray-200 bg-white hover:border-blue-200 hover:shadow-md transition-all"
                 >
                   <div className="h-32 bg-gray-100 rounded-lg mb-4 overflow-hidden relative">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     {course.cover_image_url ? (
                       <img 
                         src={course.cover_image_url} 
@@ -134,7 +133,7 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-blue-100 flex items-center justify-center text-blue-300">
+                      <div className="w-full h-full bg-blue-100 flex items-center justify-center text-blue-500">
                         <BookOpen className="w-8 h-8" />
                       </div>
                     )}
@@ -150,7 +149,7 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
                     />
                   </div>
                   <Link
-                    href={`/courses/${course.slug}/learn`}
+                    href={`/dashboard/courses/${course.slug}/learn`}
                     className="block w-full text-center py-2 rounded-lg bg-blue-50 text-blue-700 font-medium text-sm group-hover:bg-blue-600 group-hover:text-white transition-colors"
                   >
                     {course.progress_percent > 0 ? "Continue Learning" : "Start Course"}
@@ -182,7 +181,7 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
                     {activeCourse.completed_lessons}/{activeCourse.total_lessons} Lessons Done
                   </div>
                 </div>
-                <Link href={`/courses/${activeCourse.slug}/learn`} className="block w-full">
+                <Link href={`/dashboard/courses/${activeCourse.slug}/learn`} className="block w-full">
                   <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                     Continue Course
                   </Button>
