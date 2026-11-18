@@ -131,7 +131,7 @@ const mentors = [
     role: "Cybersecurity",
     topic: "Cybersecurity and digital safety",
     accent: "from-cyan-500 via-blue-400 to-indigo-300",
-    image: null,
+    image: "https://i.postimg.cc/1RJrHtq1/image.png",
   },
   {
     name: "Mr Badru Aliyu",
@@ -449,7 +449,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
         <div className="container mx-auto px-6 relative">
           <div className="max-w-3xl space-y-6 animate-fade-up">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.15] text-white">
-              Develop skills for the opportunities ahead
+              Develop skills for the <br /> opportunities ahead
             </h1>
             
             <p className="text-base text-gray-400 leading-relaxed max-w-xl">
