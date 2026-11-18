@@ -57,4 +57,17 @@ assert.match(dashboardLearnPage, /<div className="h-full flex flex-col lg:flex-r
 assert.match(dashboardLearnPage, /className="min-w-0 flex-1 h-full overflow-y-auto p-6 lg:px-10 lg:py-8"/)
 assert.match(dashboardLearnPage, /<aside className="hidden lg:flex lg:flex-col w-\[330px\] xl:w-\[360px\] shrink-0 h-full border-l border-gray-100 bg-white overflow-y-auto p-6">/)
 
+// 8. Dashboard welcome stat cards use solid colors, AI Mentor Feedback shows only latest message, AI guidance removed from project view, and courses/projects views revamped
+assert.match(dashboardView, /bg-\[#2563EB\] text-white/)
+assert.match(dashboardView, /bg-\[#EA580C\] text-white/)
+assert.match(dashboardView, /bg-\[#16A34A\] text-white/)
+assert.doesNotMatch(dashboardView, /bg-opacity-50/)
+assert.match(dashboardView, /const latestFeedback = mentorFeedback\[0\] \|\| null/)
+assert.doesNotMatch(dashboardView, /showAllFeedback/)
+assert.doesNotMatch(dashboardLearnPage, /AI Guidance/)
+assert.doesNotMatch(dashboardLearnPage, /startProject/)
+assert.match(projectsView, /bg-\[#2563EB\] text-white/)
+assert.match(projectsView, /bg-\[#EA580C\] text-white/)
+assert.match(projectsView, /bg-\[#16A34A\] text-white/)
+
 console.log("Dashboard learn contract: PASS")

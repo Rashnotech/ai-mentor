@@ -90,6 +90,33 @@ const checks = [
       dashboardLearnPage.includes('className="min-w-0 flex-1 h-full overflow-y-auto p-6 lg:px-10 lg:py-8"') &&
       dashboardLearnPage.includes('<aside className="hidden lg:flex lg:flex-col w-[330px] xl:w-[360px] shrink-0 h-full border-l border-gray-100 bg-white overflow-y-auto p-6">'),
   ],
+  [
+    "dashboard welcome stat cards use solid colors (#2563EB, #EA580C, #16A34A) and no opacity washes",
+    dashboardView.includes("bg-[#2563EB] text-white") &&
+      dashboardView.includes("bg-[#EA580C] text-white") &&
+      dashboardView.includes("bg-[#16A34A] text-white") &&
+      !dashboardView.includes("bg-opacity-50"),
+  ],
+  [
+    "AI Mentor Feedback displays only the single latest message instead of a list",
+    dashboardView.includes("const latestFeedback = mentorFeedback[0] || null") &&
+      !dashboardView.includes("showAllFeedback") &&
+      !dashboardView.includes("mentorFeedback.slice(0, 3)"),
+  ],
+  [
+    "AI Guidance is removed from the in-dashboard project view",
+    !dashboardLearnPage.includes("AI Guidance") &&
+      !dashboardLearnPage.includes("startProject") &&
+      !dashboardLearnPage.includes("showGuidance"),
+  ],
+  [
+    "courses and projects views use revamped solid-color cards and status badges",
+    myCoursesView.includes("Enrolled Classes") &&
+      myCoursesView.includes("bg-[#16A34A] text-white") &&
+      projectsView.includes("bg-[#2563EB] text-white") &&
+      projectsView.includes("bg-[#EA580C] text-white") &&
+      projectsView.includes("bg-[#16A34A] text-white"),
+  ],
 ]
 
 const passed = checks.filter(([, ok]) => ok).length

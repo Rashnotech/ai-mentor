@@ -24,9 +24,6 @@ import {
   RotateCcw,
   XCircle,
   FileCheck,
-  Compass,
-  Eye,
-  EyeOff,
   Lock,
   Layers,
   PanelRightOpen,
@@ -348,9 +345,6 @@ function ProjectContentView({
 }: ProjectContentViewProps) {
   const [linkValue, setLinkValue] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [guidance, setGuidance] = useState<{ title: string; message: string } | null>(null)
-  const [isLoadingGuidance, setIsLoadingGuidance] = useState(!previewMode)
-  const [showGuidance, setShowGuidance] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState("")
   const [isUpdating, setIsUpdating] = useState(false)
@@ -385,25 +379,6 @@ function ProjectContentView({
     }
   }
 
-  useEffect(() => {
-    if (previewMode) return
-    let cancelled = false
-    setIsLoadingGuidance(true)
-    setShowGuidance(true)
-    studentCoursesApi
-      .startProject(project.project_id)
-      .then((res) => {
-        if (!cancelled) setGuidance({ title: res.guidance.title, message: res.guidance.message })
-      })
-      .catch((error) => console.error("Failed to load AI mentor guidance:", error))
-      .finally(() => {
-        if (!cancelled) setIsLoadingGuidance(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [project.project_id, previewMode])
-
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div>
@@ -412,37 +387,6 @@ function ProjectContentView({
           Chapter {moduleOrder} - Project: {project.title}
         </p>
       </div>
-
-      {!previewMode && (isLoadingGuidance || guidance) && (
-        <div className="rounded-xl border border-blue-100 bg-blue-50 overflow-hidden">
-          <button
-            onClick={() => setShowGuidance((prev) => !prev)}
-            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
-          >
-            <span className="flex items-center gap-2 text-sm font-semibold text-blue-900">
-              <Compass className="w-4 h-4 text-blue-600" />
-              AI Guidance
-            </span>
-            {showGuidance ? (
-              <EyeOff className="w-4 h-4 text-blue-500" />
-            ) : (
-              <Eye className="w-4 h-4 text-blue-500" />
-            )}
-          </button>
-          {showGuidance && (
-            <div className="px-4 pb-4">
-              {isLoadingGuidance ? (
-                <div className="flex items-center gap-2 text-sm text-blue-700">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Getting guidance from your AI mentor...
-                </div>
-              ) : (
-                <p className="text-sm leading-relaxed text-blue-900">{guidance?.message}</p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="rounded-2xl border border-gray-200 bg-[#F8F9FA] p-5 sm:p-6">
         <div className="mb-4 flex items-start gap-3">

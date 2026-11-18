@@ -1,7 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Folder, BookOpen, ExternalLink, Loader2, RefreshCw, AlertCircle, Clock, CheckCircle2, XCircle } from "lucide-react"
+import {
+  Folder,
+  BookOpen,
+  Loader2,
+  RefreshCw,
+  AlertCircle,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Code2,
+  Layers,
+  ArrowRight,
+  MessageSquare,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -40,31 +53,58 @@ export function ProjectsView() {
     fetchProjects()
   }, [])
 
-  // Map status to display format
+  // Map status to solid display format
   const getStatusDisplay = (status: string) => {
     switch (status) {
       case "approved":
-        return { label: "Completed", color: "bg-green-100 text-green-700", icon: CheckCircle2 }
+        return {
+          label: "Completed",
+          badgeClass: "bg-[#16A34A] text-white",
+          iconBoxClass: "bg-[#DCFCE7] text-[#15803D]",
+          icon: CheckCircle2,
+        }
       case "submitted":
-        return { label: "Submitted", color: "bg-yellow-100 text-yellow-700", icon: Clock }
+        return {
+          label: "Submitted",
+          badgeClass: "bg-[#D97706] text-white",
+          iconBoxClass: "bg-[#FEF3C7] text-[#B45309]",
+          icon: Clock,
+        }
       case "in_progress":
-        return { label: "In Progress", color: "bg-blue-100 text-blue-700", icon: Clock }
+        return {
+          label: "In Progress",
+          badgeClass: "bg-[#2563EB] text-white",
+          iconBoxClass: "bg-[#EBF2FF] text-[#2563EB]",
+          icon: Clock,
+        }
       case "rejected":
-        return { label: "Needs Revision", color: "bg-red-100 text-red-700", icon: XCircle }
+        return {
+          label: "Needs Revision",
+          badgeClass: "bg-[#DC2626] text-white",
+          iconBoxClass: "bg-[#FEE2E2] text-[#B91C1C]",
+          icon: XCircle,
+        }
       default:
-        return { label: "Not Started", color: "bg-gray-100 text-gray-600", icon: Folder }
+        return {
+          label: "Not Started",
+          badgeClass: "bg-gray-200 text-gray-700",
+          iconBoxClass: "bg-[#F4F5F7] text-gray-600",
+          icon: Code2,
+        }
     }
   }
 
   // Filter projects
-  const filteredProjects = filterStatus === "all" 
-    ? projects 
-    : projects.filter((p) => {
-        if (filterStatus === "completed") return p.status === "approved"
-        if (filterStatus === "in_progress") return p.status === "in_progress" || p.status === "submitted"
-        if (filterStatus === "not_started") return p.status === "not_started"
-        return true
-      })
+  const filteredProjects =
+    filterStatus === "all"
+      ? projects
+      : projects.filter((p) => {
+          if (filterStatus === "completed") return p.status === "approved"
+          if (filterStatus === "in_progress")
+            return p.status === "in_progress" || p.status === "submitted"
+          if (filterStatus === "not_started") return p.status === "not_started"
+          return true
+        })
 
   // Pagination logic
   const totalPages = Math.ceil(filteredProjects.length / projectsPerPage)
@@ -75,59 +115,92 @@ export function ProjectsView() {
     setCurrentPage(page)
   }
 
+  const filterTabs = [
+    { id: "all", label: "All Projects" },
+    { id: "in_progress", label: "In Progress" },
+    { id: "completed", label: "Completed" },
+    { id: "not_started", label: "Not Started" },
+  ]
+
   return (
-    <div className="animate-in fade-in duration-500">
-      <div className="flex items-center justify-between mb-4">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">My Projects</h2>
-          <p className="text-sm text-gray-500 mt-1">Hands-on projects from your enrolled courses</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Hands-on portfolio projects from your enrolled courses
+          </p>
         </div>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={fetchProjects}
           disabled={isLoading}
-          className="text-gray-500 hover:text-gray-700"
+          className="text-gray-600 hover:text-gray-900 rounded-xl border-gray-200"
         >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-4 h-4 mr-1.5 ${isLoading ? "animate-spin" : ""}`} />
+          Refresh
         </Button>
       </div>
 
-      {/* Stats */}
+      {/* Three Solid Color Project Stat Cards */}
       {!isLoading && !error && projects.length > 0 && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
-            <div className="text-2xl font-bold text-blue-700">{totalCount}</div>
-            <div className="text-sm text-blue-600">Total Projects</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 rounded-2xl bg-[#2563EB] text-white shadow-sm flex items-center justify-between">
+            <div>
+              <div className="text-sm font-medium text-blue-100 mb-1">Total Projects</div>
+              <div className="text-4xl font-bold tracking-tight">{totalCount}</div>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-[#1D4ED8] flex items-center justify-center shrink-0">
+              <Code2 className="w-6 h-6 text-white" />
+            </div>
           </div>
-          <div className="p-4 rounded-xl bg-orange-50 border border-orange-100">
-            <div className="text-2xl font-bold text-orange-700">{inProgressCount}</div>
-            <div className="text-sm text-orange-600">In Progress</div>
+
+          <div className="p-6 rounded-2xl bg-[#EA580C] text-white shadow-sm flex items-center justify-between">
+            <div>
+              <div className="text-sm font-medium text-orange-100 mb-1">In Progress</div>
+              <div className="text-4xl font-bold tracking-tight">{inProgressCount}</div>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-[#C2410C] flex items-center justify-center shrink-0">
+              <Clock className="w-6 h-6 text-white" />
+            </div>
           </div>
-          <div className="p-4 rounded-xl bg-green-50 border border-green-100">
-            <div className="text-2xl font-bold text-green-700">{completedCount}</div>
-            <div className="text-sm text-green-600">Completed</div>
+
+          <div className="p-6 rounded-2xl bg-[#16A34A] text-white shadow-sm flex items-center justify-between">
+            <div>
+              <div className="text-sm font-medium text-green-100 mb-1">Completed</div>
+              <div className="text-4xl font-bold tracking-tight">{completedCount}</div>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-[#15803D] flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-6 h-6 text-white" />
+            </div>
           </div>
         </div>
       )}
 
-      {/* Filter */}
+      {/* Filter Pill Bar */}
       {!isLoading && !error && projects.length > 0 && (
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-sm text-gray-500">Filter:</span>
-          <select
-            value={filterStatus}
-            onChange={(e) => {
-              setFilterStatus(e.target.value)
-              setCurrentPage(1)
-            }}
-            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Projects</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="not_started">Not Started</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-2">
+          {filterTabs.map((tab) => {
+            const active = filterStatus === tab.id
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  setFilterStatus(tab.id)
+                  setCurrentPage(1)
+                }}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                  active
+                    ? "bg-[#2563EB] text-white"
+                    : "bg-[#F4F5F7] text-gray-600 hover:bg-gray-200/80"
+                }`}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
         </div>
       )}
 
@@ -154,9 +227,9 @@ export function ProjectsView() {
 
       {/* Empty State */}
       {!isLoading && !error && projects.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16">
+        <div className="flex flex-col items-center justify-center py-16 bg-[#F8F9FA] rounded-2xl border border-gray-200">
           <Folder className="w-12 h-12 text-gray-300 mb-3" />
-          <p className="text-gray-600 mb-2">No projects available</p>
+          <p className="text-gray-700 font-semibold mb-1">No projects available</p>
           <p className="text-gray-400 text-sm text-center max-w-md">
             Projects will appear here once you enroll in a course that has hands-on projects.
           </p>
@@ -166,91 +239,123 @@ export function ProjectsView() {
       {/* Projects Grid */}
       {!isLoading && !error && projects.length > 0 && (
         <>
-          <div className="grid gap-4 mb-6">
-            {paginatedProjects.length === 0 ? (
-              <div className="p-8 text-center border border-gray-200 rounded-xl bg-white">
-                <Folder className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">No projects found matching your filter.</p>
-              </div>
-            ) : (
-              paginatedProjects.map((project) => {
+          {paginatedProjects.length === 0 ? (
+            <div className="p-10 text-center border border-gray-200 rounded-2xl bg-[#F8F9FA]">
+              <Folder className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-600 font-medium text-sm">
+                No projects found matching your filter.
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6">
+              {paginatedProjects.map((project) => {
                 const statusInfo = getStatusDisplay(project.status)
                 const StatusIcon = statusInfo.icon
-                
+
                 return (
                   <Link
                     key={project.project_id}
                     href={`/dashboard/courses/${project.course_slug}/learn`}
-                    className="block p-6 rounded-xl border border-gray-200 bg-white hover:border-blue-300 hover:shadow-md transition-all group"
+                    className="group rounded-2xl border border-gray-200 bg-white p-6 hover:border-[#4E89FF] hover:shadow-md transition-all duration-200 flex flex-col justify-between"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors">
-                            {project.title}
-                          </h3>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${statusInfo.color}`}>
-                            <StatusIcon className="w-3 h-3" />
-                            {statusInfo.label}
-                          </span>
+                    <div>
+                      {/* Top Header: Icon + Course/Module Breadcrumb + Status Badge */}
+                      <div className="flex items-start justify-between gap-3 mb-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${statusInfo.iconBoxClass}`}
+                          >
+                            <Code2 className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-[#2563EB] flex items-center gap-1 truncate">
+                              <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                              {project.course_title}
+                            </span>
+                            <span className="text-[11px] text-gray-400 flex items-center gap-1 truncate mt-0.5">
+                              <Layers className="w-3 h-3 shrink-0" />
+                              {project.module_title}
+                            </span>
+                          </div>
                         </div>
-                        
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{project.description}</p>
-                        
-                        <div className="flex gap-2 mb-3">
+
+                        <span
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 shrink-0 ${statusInfo.badgeClass}`}
+                        >
+                          <StatusIcon className="w-3 h-3" />
+                          {statusInfo.label}
+                        </span>
+                      </div>
+
+                      {/* Project Title & Description */}
+                      <h3 className="font-bold text-gray-900 text-lg mb-2 group-hover:text-[#2563EB] transition-colors line-clamp-1">
+                        {project.title}
+                      </h3>
+                      <p className="text-xs text-gray-500 mb-4 line-clamp-2 leading-relaxed">
+                        {project.description}
+                      </p>
+
+                      {/* Skills Tags */}
+                      {project.required_skills.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-4">
                           {project.required_skills.slice(0, 4).map((skill) => (
-                            <span key={skill} className="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded border border-gray-100">
+                            <span
+                              key={skill}
+                              className="text-[11px] font-medium px-2.5 py-1 bg-[#F4F5F7] text-gray-700 rounded-lg"
+                            >
                               {skill}
                             </span>
                           ))}
                           {project.required_skills.length > 4 && (
-                            <span className="text-xs px-2 py-1 bg-gray-50 text-gray-400 rounded">
+                            <span className="text-[11px] font-medium px-2.5 py-1 bg-[#F4F5F7] text-gray-500 rounded-lg">
                               +{project.required_skills.length - 4} more
                             </span>
                           )}
                         </div>
-                        
-                        <div className="flex items-center gap-4">
-                          {project.estimated_hours && (
-                            <p className="text-xs text-gray-400 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {project.estimated_hours}h estimated
-                            </p>
-                          )}
-                          <div className="flex items-center gap-1.5 text-xs text-blue-600">
-                            <BookOpen className="w-3.5 h-3.5" />
-                            <span>{project.course_title}</span>
+                      )}
+
+                      {/* Reviewer Feedback Box */}
+                      {project.reviewer_feedback && (
+                        <div className="mb-4 p-3 bg-[#FEF3C7] border border-[#FDE68A] rounded-xl text-xs text-[#92400E] flex items-start gap-2">
+                          <MessageSquare className="w-4 h-4 shrink-0 mt-0.5" />
+                          <div className="line-clamp-2">
+                            <span className="font-bold">Mentor Feedback: </span>
+                            {project.reviewer_feedback}
                           </div>
-                          <span className="text-xs text-gray-400">
-                            Module: {project.module_title}
-                          </span>
                         </div>
-                        
-                        {project.reviewer_feedback && (
-                          <div className="mt-3 p-2 bg-yellow-50 border border-yellow-100 rounded-lg text-xs text-yellow-800">
-                            <strong>Feedback:</strong> {project.reviewer_feedback}
-                          </div>
+                      )}
+                    </div>
+
+                    {/* Footer Action Bar */}
+                    <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
+                      <div className="text-xs text-gray-400 flex items-center gap-1">
+                        {project.estimated_hours ? (
+                          <>
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>~{project.estimated_hours}h estimated</span>
+                          </>
+                        ) : (
+                          <span>Hands-on Project</span>
                         )}
                       </div>
-                      
-                      <div className="flex items-center gap-3 ml-4">
-                        <div className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-                          <ExternalLink className="w-4 h-4" />
-                          {project.status === "not_started" ? "Start Project" : "Continue"}
-                        </div>
+
+                      <div className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#2563EB] group-hover:bg-[#1D4ED8] rounded-xl transition-colors">
+                        {project.status === "not_started" ? "Start Project" : "Open Project"}
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </div>
                     </div>
                   </Link>
                 )
-              })
-            )}
-          </div>
+              })}
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between border-t border-gray-200 pt-4">
               <p className="text-sm text-gray-500">
-                Showing {startIndex + 1}-{Math.min(startIndex + projectsPerPage, filteredProjects.length)} of{" "}
+                Showing {startIndex + 1}-
+                {Math.min(startIndex + projectsPerPage, filteredProjects.length)} of{" "}
                 {filteredProjects.length} projects
               </p>
               <div className="flex items-center gap-2">
@@ -259,7 +364,7 @@ export function ProjectsView() {
                   size="sm"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="px-3"
+                  className="px-3 rounded-xl"
                 >
                   Previous
                 </Button>
@@ -269,7 +374,9 @@ export function ProjectsView() {
                     variant={currentPage === page ? "default" : "outline"}
                     size="sm"
                     onClick={() => handlePageChange(page)}
-                    className={`px-3 ${currentPage === page ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}`}
+                    className={`px-3 rounded-xl ${
+                      currentPage === page ? "bg-[#2563EB] hover:bg-[#1D4ED8] text-white" : ""
+                    }`}
                   >
                     {page}
                   </Button>
@@ -279,7 +386,7 @@ export function ProjectsView() {
                   size="sm"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="px-3"
+                  className="px-3 rounded-xl"
                 >
                   Next
                 </Button>
@@ -288,20 +395,6 @@ export function ProjectsView() {
           )}
         </>
       )}
-
-      {/* Info hint */}
-      <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl">
-        <div className="flex items-start gap-3">
-          <BookOpen className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-medium text-blue-900 mb-1">Project Exercises</h4>
-            <p className="text-sm text-blue-700">
-              Projects are hands-on exercises from your enrolled courses. Click on any project to navigate directly to the course
-              where you can continue working on it with AI-powered assistance.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
