@@ -118,7 +118,7 @@ function LessonContentView({
 
     setIsGeneratingAudio(true)
     try {
-      const audioBlob = await studentCoursesApi.synthesizeLessonOverviewSpeech(overviewSpeechText, "troy")
+      const audioBlob = await studentCoursesApi.synthesizeLessonOverviewSpeech(overviewSpeechText, "autumn")
       const objectUrl = URL.createObjectURL(audioBlob)
       setAudioUrl(objectUrl)
       const audio = new Audio(objectUrl)

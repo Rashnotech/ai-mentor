@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request, HTTPException, status
 from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel, Field
 from typing import List, AsyncGenerator, Optional
-from groq import Groq
+from groq import Groq, RateLimitError, APIStatusError
 from core.config import settings
 from auth.dependencies import get_currrent_user
 from domains.ai.services.groq_client import generate_text
@@ -15,7 +15,6 @@ import json
 import re
 import time
 import wave
-import httpx
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 
@@ -95,19 +94,19 @@ async def rubber_duck_chat(request: Request, body: ChatRequest):
 
 TTS_MODEL = "canopylabs/orpheus-v1-english"
 ALLOWED_TTS_VOICES = {"troy", "autumn", "diana", "hannah", "austin", "daniel"}
-MAX_TTS_CHUNKS = 3
+MAX_TTS_CHUNKS = 2
 _TTS_AUDIO_CACHE: dict[str, bytes] = {}
 
 OVERVIEW_NARRATION_SYSTEM_PROMPT = (
     "You are an engaging technical instructor narrating a concise spoken audio summary of a lesson. "
-    "Summarize the core takeaways of the provided lesson into 2 to 3 natural, clear spoken sentences "
-    "under 340 characters total. Use plain spoken English only (no markdown, no bullet points, no code)."
+    "Summarize the core takeaways of the provided lesson into 2 natural, clear spoken sentences "
+    "under 185 characters total. Use plain spoken English only (no markdown, no bullet points, no code)."
 )
 
 
 class LessonOverviewSpeechRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=20000)
-    voice: Optional[str] = Field(default="troy")
+    voice: Optional[str] = Field(default="autumn")
 
 
 def _strip_markdown_for_speech(raw: str) -> str:
@@ -172,68 +171,58 @@ def _split_into_tts_chunks(text: str, max_chars: int = 190) -> List[str]:
 
 
 def _synthesize_wav_chunks_sync(chunks: List[str], voice: str) -> bytes:
-    """Call Groq Orpheus TTS for each chunk with 429 retry/backoff and merge the WAV frames."""
-    url = "https://api.groq.com/openai/v1/audio/speech"
-    headers = {
-        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
-        "Content-Type": "application/json",
-    }
+    """Call Groq SDK client.audio.speech.create for each chunk and merge WAV frames."""
+    client = Groq(api_key=settings.GROQ_API_KEY)
+    wav_payloads: List[bytes] = []
 
-    wav_Payloads: List[bytes] = []
-    with httpx.Client(timeout=45.0) as client:
-        for chunk in chunks:
-            resp = None
-            for attempt in range(4):
-                resp = client.post(
-                    url,
-                    headers=headers,
-                    json={
-                        "model": TTS_MODEL,
-                        "voice": voice,
-                        "input": chunk,
-                        "response_format": "wav",
-                    },
+    for chunk in chunks:
+        audio_bytes: Optional[bytes] = None
+        for attempt in range(3):
+            try:
+                response = client.audio.speech.create(
+                    model=TTS_MODEL,
+                    voice=voice,
+                    response_format="wav",
+                    input=chunk,
                 )
-                if resp.status_code == 200:
-                    break
-                if resp.status_code == 429 and attempt < 3:
-                    retry_after = resp.headers.get("retry-after")
+                audio_bytes = response.read()
+                break
+            except RateLimitError as exc:
+                err_msg = str(exc)
+                # If daily token quota (TPD) or long wait is hit, fail immediately with a clear message
+                if "tokens per day (TPD)" in err_msg or "m" in re.findall(r"try again in ([^\s.]+)", err_msg):
+                    raise RuntimeError(f"Groq TTS rate limit reached (429): {err_msg[:320]}") from exc
+                if attempt < 2:
                     wait_seconds = 6.5
-                    if retry_after:
-                        try:
-                            wait_seconds = min(float(retry_after) + 0.5, 12.0)
-                        except ValueError:
-                            pass
-                    else:
-                        match = re.search(r"try again in (\d+(?:\.\d+)?)s", resp.text)
-                        if match:
-                            wait_seconds = min(float(match.group(1)) + 0.5, 12.0)
+                    match = re.search(r"try again in (\d+(?:\.\d+)?)s", err_msg)
+                    if match:
+                        wait_seconds = min(float(match.group(1)) + 0.5, 10.0)
                     time.sleep(wait_seconds)
                     continue
-                detail = resp.text[:300]
-                raise RuntimeError(f"Groq TTS error ({resp.status_code}): {detail}")
+                raise RuntimeError(f"Groq TTS rate limit reached (429): {err_msg[:320]}") from exc
+            except APIStatusError as exc:
+                raise RuntimeError(f"Groq TTS error ({exc.status_code}): {str(exc)[:300]}") from exc
 
-            if resp is None or resp.status_code != 200:
-                detail = resp.text[:300] if resp is not None else "No response"
-                raise RuntimeError(f"Groq TTS error: {detail}")
-            wav_Payloads.append(resp.content)
+        if not audio_bytes:
+            raise RuntimeError("Groq TTS returned empty audio")
+        wav_payloads.append(audio_bytes)
 
-    if len(wav_Payloads) == 1:
-        return wav_Payloads[0]
+    if len(wav_payloads) == 1:
+        return wav_payloads[0]
 
     # Concatenate WAV PCM frames into a single WAV file
     output_buffer = io.BytesIO()
     params = None
     frames: List[bytes] = []
 
-    for wav_bytes in wav_Payloads:
+    for wav_bytes in wav_payloads:
         with wave.open(io.BytesIO(wav_bytes), "rb") as reader:
             if params is None:
                 params = reader.getparams()
             frames.append(reader.readframes(reader.getnframes()))
 
     if params is None:
-        return wav_Payloads[0]
+        return wav_payloads[0]
 
     with wave.open(output_buffer, "wb") as writer:
         writer.setparams(params)
@@ -257,9 +246,9 @@ async def lesson_overview_speech(request: Request, body: LessonOverviewSpeechReq
     if not cleaned_text:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No readable overview text provided")
 
-    voice = (body.voice or "troy").lower()
+    voice = (body.voice or "autumn").lower()
     if voice not in ALLOWED_TTS_VOICES:
-        voice = "troy"
+        voice = "autumn"
 
     cache_key = hashlib.sha256(f"{voice}:{cleaned_text}".encode("utf-8")).hexdigest()
     cached_wav = _TTS_AUDIO_CACHE.get(cache_key)
@@ -271,19 +260,19 @@ async def lesson_overview_speech(request: Request, body: LessonOverviewSpeechReq
         )
 
     # Condense long lesson markdown into a natural spoken overview via Groq LLM
-    # so Orpheus TTS stays well inside the 10 RPM on_demand tier limit (<= 2-3 chunks).
+    # so Orpheus TTS fits inside 1 single request (<= 190 chars) and preserves TPD/RPM quota.
     spoken_script = cleaned_text
-    if len(cleaned_text) > 360:
+    if len(cleaned_text) > 190:
         summarized = await generate_text(
             OVERVIEW_NARRATION_SYSTEM_PROMPT,
             cleaned_text[:4000],
-            max_tokens=120,
+            max_tokens=90,
             temperature=0.5,
         )
         if summarized:
-            spoken_script = _strip_markdown_for_speech(summarized) or cleaned_text[:360]
+            spoken_script = _strip_markdown_for_speech(summarized) or cleaned_text[:190]
         else:
-            spoken_script = cleaned_text[:360]
+            spoken_script = cleaned_text[:190]
 
     chunks = _split_into_tts_chunks(spoken_script)
     if not chunks:
@@ -292,9 +281,15 @@ async def lesson_overview_speech(request: Request, body: LessonOverviewSpeechReq
     try:
         wav_bytes = await asyncio.to_thread(_synthesize_wav_chunks_sync, chunks, voice)
     except Exception as exc:
+        err_str = str(exc)
+        status_code = (
+            status.HTTP_429_TOO_MANY_REQUESTS
+            if "429" in err_str or "rate limit" in err_str.lower()
+            else status.HTTP_502_BAD_GATEWAY
+        )
         raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to generate lesson audio with Groq: {str(exc)}",
+            status_code=status_code,
+            detail=f"Failed to generate lesson audio with Groq: {err_str}",
         )
 
     if len(_TTS_AUDIO_CACHE) >= 128:

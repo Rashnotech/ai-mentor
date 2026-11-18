@@ -2293,7 +2293,7 @@ export const studentCoursesApi = {
    */
   synthesizeLessonOverviewSpeech: async (
     text: string,
-    voice: string = "troy"
+    voice: string = "autumn"
   ): Promise<Blob> => {
     const response = await apiClient.post(
       "/ai/lesson-overview/speech",

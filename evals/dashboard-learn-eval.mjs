@@ -133,12 +133,13 @@ const checks = [
   [
     "lesson overview includes Groq TTS audio endpoint, LLM condensation, 429 backoff, and player controls",
     aiRoutes.includes('TTS_MODEL = "canopylabs/orpheus-v1-english"') &&
-      aiRoutes.includes("MAX_TTS_CHUNKS = 3") &&
+      aiRoutes.includes("MAX_TTS_CHUNKS = 2") &&
       aiRoutes.includes("OVERVIEW_NARRATION_SYSTEM_PROMPT") &&
-      aiRoutes.includes("resp.status_code == 429") &&
+      aiRoutes.includes("client.audio.speech.create") &&
+      aiRoutes.includes("response.read()") &&
+      aiRoutes.includes("RateLimitError") &&
       aiRoutes.includes("_TTS_AUDIO_CACHE") &&
       aiRoutes.includes('@router.post("/lesson-overview/speech")') &&
-      aiRoutes.includes("https://api.groq.com/openai/v1/audio/speech") &&
       apiLib.includes("synthesizeLessonOverviewSpeech") &&
       dashboardLearnPage.includes("handleToggleOverviewAudio") &&
       dashboardLearnPage.includes("studentCoursesApi.synthesizeLessonOverviewSpeech") &&
