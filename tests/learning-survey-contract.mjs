@@ -50,6 +50,7 @@ const checks = [
   ["non-blocking survey actions", modal.includes("Maybe later") && modal.includes("Close") && modal.includes("Submit feedback")],
   ["admin can manage and filter", admin.includes("Create survey") && admin.includes("Add question") && admin.includes("Needs support") && admin.includes("Monthly satisfaction")],
   ["typed frontend API", api.includes("export const surveyApi") && api.includes("export const surveyAdminApi")],
+  ["no undefined _job_outcome_candidate call in eligibility loop", !service.includes("_job_outcome_candidate")],
 ]
 
 for (const [name, passed] of checks) assert.equal(passed, true, name)

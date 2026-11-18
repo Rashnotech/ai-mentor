@@ -82,8 +82,12 @@ assert.match(profileView, /Personal Information/)
 assert.match(profileView, /Connected Accounts/)
 assert.match(gateConfig, /app\/dashboard\/_components\/profile-view\.tsx/)
 
-// 10. Lesson overview audio uses Groq TTS (canopylabs/orpheus-v1-english)
+// 10. Lesson overview audio uses Groq TTS (canopylabs/orpheus-v1-english) with RPM rate-limit protection
 assert.match(aiRoutes, /canopylabs\/orpheus-v1-english/)
+assert.match(aiRoutes, /MAX_TTS_CHUNKS = 3/)
+assert.match(aiRoutes, /OVERVIEW_NARRATION_SYSTEM_PROMPT/)
+assert.match(aiRoutes, /resp\.status_code == 429/)
+assert.match(aiRoutes, /_TTS_AUDIO_CACHE/)
 assert.match(aiRoutes, /@router\.post\("\/lesson-overview\/speech"\)/)
 assert.match(aiRoutes, /https:\/\/api\.groq\.com\/openai\/v1\/audio\/speech/)
 assert.match(apiLib, /synthesizeLessonOverviewSpeech/)

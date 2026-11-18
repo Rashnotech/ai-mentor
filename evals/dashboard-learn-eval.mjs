@@ -131,8 +131,12 @@ const checks = [
       gateConfig.includes("app/dashboard/_components/profile-view.tsx"),
   ],
   [
-    "lesson overview includes Groq TTS audio endpoint and player controls",
+    "lesson overview includes Groq TTS audio endpoint, LLM condensation, 429 backoff, and player controls",
     aiRoutes.includes('TTS_MODEL = "canopylabs/orpheus-v1-english"') &&
+      aiRoutes.includes("MAX_TTS_CHUNKS = 3") &&
+      aiRoutes.includes("OVERVIEW_NARRATION_SYSTEM_PROMPT") &&
+      aiRoutes.includes("resp.status_code == 429") &&
+      aiRoutes.includes("_TTS_AUDIO_CACHE") &&
       aiRoutes.includes('@router.post("/lesson-overview/speech")') &&
       aiRoutes.includes("https://api.groq.com/openai/v1/audio/speech") &&
       apiLib.includes("synthesizeLessonOverviewSpeech") &&

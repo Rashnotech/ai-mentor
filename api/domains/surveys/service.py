@@ -234,9 +234,6 @@ class SurveyService:
             learning = await self._learning_candidate(user_id, enrollment, surveys.get("learning_timeline"), now)
             if learning:
                 candidates.append(learning)
-            job_outcome = await self._job_outcome_candidate(user_id, enrollment, surveys.get("course_completion"), now)
-            if job_outcome:
-                candidates.append(job_outcome)
 
         candidates.sort(key=lambda item: (item.urgent, item.survey.priority), reverse=True)
         for candidate in candidates:

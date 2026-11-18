@@ -30,6 +30,7 @@ const acceptance = {
   "admin filters course path month and type": ["course_id", "path_id", "month", "survey_type"].every((value) => admin.includes(value)),
   "default templates seed automatically": app.includes("ensure_default_surveys"),
   "runtime traces eligibility and completion": service.includes("survey_eligible") && service.includes("survey_completed"),
+  "eligible route does not call undefined _job_outcome_candidate": !service.includes("_job_outcome_candidate"),
 }
 
 for (const [name, passed] of Object.entries(acceptance)) assert.equal(passed, true, name)
