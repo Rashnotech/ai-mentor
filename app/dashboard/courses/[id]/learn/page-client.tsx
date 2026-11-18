@@ -27,6 +27,9 @@ import {
   Lock,
   Layers,
   PanelRightOpen,
+  Volume2,
+  Pause,
+  Square,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -71,6 +74,77 @@ function LessonContentView({
   isCompleting,
   previewMode = false,
 }: LessonContentViewProps) {
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false)
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  const overviewSpeechText = [lesson.title, lesson.description, lesson.content]
+    .filter(Boolean)
+    .join(". ")
+    .trim()
+
+  useEffect(() => {
+    // Reset audio player state when switching lessons
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+    }
+    setIsPlayingAudio(false)
+    setIsGeneratingAudio(false)
+    setAudioUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return null
+    })
+  }, [lesson.lesson_id])
+
+  const handleToggleOverviewAudio = async () => {
+    if (!overviewSpeechText) {
+      toast.error("No overview text available to read")
+      return
+    }
+
+    // If audio is already loaded, toggle play/pause
+    if (audioUrl && audioRef.current) {
+      if (isPlayingAudio) {
+        audioRef.current.pause()
+        setIsPlayingAudio(false)
+      } else {
+        await audioRef.current.play()
+        setIsPlayingAudio(true)
+      }
+      return
+    }
+
+    setIsGeneratingAudio(true)
+    try {
+      const audioBlob = await studentCoursesApi.synthesizeLessonOverviewSpeech(overviewSpeechText, "troy")
+      const objectUrl = URL.createObjectURL(audioBlob)
+      setAudioUrl(objectUrl)
+      const audio = new Audio(objectUrl)
+      audioRef.current = audio
+      audio.onended = () => setIsPlayingAudio(false)
+      audio.onpause = () => setIsPlayingAudio(false)
+      audio.onplay = () => setIsPlayingAudio(true)
+      await audio.play()
+      setIsPlayingAudio(true)
+    } catch (error: any) {
+      console.error("Failed to generate Groq overview audio:", error)
+      const detail = error?.response?.data?.detail || "Failed to generate audio overview with Groq"
+      toast.error(detail)
+    } finally {
+      setIsGeneratingAudio(false)
+    }
+  }
+
+  const handleStopOverviewAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+      setIsPlayingAudio(false)
+    }
+  }
+
   const getYouTubeEmbedUrl = (url: string): string | null => {
     if (!url) return null
 
@@ -170,8 +244,53 @@ function LessonContentView({
 
       {/* Overview Section */}
       <div className="space-y-4 pt-1">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-base font-bold text-gray-900 sm:text-lg">Overview</h3>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <h3 className="text-base font-bold text-gray-900 sm:text-lg">Overview</h3>
+            {(lesson.description || lesson.content) && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleToggleOverviewAudio}
+                  disabled={isGeneratingAudio}
+                  aria-label={isPlayingAudio ? "Pause audio overview" : "Listen to overview with Groq AI"}
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60 ${
+                    isPlayingAudio
+                      ? "bg-[#2563EB] text-white"
+                      : "bg-[#EBF2FF] hover:bg-[#DCE8FF] text-[#2563EB]"
+                  }`}
+                >
+                  {isGeneratingAudio ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Generating Audio...</span>
+                    </>
+                  ) : isPlayingAudio ? (
+                    <>
+                      <Pause className="w-3.5 h-3.5" />
+                      <span>Pause Audio</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="w-3.5 h-3.5" />
+                      <span>Listen to Overview</span>
+                    </>
+                  )}
+                </button>
+                {audioUrl && isPlayingAudio && (
+                  <button
+                    type="button"
+                    onClick={handleStopOverviewAudio}
+                    aria-label="Stop audio overview"
+                    title="Stop audio"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors cursor-pointer"
+                  >
+                    <Square className="w-3 h-3 fill-current" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-3 text-xs text-gray-400">
             {lesson.content_type && (
               <span className="flex items-center gap-1 capitalize">

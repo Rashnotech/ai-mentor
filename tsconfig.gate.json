@@ -34,6 +34,7 @@
     "app/dashboard/_components/dashboard-view.tsx",
     "app/dashboard/_components/my-courses-view.tsx",
     "app/dashboard/_components/projects-view.tsx",
+    "app/dashboard/_components/profile-view.tsx",
     "app/admin/layout-client.tsx",
     "app/admin/page.tsx",
     "app/admin/page-client.tsx",

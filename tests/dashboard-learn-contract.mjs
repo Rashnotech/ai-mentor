@@ -5,9 +5,12 @@ const dashboardLayout = await readFile("app/dashboard/layout-client.tsx", "utf8"
 const dashboardView = await readFile("app/dashboard/_components/dashboard-view.tsx", "utf8")
 const myCoursesView = await readFile("app/dashboard/_components/my-courses-view.tsx", "utf8")
 const projectsView = await readFile("app/dashboard/_components/projects-view.tsx", "utf8")
+const profileView = await readFile("app/dashboard/_components/profile-view.tsx", "utf8")
 const courseDetails = await readFile("app/courses/[id]/page-client.tsx", "utf8")
 const legacyLearnPage = await readFile("app/courses/[id]/learn/page.tsx", "utf8")
 const dashboardLearnPage = await readFile("app/dashboard/courses/[id]/learn/page-client.tsx", "utf8")
+const aiRoutes = await readFile("api/domains/ai/routes/rubber_duck.py", "utf8")
+const apiLib = await readFile("lib/api.ts", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 // 1. No gradients in student dashboard shell, dashboard view, or in-dashboard learn page
@@ -69,5 +72,24 @@ assert.doesNotMatch(dashboardLearnPage, /startProject/)
 assert.match(projectsView, /bg-\[#2563EB\] text-white/)
 assert.match(projectsView, /bg-\[#EA580C\] text-white/)
 assert.match(projectsView, /bg-\[#16A34A\] text-white/)
+
+// 9. Revamped student profile uses solid colors and zero gradients
+assert.doesNotMatch(profileView, /bg-gradient|bg-linear|radial-gradient/)
+assert.match(profileView, /bg-\[#2563EB\] text-white/)
+assert.match(profileView, /bg-\[#EA580C\] text-white/)
+assert.match(profileView, /bg-\[#16A34A\] text-white/)
+assert.match(profileView, /Personal Information/)
+assert.match(profileView, /Connected Accounts/)
+assert.match(gateConfig, /app\/dashboard\/_components\/profile-view\.tsx/)
+
+// 10. Lesson overview audio uses Groq TTS (canopylabs/orpheus-v1-english)
+assert.match(aiRoutes, /canopylabs\/orpheus-v1-english/)
+assert.match(aiRoutes, /@router\.post\("\/lesson-overview\/speech"\)/)
+assert.match(aiRoutes, /https:\/\/api\.groq\.com\/openai\/v1\/audio\/speech/)
+assert.match(apiLib, /synthesizeLessonOverviewSpeech/)
+assert.match(apiLib, /\/ai\/lesson-overview\/speech/)
+assert.match(dashboardLearnPage, /handleToggleOverviewAudio/)
+assert.match(dashboardLearnPage, /studentCoursesApi\.synthesizeLessonOverviewSpeech/)
+assert.match(dashboardLearnPage, /Listen to Overview/)
 
 console.log("Dashboard learn contract: PASS")

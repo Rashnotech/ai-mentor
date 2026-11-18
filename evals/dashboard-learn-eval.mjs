@@ -5,9 +5,12 @@ const dashboardLayout = await readFile("app/dashboard/layout-client.tsx", "utf8"
 const dashboardView = await readFile("app/dashboard/_components/dashboard-view.tsx", "utf8")
 const myCoursesView = await readFile("app/dashboard/_components/my-courses-view.tsx", "utf8")
 const projectsView = await readFile("app/dashboard/_components/projects-view.tsx", "utf8")
+const profileView = await readFile("app/dashboard/_components/profile-view.tsx", "utf8")
 const courseDetails = await readFile("app/courses/[id]/page-client.tsx", "utf8")
 const legacyLearnPage = await readFile("app/courses/[id]/learn/page.tsx", "utf8")
 const dashboardLearnPage = await readFile("app/dashboard/courses/[id]/learn/page-client.tsx", "utf8")
+const aiRoutes = await readFile("api/domains/ai/routes/rubber_duck.py", "utf8")
+const apiLib = await readFile("lib/api.ts", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 const checks = [
@@ -116,6 +119,26 @@ const checks = [
       projectsView.includes("bg-[#2563EB] text-white") &&
       projectsView.includes("bg-[#EA580C] text-white") &&
       projectsView.includes("bg-[#16A34A] text-white"),
+  ],
+  [
+    "student profile view is revamped with solid stat cards, two-column layout, and zero gradients",
+    !/bg-gradient|bg-linear|radial-gradient/.test(profileView) &&
+      profileView.includes("bg-[#2563EB] text-white") &&
+      profileView.includes("bg-[#EA580C] text-white") &&
+      profileView.includes("bg-[#16A34A] text-white") &&
+      profileView.includes("Personal Information") &&
+      profileView.includes("Connected Accounts") &&
+      gateConfig.includes("app/dashboard/_components/profile-view.tsx"),
+  ],
+  [
+    "lesson overview includes Groq TTS audio endpoint and player controls",
+    aiRoutes.includes('TTS_MODEL = "canopylabs/orpheus-v1-english"') &&
+      aiRoutes.includes('@router.post("/lesson-overview/speech")') &&
+      aiRoutes.includes("https://api.groq.com/openai/v1/audio/speech") &&
+      apiLib.includes("synthesizeLessonOverviewSpeech") &&
+      dashboardLearnPage.includes("handleToggleOverviewAudio") &&
+      dashboardLearnPage.includes("studentCoursesApi.synthesizeLessonOverviewSpeech") &&
+      dashboardLearnPage.includes("Listen to Overview"),
   ],
 ]
 

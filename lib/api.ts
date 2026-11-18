@@ -2287,6 +2287,21 @@ export const studentCoursesApi = {
     )
     return response.data.items
   },
+
+  /**
+   * Synthesize spoken audio (WAV) for a lesson overview using Groq TTS.
+   */
+  synthesizeLessonOverviewSpeech: async (
+    text: string,
+    voice: string = "troy"
+  ): Promise<Blob> => {
+    const response = await apiClient.post(
+      "/ai/lesson-overview/speech",
+      { text, voice },
+      { responseType: "blob" }
+    )
+    return response.data
+  },
 }
 
 // AI Mentor Feedback — smart-trigger messages generated for a student
