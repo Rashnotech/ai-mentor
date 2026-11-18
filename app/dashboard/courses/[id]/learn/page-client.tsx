@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, use, useEffect } from "react"
+import { useState, use, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
@@ -1571,6 +1571,7 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
   const [isCompleting, setIsCompleting] = useState(false)
   const [isOtherModulesOpen, setIsOtherModulesOpen] = useState(false)
   const [isMobileRailOpen, setIsMobileRailOpen] = useState(false)
+  const mainStageRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -1651,6 +1652,7 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
 
   useEffect(() => {
     if (!activeItemId) return
+    mainStageRef.current?.scrollTo({ top: 0, behavior: "smooth" })
     window.scrollTo({ top: 0, behavior: "smooth" })
   }, [activeItemId])
 
@@ -1951,45 +1953,47 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
   const currentModuleOrder = activeModule?.order || 1
 
   return (
-    <div className="pb-10">
-      {/* Mobile Trigger for Right Module Rail */}
-      <div className="mb-4 flex items-center justify-between lg:hidden">
-        <Link
-          href="/dashboard/courses"
-          className="text-xs font-semibold text-gray-500 hover:text-gray-900 flex items-center gap-1"
-        >
-          ← Back to My Courses
-        </Link>
-        <Sheet open={isMobileRailOpen} onOpenChange={setIsMobileRailOpen}>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsMobileRailOpen(true)}
-            className="rounded-xl border-gray-200 bg-white text-xs font-semibold"
-          >
-            <PanelRightOpen className="w-4 h-4 mr-1.5 text-blue-600" />
-            Class Chapter
-          </Button>
-          <SheetContent side="right" className="w-full sm:max-w-sm p-5 overflow-y-auto bg-white">
-            <FocusedModuleRail
-              courseContent={courseContent}
-              activeModule={activeModule}
-              activeItemId={activeItemId}
-              isOtherModulesOpen={isOtherModulesOpen}
-              onToggleOtherModules={() => setIsOtherModulesOpen((prev) => !prev)}
-              onSelectModule={handleSelectModule}
-              onSelectItem={handleSelectItem}
-              otherCourses={otherCourses}
-              onCloseMobile={() => setIsMobileRailOpen(false)}
-            />
-          </SheetContent>
-        </Sheet>
-      </div>
+    <div className="h-full flex flex-col lg:flex-row overflow-hidden">
+      {/* Left / Center Stage: Independently scrollable lesson/video/project/quiz area */}
+      <div
+        ref={mainStageRef}
+        className="min-w-0 flex-1 h-full overflow-y-auto p-6 lg:px-10 lg:py-8"
+      >
+        <div className="max-w-4xl mx-auto pb-10">
+          {/* Mobile Trigger for Right Module Rail */}
+          <div className="mb-4 flex items-center justify-between lg:hidden">
+            <Link
+              href="/dashboard/courses"
+              className="text-xs font-semibold text-gray-500 hover:text-gray-900 flex items-center gap-1"
+            >
+              ← Back to My Courses
+            </Link>
+            <Sheet open={isMobileRailOpen} onOpenChange={setIsMobileRailOpen}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsMobileRailOpen(true)}
+                className="rounded-xl border-gray-200 bg-white text-xs font-semibold"
+              >
+                <PanelRightOpen className="w-4 h-4 mr-1.5 text-blue-600" />
+                Class Chapter
+              </Button>
+              <SheetContent side="right" className="w-full sm:max-w-sm p-5 overflow-y-auto bg-white">
+                <FocusedModuleRail
+                  courseContent={courseContent}
+                  activeModule={activeModule}
+                  activeItemId={activeItemId}
+                  isOtherModulesOpen={isOtherModulesOpen}
+                  onToggleOtherModules={() => setIsOtherModulesOpen((prev) => !prev)}
+                  onSelectModule={handleSelectModule}
+                  onSelectItem={handleSelectItem}
+                  otherCourses={otherCourses}
+                  onCloseMobile={() => setIsMobileRailOpen(false)}
+                />
+              </SheetContent>
+            </Sheet>
+          </div>
 
-      {/* Main Two-Column Learn Layout Inside Dashboard */}
-      <div className="flex flex-col lg:flex-row gap-8 xl:gap-10 items-start">
-        {/* Left / Center Stage: Video + Lesson / Project / Quiz Overview */}
-        <div className="min-w-0 flex-1 w-full">
           {activeLesson && (
             <LessonContentView
               courseTitle={courseContent.course.title}
@@ -2058,23 +2062,21 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
             </div>
           )}
         </div>
-
-        {/* Right Column: Active Module Lessons Only + Collapsible Other Modules at Bottom */}
-        <aside className="hidden lg:block w-[320px] xl:w-[350px] shrink-0">
-          <div className="sticky top-6">
-            <FocusedModuleRail
-              courseContent={courseContent}
-              activeModule={activeModule}
-              activeItemId={activeItemId}
-              isOtherModulesOpen={isOtherModulesOpen}
-              onToggleOtherModules={() => setIsOtherModulesOpen((prev) => !prev)}
-              onSelectModule={handleSelectModule}
-              onSelectItem={handleSelectItem}
-              otherCourses={otherCourses}
-            />
-          </div>
-        </aside>
       </div>
+
+      {/* Right Column: Fixed Sidebar Rail (does not scroll with the main lesson content) */}
+      <aside className="hidden lg:flex lg:flex-col w-[330px] xl:w-[360px] shrink-0 h-full border-l border-gray-100 bg-white overflow-y-auto p-6">
+        <FocusedModuleRail
+          courseContent={courseContent}
+          activeModule={activeModule}
+          activeItemId={activeItemId}
+          isOtherModulesOpen={isOtherModulesOpen}
+          onToggleOtherModules={() => setIsOtherModulesOpen((prev) => !prev)}
+          onSelectModule={handleSelectModule}
+          onSelectItem={handleSelectItem}
+          otherCourses={otherCourses}
+        />
+      </aside>
     </div>
   )
 }

@@ -47,4 +47,14 @@ assert.match(readme, /## Getting Started/)
 assert.match(readme, /## Testing, Gate Checks & Evals/)
 assert.match(readme, /\/dashboard\/courses\/\[id\]\/learn/)
 
+// 7. Left sidebar has icon-only collapse toggle & right chapter rail is fixed full-height like the sidebar
+assert.match(dashboardLayout, /isSidebarCollapsed/)
+assert.match(dashboardLayout, /PanelLeftClose/)
+assert.match(dashboardLayout, /PanelLeftOpen/)
+assert.match(dashboardLayout, /isSidebarCollapsed \? "w-64 lg:w-20" : "w-64"/)
+assert.match(dashboardLayout, /isLearnRoute \? \(\s*<div className="flex-1 min-h-0 overflow-hidden">/)
+assert.match(dashboardLearnPage, /<div className="h-full flex flex-col lg:flex-row overflow-hidden">/)
+assert.match(dashboardLearnPage, /className="min-w-0 flex-1 h-full overflow-y-auto p-6 lg:px-10 lg:py-8"/)
+assert.match(dashboardLearnPage, /<aside className="hidden lg:flex lg:flex-col w-\[330px\] xl:w-\[360px\] shrink-0 h-full border-l border-gray-100 bg-white overflow-y-auto p-6">/)
+
 console.log("Dashboard learn contract: PASS")

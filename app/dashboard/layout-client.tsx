@@ -16,6 +16,8 @@ import {
   Shield,
   Loader2,
   Video,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -48,9 +50,11 @@ export default function DashboardLayoutClient({
 }) {
   const pathname = usePathname()
   const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const isLearnRoute = /^\/dashboard\/courses\/[^/]+\/learn/.test(pathname)
   
   const user = useUserStore((state) => state.user)
   const { logout } = useAuth()
@@ -110,28 +114,56 @@ export default function DashboardLayoutClient({
 
         {/* Sidebar */}
         <aside
-          className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#F4F5F2] border-r border-gray-200/80 transform transition-transform duration-200 ease-in-out ${
+          className={`fixed lg:static inset-y-0 left-0 z-50 ${
+            isSidebarCollapsed ? "w-64 lg:w-20" : "w-64"
+          } bg-[#F4F5F2] border-r border-gray-200/80 transform transition-all duration-200 ease-in-out ${
             showMobileMenu ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }`}
         >
           <div className="h-full flex flex-col">
-            <div className="p-6">
-              <Link href="/dashboard" className="flex items-center gap-2.5 text-blue-600">
+            <div
+              className={`p-5 flex items-center ${
+                isSidebarCollapsed ? "lg:justify-center justify-between" : "justify-between"
+              }`}
+            >
+              <Link
+                href="/dashboard"
+                className={`flex items-center gap-2.5 text-blue-600 ${
+                  isSidebarCollapsed ? "lg:hidden" : ""
+                }`}
+              >
                 <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
                   <img src="/mylogo.png" className="w-5 h-5 object-contain" alt="Rashnotech" />
                 </div>
                 <span className="font-bold text-lg tracking-tight text-gray-900">Rashnotech</span>
               </Link>
+              <button
+                type="button"
+                onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+                aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="hidden lg:flex w-8 h-8 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-200/60 items-center justify-center transition-colors cursor-pointer shrink-0"
+              >
+                {isSidebarCollapsed ? (
+                  <PanelLeftOpen className="w-4 h-4" />
+                ) : (
+                  <PanelLeftClose className="w-4 h-4" />
+                )}
+              </button>
             </div>
 
-            <nav className="flex-1 px-4 py-2 space-y-1.5 overflow-y-auto">
+            <nav className="flex-1 px-3 py-2 space-y-1.5 overflow-y-auto">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon
                 const active = isActive(item.href)
                 return (
-                  <Link key={item.href} href={item.href} className="block">
+                  <Link key={item.href} href={item.href} className="block" title={item.label}>
                     <div
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm transition-all duration-200 cursor-pointer ${
+                      className={`w-full flex items-center ${
+                        isSidebarCollapsed
+                          ? "lg:justify-center lg:px-0 px-4 justify-between"
+                          : "justify-between px-4"
+                      } py-3 rounded-xl text-sm transition-all duration-200 cursor-pointer relative ${
                         active
                           ? "text-blue-600 bg-[#EBF2FF] font-semibold"
                           : "text-gray-500 hover:bg-gray-200/50 hover:text-gray-800 font-medium"
@@ -139,18 +171,28 @@ export default function DashboardLayoutClient({
                       onClick={() => setShowMobileMenu(false)}
                     >
                       <span className="flex items-center gap-3">
-                        <Icon className={`w-5 h-5 ${active ? "text-blue-600" : "text-gray-400"}`} />
-                        {item.label}
+                        <Icon className={`w-5 h-5 shrink-0 ${active ? "text-blue-600" : "text-gray-400"}`} />
+                        <span className={isSidebarCollapsed ? "lg:hidden" : ""}>{item.label}</span>
                       </span>
-                      {active && <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />}
+                      {active && (
+                        <span
+                          className={`w-2 h-2 rounded-full bg-blue-600 shrink-0 ${
+                            isSidebarCollapsed ? "lg:hidden" : ""
+                          }`}
+                        />
+                      )}
                     </div>
                   </Link>
                 )
               })}
             </nav>
 
-            <div className="p-4">
-              <div className="p-4 rounded-2xl bg-white border border-gray-200/70 shadow-xs">
+            <div className="p-3">
+              <div
+                className={`p-4 rounded-2xl bg-white border border-gray-200/70 shadow-xs ${
+                  isSidebarCollapsed ? "lg:hidden" : ""
+                }`}
+              >
                 <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
                   <BookOpen className="w-5 h-5" />
                 </div>
@@ -162,11 +204,18 @@ export default function DashboardLayoutClient({
                   </Button>
                 </Link>
               </div>
-              <div className="mt-4 flex items-center gap-3 px-2">
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+              <div
+                className={`mt-4 flex items-center ${
+                  isSidebarCollapsed ? "lg:justify-center px-0" : "gap-3 px-2"
+                }`}
+              >
+                <div
+                  className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shrink-0"
+                  title={user?.full_name || "User"}
+                >
                   {userInitials}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className={`flex-1 min-w-0 ${isSidebarCollapsed ? "lg:hidden" : ""}`}>
                   <p className="text-sm font-medium text-gray-900 truncate">{user?.full_name || "User"}</p>
                   <p className="text-xs text-gray-500 truncate">{userHandle}</p>
                 </div>
@@ -298,10 +347,14 @@ export default function DashboardLayoutClient({
             </div>
           </header>
 
-          {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto p-6 lg:px-10 lg:py-8">
-            <div className="max-w-7xl mx-auto">{children}</div>
-          </div>
+          {/* Content Area */}
+          {isLearnRoute ? (
+            <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+          ) : (
+            <div className="flex-1 overflow-y-auto p-6 lg:px-10 lg:py-8">
+              <div className="max-w-7xl mx-auto">{children}</div>
+            </div>
+          )}
         </main>
       </div>
 

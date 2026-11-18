@@ -74,6 +74,22 @@ const checks = [
         readme.includes("npm run eval")
     ),
   ],
+  [
+    "left sidebar supports collapsing to icon-only width (lg:w-20) with accessible toggle button",
+    dashboardLayout.includes("isSidebarCollapsed") &&
+      dashboardLayout.includes("PanelLeftClose") &&
+      dashboardLayout.includes("PanelLeftOpen") &&
+      dashboardLayout.includes('isSidebarCollapsed ? "w-64 lg:w-20" : "w-64"') &&
+      dashboardLayout.includes('aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}'),
+  ],
+  [
+    "right chapter rail is a fixed full-height panel that does not scroll away with the main lesson stage",
+    dashboardLayout.includes("const isLearnRoute = /^\\/dashboard\\/courses\\/[^/]+\\/learn/.test(pathname)") &&
+      dashboardLayout.includes('<div className="flex-1 min-h-0 overflow-hidden">{children}</div>') &&
+      dashboardLearnPage.includes('<div className="h-full flex flex-col lg:flex-row overflow-hidden">') &&
+      dashboardLearnPage.includes('className="min-w-0 flex-1 h-full overflow-y-auto p-6 lg:px-10 lg:py-8"') &&
+      dashboardLearnPage.includes('<aside className="hidden lg:flex lg:flex-col w-[330px] xl:w-[360px] shrink-0 h-full border-l border-gray-100 bg-white overflow-y-auto p-6">'),
+  ],
 ]
 
 const passed = checks.filter(([, ok]) => ok).length
