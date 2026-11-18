@@ -39,4 +39,12 @@ assert.match(dashboardLearnPage, /Your other class progress/)
 assert.match(gateConfig, /app\/dashboard\/courses\/\[id\]\/learn\/page-client\.tsx/)
 assert.match(gateConfig, /app\/dashboard\/courses\/\[id\]\/learn\/page\.tsx/)
 
+// 6. README.md documents architecture, setup, env vars, and verification commands
+const readme = await readFile("README.md", "utf8")
+assert.match(readme, /## System Architecture/)
+assert.match(readme, /## Personalization Engine Specification/)
+assert.match(readme, /## Getting Started/)
+assert.match(readme, /## Testing, Gate Checks & Evals/)
+assert.match(readme, /\/dashboard\/courses\/\[id\]\/learn/)
+
 console.log("Dashboard learn contract: PASS")

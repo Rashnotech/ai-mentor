@@ -63,6 +63,17 @@ const checks = [
     gateConfig.includes("app/dashboard/courses/[id]/learn/page.tsx") &&
       gateConfig.includes("app/dashboard/courses/[id]/learn/page-client.tsx"),
   ],
+  [
+    "README.md documents full-stack architecture, personalization spec, setup, and test lanes",
+    await readFile("README.md", "utf8").then(
+      (readme) =>
+        readme.includes("## Core Capabilities") &&
+        readme.includes("## System Architecture") &&
+        readme.includes("## Personalization Engine Specification") &&
+        readme.includes("npm run test:gate") &&
+        readme.includes("npm run eval")
+    ),
+  ],
 ]
 
 const passed = checks.filter(([, ok]) => ok).length
