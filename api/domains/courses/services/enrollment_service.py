@@ -919,6 +919,13 @@ class EnrollmentService:
                 else:
                     status = "not_started"
 
+                from domains.courses.services.project_milestone_service import build_project_milestones
+
+                milestones = build_project_milestones(project)
+                valid_milestone_ids = {m["id"] for m in milestones}
+                raw_completed = progress.completed_milestones if (progress and isinstance(progress.completed_milestones, list)) else []
+                completed_milestone_ids = [str(m) for m in raw_completed if str(m) in valid_milestone_ids]
+
                 projects_data.append({
                     "submission_id": submission.submission_id if submission else None,
                     "project_id": project.project_id,
@@ -942,6 +949,8 @@ class EnrollmentService:
                     "points_earned": submission.points_earned if submission else None,
                     "deadline_status": deadline_status_labels.get(submission.deadline_status) if submission else None,
                     "reviewed_at": submission.reviewed_at.isoformat() if submission and submission.reviewed_at else None,
+                    "milestones": milestones,
+                    "completed_milestones": completed_milestone_ids,
                 })
 
             return {

@@ -16,6 +16,8 @@ const gamificationService = await readFile("api/domains/courses/services/gamific
 const studentRoutes = await readFile("api/domains/courses/routes/student.py", "utf8")
 const studentProgressRoutes = await readFile("api/domains/courses/routes/student_progress.py", "utf8")
 const studentReviewRoutes = await readFile("api/domains/courses/routes/student_reviews.py", "utf8")
+const milestoneService = await readFile("api/domains/courses/services/project_milestone_service.py", "utf8")
+const githubPrecheckService = await readFile("api/domains/courses/services/github_precheck_service.py", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 const checks = [
@@ -173,6 +175,26 @@ const checks = [
       /gamificationApi\s*\.getMyGamification\(\)/.test(dashboardView) &&
       dashboardView.includes("streakDays") &&
       dashboardView.includes("totalXp"),
+  ],
+  [
+    "projects expose 3 progressive micro-milestones with progress bar on cards and interactive checklist in learn view",
+    milestoneService.includes("def build_project_milestones") &&
+      milestoneService.includes("async def toggle_project_milestone") &&
+      studentProgressRoutes.includes("/projects/{project_id}/milestones/{milestone_id}/toggle") &&
+      apiLib.includes("toggleProjectMilestone") &&
+      projectsView.includes("milestones checked") &&
+      dashboardLearnPage.includes("Project Micro-Milestones") &&
+      dashboardLearnPage.includes("handleToggleProjectMilestone"),
+  ],
+  [
+    "students can run an automated 3-bullet GitHub repo pre-check before mentor submission",
+    githubPrecheckService.includes("def parse_github_repo_url") &&
+      githubPrecheckService.includes("async def run_github_precheck") &&
+      githubPrecheckService.includes("api.github.com/repos/") &&
+      studentProgressRoutes.includes("/projects/{project_id}/precheck") &&
+      apiLib.includes("precheckProjectRepo") &&
+      dashboardLearnPage.includes("Pre-Check Repo") &&
+      dashboardLearnPage.includes("GitHub Pre-Flight Check"),
   ],
 ]
 

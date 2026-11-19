@@ -676,6 +676,56 @@ class StudentCoursesListResponse(BaseModel):
 
 
 # Student Project Schemas
+class ProjectMilestoneSchema(BaseModel):
+    """Single progressive checkpoint within a project."""
+
+    id: str = Field(description="Milestone identifier (e.g. m1)")
+    title: str = Field(description="Short milestone title")
+    description: str = Field(default="", description="Actionable checkpoint description")
+    order: int = Field(default=1, description="Display order")
+
+
+class MilestoneToggleRequest(BaseModel):
+    """Request to toggle completion of a project micro-milestone."""
+
+    module_id: Optional[int] = Field(None, description="Parent module ID")
+    completed: bool = Field(description="Whether milestone is checked")
+
+
+class MilestoneToggleResponse(BaseModel):
+    """Response after toggling a project micro-milestone."""
+
+    project_id: int
+    milestone_id: str
+    completed: bool
+    completed_milestones: List[str]
+    total_milestones: int
+    xp_awarded: int = 0
+
+
+class GitHubPrecheckRequest(BaseModel):
+    """Request to run an automated GitHub repository pre-check."""
+
+    repo_url: str = Field(description="Public GitHub repository URL")
+
+
+class GitHubPrecheckResponse(BaseModel):
+    """Instant 3-bullet readiness report for a GitHub repository."""
+
+    is_valid_github_url: bool
+    repo_full_name: Optional[str] = None
+    is_public: bool
+    is_empty: bool
+    default_branch: Optional[str] = None
+    file_count: int = 0
+    has_readme: bool = False
+    detected_stack: List[str] = Field(default=[])
+    key_files: List[str] = Field(default=[])
+    readiness_status: str = Field(description="ready, needs_attention, or blocked")
+    summary: str
+    bullets: List[str]
+
+
 class StudentProjectResponse(BaseModel):
     """Response schema for a project in the student's enrolled course."""
     
@@ -709,6 +759,8 @@ class StudentProjectResponse(BaseModel):
     points_earned: Optional[float] = Field(None, description="Score/points awarded for this submission")
     deadline_status: Optional[str] = Field(None, description="Deadline compliance: on_time, late_50, or late_25")
     reviewed_at: Optional[str] = Field(None, description="Review timestamp if reviewed")
+    milestones: List[ProjectMilestoneSchema] = Field(default=[], description="Progressive micro-milestones")
+    completed_milestones: List[str] = Field(default=[], description="IDs of completed milestones for this student")
 
     class Config:
         from_attributes = True

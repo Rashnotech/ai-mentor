@@ -135,6 +135,37 @@ export interface LessonContent {
   is_completed: boolean
 }
 
+export interface ProjectMilestone {
+  id: string
+  title: string
+  description: string
+  order: number
+}
+
+export interface MilestoneToggleResponse {
+  project_id: number
+  milestone_id: string
+  completed: boolean
+  completed_milestones: string[]
+  total_milestones: number
+  xp_awarded: number
+}
+
+export interface GitHubPrecheckResponse {
+  is_valid_github_url: boolean
+  repo_full_name: string | null
+  is_public: boolean
+  is_empty: boolean
+  default_branch: string | null
+  file_count: number
+  has_readme: boolean
+  detected_stack: string[]
+  key_files: string[]
+  readiness_status: "ready" | "needs_attention" | "blocked"
+  summary: string
+  bullets: string[]
+}
+
 export interface ProjectContent {
   project_id: number
   submission_id: number | null  // ID needed for updating the URL
@@ -145,6 +176,8 @@ export interface ProjectContent {
   estimated_hours: number | null
   starter_repo_url: string | null
   required_skills: string[]
+  milestones?: ProjectMilestone[]
+  completed_milestones?: string[]
   is_completed: boolean
   is_submitted: boolean
   submission_url: string | null
@@ -1194,6 +1227,8 @@ export interface StudentProjectResponse {
   submission_url: string | null
   submitted_at: string | null
   reviewer_feedback: string | null
+  milestones?: ProjectMilestone[]
+  completed_milestones?: string[]
 }
 
 export interface StudentProjectsListResponse {
@@ -1334,6 +1369,41 @@ export const studentCoursesApi = {
       solution_url: solutionUrl,
       module_id: moduleId,
     })
+    return response.data
+  },
+
+  /**
+   * Toggle completion of a project micro-milestone checkpoint
+   */
+  toggleProjectMilestone: async (
+    projectId: number,
+    moduleId: number,
+    milestoneId: string,
+    completed: boolean
+  ): Promise<MilestoneToggleResponse> => {
+    const response = await apiClient.post<MilestoneToggleResponse>(
+      `/enrollments/progress/projects/${projectId}/milestones/${encodeURIComponent(milestoneId)}/toggle`,
+      {
+        module_id: moduleId,
+        completed,
+      }
+    )
+    return response.data
+  },
+
+  /**
+   * Run automated GitHub repository pre-check before submitting to mentor
+   */
+  precheckProjectRepo: async (
+    projectId: number,
+    repoUrl: string
+  ): Promise<GitHubPrecheckResponse> => {
+    const response = await apiClient.post<GitHubPrecheckResponse>(
+      `/enrollments/progress/projects/${projectId}/precheck`,
+      {
+        repo_url: repoUrl,
+      }
+    )
     return response.data
   },
 

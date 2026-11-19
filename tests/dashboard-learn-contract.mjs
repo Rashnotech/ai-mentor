@@ -16,6 +16,8 @@ const gamificationService = await readFile("api/domains/courses/services/gamific
 const studentRoutes = await readFile("api/domains/courses/routes/student.py", "utf8")
 const studentProgressRoutes = await readFile("api/domains/courses/routes/student_progress.py", "utf8")
 const studentReviewRoutes = await readFile("api/domains/courses/routes/student_reviews.py", "utf8")
+const milestoneService = await readFile("api/domains/courses/services/project_milestone_service.py", "utf8")
+const githubPrecheckService = await readFile("api/domains/courses/services/github_precheck_service.py", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 // 1. No gradients in student dashboard shell, dashboard view, or in-dashboard learn page
@@ -122,5 +124,20 @@ assert.match(studentProgressRoutes, /GamificationService\(db_session\)\.record_q
 assert.match(dashboardView, /gamificationApi\s*\.getMyGamification\(\)/)
 assert.match(dashboardView, /streakDays/)
 assert.match(dashboardView, /totalXp/)
+
+// Project Micro-Milestones & GitHub Pre-Check contracts
+assert.match(milestoneService, /def build_project_milestones/)
+assert.match(milestoneService, /async def toggle_project_milestone/)
+assert.match(githubPrecheckService, /def parse_github_repo_url/)
+assert.match(githubPrecheckService, /async def run_github_precheck/)
+assert.match(githubPrecheckService, /api\.github\.com\/repos\//)
+assert.match(studentProgressRoutes, /\/projects\/\{project_id\}\/milestones\/\{milestone_id\}\/toggle/)
+assert.match(studentProgressRoutes, /\/projects\/\{project_id\}\/precheck/)
+assert.match(apiLib, /toggleProjectMilestone/)
+assert.match(apiLib, /precheckProjectRepo/)
+assert.match(projectsView, /milestones checked/)
+assert.match(dashboardLearnPage, /Project Micro-Milestones/)
+assert.match(dashboardLearnPage, /Pre-Check Repo/)
+assert.match(dashboardLearnPage, /GitHub Pre-Flight Check/)
 
 console.log("Dashboard learn contract: PASS")

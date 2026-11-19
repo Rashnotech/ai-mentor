@@ -563,6 +563,16 @@ async def get_learning_content_by_slug(
                     "is_completed": is_completed,
                 })
             
+            from domains.courses.services.project_milestone_service import (
+                build_project_milestones,
+                get_completed_milestones_map,
+            )
+
+            milestones_map = await get_completed_milestones_map(
+                db_session,
+                user_id,
+                [p.project_id for p in projects],
+            )
             projects_data = []
             for project in projects:
                 total_projects += 1
@@ -574,6 +584,11 @@ async def get_learning_content_by_slug(
                 submission_url = submission.solution_url if submission else None
                 submission_status = submission.status if submission else None
                 is_submitted = submission is not None
+                milestones = build_project_milestones(project)
+                valid_milestone_ids = {m["id"] for m in milestones}
+                completed_milestone_ids = [
+                    m for m in milestones_map.get(project.project_id, []) if m in valid_milestone_ids
+                ]
                 projects_data.append({
                     "project_id": project.project_id,
                     "submission_id": submission.submission_id if submission else None,  # Add submission_id for updates
@@ -584,6 +599,8 @@ async def get_learning_content_by_slug(
                     "estimated_hours": project.estimated_hours,
                     "starter_repo_url": project.starter_repo_url,
                     "required_skills": project.required_skills or [],
+                    "milestones": milestones,
+                    "completed_milestones": completed_milestone_ids,
                     "is_completed": is_completed,
                     "is_submitted": is_submitted,
                     "submission_url": submission_url,

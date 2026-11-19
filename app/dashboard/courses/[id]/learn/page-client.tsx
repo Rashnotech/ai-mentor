@@ -30,6 +30,8 @@ import {
   Volume2,
   Pause,
   Square,
+  ShieldCheck,
+  AlertTriangle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -44,6 +46,7 @@ import {
   type ProjectContent,
   type QuizContent,
   type StudentCourseResponse,
+  type GitHubPrecheckResponse,
 } from "@/lib/api"
 import { toast } from "sonner"
 import ReactMarkdown from "react-markdown"
@@ -466,6 +469,7 @@ interface ProjectContentViewProps {
   moduleOrder: number
   project: ProjectContent
   onSubmit: (link: string) => Promise<void>
+  onToggleMilestone: (projectId: number, moduleId: number, milestoneId: string, completed: boolean) => Promise<void>
   onNext: () => void
   hasNext: boolean
   previewMode?: boolean
@@ -476,6 +480,7 @@ function ProjectContentView({
   moduleOrder,
   project,
   onSubmit,
+  onToggleMilestone,
   onNext,
   hasNext,
   previewMode = false,
@@ -485,6 +490,66 @@ function ProjectContentView({
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState("")
   const [isUpdating, setIsUpdating] = useState(false)
+  const [togglingMilestoneId, setTogglingMilestoneId] = useState<string | null>(null)
+  const [isCheckingRepo, setIsCheckingRepo] = useState(false)
+  const [precheckReport, setPrecheckReport] = useState<GitHubPrecheckResponse | null>(null)
+
+  useEffect(() => {
+    setPrecheckReport(null)
+    setLinkValue("")
+    setIsEditing(false)
+  }, [project.project_id])
+
+  const milestones = project.milestones && project.milestones.length > 0
+    ? project.milestones
+    : [
+        {
+          id: "m1",
+          title: "Milestone 1: Setup & Data Model",
+          description: "Initialize your repository, configure dependencies, and create the core folder structure or schema stubs.",
+          order: 1,
+        },
+        {
+          id: "m2",
+          title: "Milestone 2: Core Logic",
+          description: "Implement the main project features, wire up validation or state flow, and verify happy-path behavior.",
+          order: 2,
+        },
+        {
+          id: "m3",
+          title: "Milestone 3: Edge Cases & GitHub Readiness",
+          description: "Handle error cases, add a clear README with setup steps, and push clean commits to a public GitHub repo.",
+          order: 3,
+        },
+      ]
+  const completedMilestoneIds = project.completed_milestones ?? []
+  const checkedCount = milestones.filter((m) => completedMilestoneIds.includes(m.id)).length
+  const milestonePct = milestones.length > 0 ? Math.round((checkedCount / milestones.length) * 100) : 0
+
+  const handleToggle = async (milestoneId: string, currentlyChecked: boolean) => {
+    if (previewMode || togglingMilestoneId) return
+    setTogglingMilestoneId(milestoneId)
+    try {
+      await onToggleMilestone(project.project_id, project.module_id, milestoneId, !currentlyChecked)
+    } finally {
+      setTogglingMilestoneId(null)
+    }
+  }
+
+  const handleRunPrecheck = async (targetUrl?: string) => {
+    const urlToCheck = (targetUrl ?? linkValue).trim()
+    if (!urlToCheck) return
+    setIsCheckingRepo(true)
+    try {
+      const report = await studentCoursesApi.precheckProjectRepo(project.project_id, urlToCheck)
+      setPrecheckReport(report)
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.detail || "Failed to run repository pre-check"
+      toast.error(errorMsg)
+    } finally {
+      setIsCheckingRepo(false)
+    }
+  }
 
   const handleSubmit = async () => {
     if (!linkValue.trim()) return
@@ -610,6 +675,84 @@ function ProjectContentView({
         </div>
       )}
 
+      {/* Progressive Micro-Milestones Checklist */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+          <div>
+            <h4 className="text-sm font-bold text-gray-900">Project Micro-Milestones</h4>
+            <p className="text-xs text-gray-500">
+              Check off each milestone as you build to track your progress and earn +5 XP per step.
+            </p>
+          </div>
+          <span
+            className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 ${
+              checkedCount >= milestones.length
+                ? "bg-[#16A34A] text-white"
+                : "bg-[#2563EB] text-white"
+            }`}
+          >
+            {checkedCount} of {milestones.length} milestones checked
+          </span>
+        </div>
+
+        <div className="w-full h-2.5 rounded-full bg-gray-100 overflow-hidden mb-4">
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${
+              checkedCount >= milestones.length ? "bg-[#16A34A]" : "bg-[#2563EB]"
+            }`}
+            style={{ width: `${milestonePct}%` }}
+          />
+        </div>
+
+        <div className="space-y-2.5">
+          {milestones.map((milestone) => {
+            const isChecked = completedMilestoneIds.includes(milestone.id)
+            const isBusy = togglingMilestoneId === milestone.id
+            return (
+              <button
+                key={milestone.id}
+                type="button"
+                disabled={previewMode || isBusy}
+                onClick={() => handleToggle(milestone.id, isChecked)}
+                className={`w-full text-left flex items-start gap-3 p-3.5 rounded-xl border transition-colors ${
+                  isChecked
+                    ? "bg-[#F0FDF4] border-[#BBF7D0]"
+                    : "bg-[#F8FAFC] border-gray-200 hover:border-[#2563EB]"
+                } disabled:opacity-70`}
+              >
+                <div
+                  className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0 border transition-colors ${
+                    isChecked
+                      ? "bg-[#16A34A] border-[#16A34A] text-white"
+                      : "bg-white border-gray-300 text-transparent"
+                  }`}
+                >
+                  {isBusy ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2563EB]" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div
+                    className={`text-sm font-semibold ${
+                      isChecked ? "text-[#166534] line-through" : "text-gray-900"
+                    }`}
+                  >
+                    {milestone.title}
+                  </div>
+                  {milestone.description && (
+                    <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                      {milestone.description}
+                    </p>
+                  )}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       {previewMode ? (
         <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
           <h4 className="font-semibold text-gray-900 text-sm mb-1">Preview Mode</h4>
@@ -618,39 +761,126 @@ function ProjectContentView({
           </p>
         </div>
       ) : !project.is_submitted ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5">
-          <h4 className="mb-3 text-sm font-semibold text-gray-900">Submit Your Project</h4>
-          <div className="flex flex-col gap-2.5 sm:flex-row">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <Link2 className="w-4 h-4 text-gray-400" />
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
+          <div>
+            <h4 className="mb-3 text-sm font-semibold text-gray-900">Submit Your Project</h4>
+            <div className="flex flex-col gap-2.5 sm:flex-row">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Link2 className="w-4 h-4 text-gray-400" />
+                </div>
+                <input
+                  type="url"
+                  value={linkValue}
+                  onChange={(e) => setLinkValue(e.target.value)}
+                  placeholder="https://github.com/username/project"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
-              <input
-                type="url"
-                value={linkValue}
-                onChange={(e) => setLinkValue(e.target.value)}
-                placeholder="https://github.com/username/project"
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleRunPrecheck()}
+                disabled={!linkValue.trim() || isCheckingRepo}
+                className="w-full border-[#2563EB] text-[#2563EB] hover:bg-blue-50 rounded-xl px-4 sm:w-auto"
+              >
+                {isCheckingRepo ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                ) : (
+                  <ShieldCheck className="w-4 h-4 mr-1.5" />
+                )}
+                Pre-Check Repo
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={!linkValue.trim() || isSubmitting}
+                className="w-full bg-[#4E89FF] hover:bg-blue-600 text-white rounded-xl px-6 sm:w-auto"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-1.5" />
+                    Submit
+                  </>
+                )}
+              </Button>
             </div>
-            <Button
-              onClick={handleSubmit}
-              disabled={!linkValue.trim() || isSubmitting}
-              className="w-full bg-[#4E89FF] hover:bg-blue-600 text-white rounded-xl px-6 sm:w-auto"
-            >
-              {isSubmitting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <Check className="w-4 h-4 mr-1.5" />
-                  Submit
-                </>
-              )}
-            </Button>
+            <p className="text-xs text-gray-400 mt-2">
+              Paste your public GitHub repository URL and click Pre-Check Repo for instant readiness feedback before mentor review.
+            </p>
           </div>
-          <p className="text-xs text-gray-400 mt-2">
-            Paste the link to your GitHub repository, CodeSandbox, or live demo.
-          </p>
+
+          {precheckReport && (
+            <div
+              className={`rounded-xl border p-4 ${
+                precheckReport.readiness_status === "ready"
+                  ? "bg-[#F0FDF4] border-[#BBF7D0]"
+                  : precheckReport.readiness_status === "needs_attention"
+                  ? "bg-[#FFFBEB] border-[#FDE68A]"
+                  : "bg-[#FEF2F2] border-[#FECACA]"
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  {precheckReport.readiness_status === "ready" ? (
+                    <ShieldCheck className="w-4 h-4 text-[#16A34A]" />
+                  ) : precheckReport.readiness_status === "needs_attention" ? (
+                    <AlertTriangle className="w-4 h-4 text-[#D97706]" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-[#DC2626]" />
+                  )}
+                  <span className="text-xs font-bold text-gray-900">
+                    GitHub Pre-Flight Check
+                    {precheckReport.repo_full_name ? ` — ${precheckReport.repo_full_name}` : ""}
+                  </span>
+                </div>
+                <span
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-bold text-white ${
+                    precheckReport.readiness_status === "ready"
+                      ? "bg-[#16A34A]"
+                      : precheckReport.readiness_status === "needs_attention"
+                      ? "bg-[#EA580C]"
+                      : "bg-[#DC2626]"
+                  }`}
+                >
+                  {precheckReport.readiness_status === "ready"
+                    ? "Ready to Submit"
+                    : precheckReport.readiness_status === "needs_attention"
+                    ? "Needs Attention"
+                    : "Blocked"}
+                </span>
+              </div>
+
+              <p className="text-xs text-gray-700 mb-2.5">{precheckReport.summary}</p>
+
+              <ul className="space-y-1.5 text-xs text-gray-800 list-disc list-inside">
+                {precheckReport.bullets.map((bullet, idx) => (
+                  <li key={idx} className="leading-relaxed">
+                    {bullet}
+                  </li>
+                ))}
+              </ul>
+
+              {precheckReport.detected_stack.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {precheckReport.detected_stack.map((tech) => (
+                    <span
+                      key={tech}
+                      className="px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[11px] font-medium text-gray-700"
+                    >
+                      {tech}
+                    </span>
+                  ))}
+                  {precheckReport.file_count > 0 && (
+                    <span className="px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[11px] font-medium text-gray-500">
+                      {precheckReport.file_count} files
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -1940,6 +2170,40 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
     }
   }
 
+  const handleToggleProjectMilestone = async (
+    projectId: number,
+    moduleId: number,
+    milestoneId: string,
+    completed: boolean
+  ) => {
+    if (!courseContent) return
+    try {
+      const res = await studentCoursesApi.toggleProjectMilestone(
+        projectId,
+        moduleId,
+        milestoneId,
+        completed
+      )
+      setCourseContent({
+        ...courseContent,
+        modules: courseContent.modules.map((mod) => ({
+          ...mod,
+          projects: mod.projects.map((p) =>
+            p.project_id === projectId
+              ? { ...p, completed_milestones: res.completed_milestones }
+              : p
+          ),
+        })),
+      })
+      if (res.xp_awarded > 0) {
+        toast.success(`Milestone completed! +${res.xp_awarded} XP`)
+      }
+    } catch (error) {
+      console.error("Failed to toggle project milestone:", error)
+      toast.error("Could not update milestone. Please try again.")
+    }
+  }
+
   const handleSubmitProject = async (link: string) => {
     if (!courseContent || !activeItemId) return
 
@@ -2094,6 +2358,7 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
               moduleOrder={currentModuleOrder}
               project={activeProject.project}
               onSubmit={handleSubmitProject}
+              onToggleMilestone={handleToggleProjectMilestone}
               onNext={handleNext}
               hasNext={hasNextItem()}
               previewMode={isPreviewMode}

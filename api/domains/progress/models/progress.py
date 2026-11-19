@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """a module that handles progress tracking"""
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, CheckConstraint, Index
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, CheckConstraint, Index, JSON
 from sqlalchemy.sql.sqltypes import Text
 from sqlalchemy.orm import relationship
 from db.base import Base
@@ -18,6 +18,7 @@ class UserProgress(Base):
     started_at = Column(DateTime(timezone=True))
     completed_at = Column(DateTime(timezone=True))
     time_spent_seconds = Column(Integer)
+    completed_milestones = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 

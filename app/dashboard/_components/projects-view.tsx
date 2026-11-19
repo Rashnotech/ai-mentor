@@ -314,6 +314,32 @@ export function ProjectsView() {
                         </div>
                       )}
 
+                      {/* Micro-Milestones Progress Bar */}
+                      {(() => {
+                        const totalMilestones = project.milestones?.length ?? 3
+                        const checkedCount = project.completed_milestones?.length ?? 0
+                        const pct = totalMilestones > 0 ? Math.round((checkedCount / totalMilestones) * 100) : 0
+                        const allChecked = totalMilestones > 0 && checkedCount >= totalMilestones
+                        return (
+                          <div className="mb-4 rounded-xl border border-gray-100 bg-[#F8FAFC] p-3">
+                            <div className="flex items-center justify-between text-[11px] font-semibold mb-1.5">
+                              <span className="text-gray-700">Project Milestones</span>
+                              <span className={allChecked ? "text-[#16A34A]" : "text-[#2563EB]"}>
+                                {checkedCount} of {totalMilestones} milestones checked
+                              </span>
+                            </div>
+                            <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-300 ${
+                                  allChecked ? "bg-[#16A34A]" : "bg-[#2563EB]"
+                                }`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })()}
+
                       {/* Reviewer Feedback Box */}
                       {project.reviewer_feedback && (
                         <div className="mb-4 p-3 bg-[#FEF3C7] border border-[#FDE68A] rounded-xl text-xs text-[#92400E] flex items-start gap-2">

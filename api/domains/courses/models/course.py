@@ -2,7 +2,7 @@
 """a module that handles course and learning path models"""
 from datetime import datetime, timezone
 from db.base import Base
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Text, Enum, Index, Numeric
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Text, Enum, Index, Numeric, JSON
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 from core.constant import SkillLevel, ContentType
@@ -161,6 +161,7 @@ class Project(Base):
     starter_repo_url = Column(String(255))
     solution_repo_url = Column(String(255))
     required_skills = Column(ARRAY(String(50)), nullable=True)
+    milestones = Column(JSON, nullable=True)
     
     # Project-specific deadline configuration (days from project assignment)
     first_deadline_days = Column(Integer, nullable=True)  # Days to first deadline (100% points)

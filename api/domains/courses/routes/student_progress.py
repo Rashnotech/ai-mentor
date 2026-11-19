@@ -19,6 +19,10 @@ from domains.courses.schemas.course_schema import (
     ProjectSubmissionRequest,
     ProjectSubmissionResponse,
     ModuleProgressResponse,
+    MilestoneToggleRequest,
+    MilestoneToggleResponse,
+    GitHubPrecheckRequest,
+    GitHubPrecheckResponse,
 )
 from domains.users.models.user import User
 from core.errors import AppError
@@ -547,6 +551,82 @@ async def get_ai_mentor_feedback(
             for item in feed
         ]
     }
+
+
+@progress_router.post(
+    "/projects/{project_id}/milestones/{milestone_id}/toggle",
+    response_model=MilestoneToggleResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Toggle project micro-milestone",
+    description="Mark a project checkpoint as completed or incomplete and award XP on completion",
+)
+async def toggle_project_milestone_route(
+    project_id: int,
+    milestone_id: str,
+    request: MilestoneToggleRequest,
+    current_user: User = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """Toggle a project micro-milestone checkpoint."""
+    try:
+        from domains.courses.services.project_milestone_service import toggle_project_milestone
+        from domains.users.services.activity_service import touch_last_active
+
+        user_id = current_user.get("user_id")
+        await touch_last_active(db_session, user_id)
+        result = await toggle_project_milestone(
+            db_session=db_session,
+            user_id=user_id,
+            project_id=project_id,
+            milestone_id=milestone_id,
+            completed=request.completed,
+        )
+        return MilestoneToggleResponse(**result)
+    except AppError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.error(f"Error toggling project milestone {project_id}/{milestone_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating project milestone",
+        )
+
+
+@progress_router.post(
+    "/projects/{project_id}/precheck",
+    response_model=GitHubPrecheckResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Run automated GitHub repo pre-check",
+    description="Inspect a public GitHub repository against project requirements before mentor submission",
+)
+async def precheck_project_repo(
+    project_id: int,
+    request: GitHubPrecheckRequest,
+    current_user: User = Depends(get_current_user),
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """Run an instant 3-bullet readiness check on a public GitHub repository."""
+    try:
+        from domains.courses.models.course import Project
+        from domains.courses.services.github_precheck_service import run_github_precheck
+
+        stmt = select(Project).where(Project.project_id == project_id)
+        project = (await db_session.execute(stmt)).scalar_one_or_none()
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+
+        report = await run_github_precheck(project=project, repo_url=request.repo_url)
+        return GitHubPrecheckResponse(**report)
+    except HTTPException:
+        raise
+    except AppError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.error(f"Error running GitHub pre-check for project {project_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error running GitHub repository pre-check",
+        )
 
 
 @progress_router.get(
