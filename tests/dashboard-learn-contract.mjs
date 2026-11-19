@@ -24,6 +24,7 @@ const projectDefenseComponent = await readFile("app/dashboard/courses/[id]/learn
 const apiClient = await readFile("lib/api/client.ts", "utf8")
 const authContext = await readFile("lib/auth-context.tsx", "utf8")
 const procfile = await readFile("api/Procfile", "utf8")
+const herokuRelease = await readFile("api/scripts/heroku_release.py", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 // 1. No gradients in student dashboard shell, dashboard view, or in-dashboard learn page
@@ -163,6 +164,8 @@ assert.match(apiClient, /auth:session-expired/)
 assert.doesNotMatch(apiClient, /hasOAuthSession/)
 assert.match(authContext, /addEventListener\("auth:session-expired"/)
 assert.match(authContext, /router\.replace\("\/login"\)/)
-assert.match(procfile, /^release:\s*alembic upgrade head/m)
+assert.match(procfile, /^release:\s*python scripts\/heroku_release\.py/m)
+assert.match(herokuRelease, /alembic/)
+assert.match(herokuRelease, /choose_baseline_revisions/)
 
 console.log("Dashboard learn contract: PASS")

@@ -1,2 +1,2 @@
-release: alembic upgrade head
+release: python scripts/heroku_release.py
 web: gunicorn -k uvicorn.workers.UvicornWorker app:app

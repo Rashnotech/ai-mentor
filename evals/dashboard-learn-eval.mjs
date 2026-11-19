@@ -24,6 +24,7 @@ const projectDefenseComponent = await readFile("app/dashboard/courses/[id]/learn
 const apiClient = await readFile("lib/api/client.ts", "utf8")
 const authContext = await readFile("lib/auth-context.tsx", "utf8")
 const procfile = await readFile("api/Procfile", "utf8")
+const herokuRelease = await readFile("api/scripts/heroku_release.py", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 const checks = [
@@ -223,9 +224,11 @@ const checks = [
       authContext.includes('router.replace("/login")'),
   ],
   [
-    "Heroku Procfile runs alembic upgrade head in release phase before web dyno starts",
-    /^release:\s*alembic upgrade head/m.test(procfile) &&
-      /^web:\s*gunicorn /m.test(procfile),
+    "Heroku Procfile runs idempotent release script before web dyno starts",
+    /^release:\s*python scripts\/heroku_release\.py/m.test(procfile) &&
+      /^web:\s*gunicorn /m.test(procfile) &&
+      herokuRelease.includes("choose_baseline_revisions") &&
+      herokuRelease.includes("upgrade"),
   ],
 ]
 
