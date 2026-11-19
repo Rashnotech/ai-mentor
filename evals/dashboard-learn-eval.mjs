@@ -23,6 +23,7 @@ const projectInterviewRoutes = await readFile("api/domains/ai/routes/project_int
 const projectDefenseComponent = await readFile("app/dashboard/courses/[id]/learn/_components/project-defense-interview.tsx", "utf8")
 const apiClient = await readFile("lib/api/client.ts", "utf8")
 const authContext = await readFile("lib/auth-context.tsx", "utf8")
+const procfile = await readFile("api/Procfile", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 const checks = [
@@ -220,6 +221,11 @@ const checks = [
       !apiClient.includes("hasOAuthSession") &&
       authContext.includes('addEventListener("auth:session-expired"') &&
       authContext.includes('router.replace("/login")'),
+  ],
+  [
+    "Heroku Procfile runs alembic upgrade head in release phase before web dyno starts",
+    /^release:\s*alembic upgrade head/m.test(procfile) &&
+      /^web:\s*gunicorn /m.test(procfile),
   ],
 ]
 
