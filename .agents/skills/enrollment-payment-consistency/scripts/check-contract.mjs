@@ -10,7 +10,7 @@ const files = {
   enrollment: await readFile("api/domains/courses/services/enrollment_service.py", "utf8"),
   studentRoutes: await readFile("api/domains/courses/routes/student.py", "utf8"),
   paymentSchema: await readFile("api/domains/payments/schemas.py", "utf8"),
-  apiTypes: await readFile("lib/api.ts", "utf8"),
+  apiTypes: await readFile("lib/api/payments-surveys.ts", "utf8"),
   paymentModal: await readFile("components/payment-modal.tsx", "utf8"),
 }
 

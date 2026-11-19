@@ -7,7 +7,7 @@ const files = {
   onboardingPage: await readFile("app/onboarding/page-client.tsx", "utf8"),
   loginPage: await readFile("app/login/login-client.tsx", "utf8"),
   authContext: await readFile("lib/auth-context.tsx", "utf8"),
-  api: await readFile("lib/api.ts", "utf8"),
+  api: await readFile("lib/api/auth.ts", "utf8"),
   store: await readFile("lib/stores/user-store.ts", "utf8"),
 }
 

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises"
 
 const profileView = await readFile("app/dashboard/_components/profile-view.tsx", "utf8")
 const adminUsersPage = await readFile("app/admin/users/page-client.tsx", "utf8")
-const apiClient = await readFile("lib/api.ts", "utf8")
+const apiClient = (await readFile("lib/api/courses.ts", "utf8")) + "\n" + (await readFile("lib/api/admin.ts", "utf8"))
 const adminRoutes = await readFile("api/domains/users/routes/admin.py", "utf8")
 const adminSchemas = await readFile("api/domains/users/schemas/admin_schema.py", "utf8")
 const rewardsRoutes = await readFile("api/domains/courses/routes/rewards.py", "utf8")

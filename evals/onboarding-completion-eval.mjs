@@ -7,7 +7,7 @@ const source = {
   auth: await readFile("api/domains/users/routes/auth.py", "utf8"),
   page: await readFile("app/onboarding/page-client.tsx", "utf8"),
   guard: await readFile("lib/auth-context.tsx", "utf8"),
-  api: await readFile("lib/api.ts", "utf8"),
+  api: await readFile("lib/api/auth.ts", "utf8"),
   store: await readFile("lib/stores/user-store.ts", "utf8"),
   login: await readFile("app/login/login-client.tsx", "utf8"),
 }

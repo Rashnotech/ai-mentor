@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises"
 const files = {
   contact: await readFile("app/contact/page.tsx", "utf8"),
   contactClient: await readFile("app/contact/page-client.tsx", "utf8"),
-  api: await readFile("lib/api.ts", "utf8"),
+  api: await readFile("lib/api/auth.ts", "utf8"),
   backendRoutes: await readFile("api/domains/contact/routes.py", "utf8"),
   backendSchemas: await readFile("api/domains/contact/schemas.py", "utf8"),
   backendConfig: await readFile("api/core/config.py", "utf8"),

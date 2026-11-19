@@ -6,7 +6,7 @@ const mentorCourses = await readFile("app/mentor/my-courses/page-client.tsx", "u
 const learnPage = await readFile("app/courses/[id]/learn/page-client.tsx", "utf8")
 const mentorStudents = await readFile("app/mentor/my-students/page-client.tsx", "utf8")
 const dashboardView = await readFile("app/dashboard/_components/dashboard-view.tsx", "utf8")
-const apiLib = await readFile("lib/api.ts", "utf8")
+const apiLib = await readFile("lib/api/courses.ts", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 const checks = [

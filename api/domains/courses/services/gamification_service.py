@@ -62,8 +62,19 @@ class GamificationService:
         # Get or create gamification record
         gamification = await self._get_or_create_gamification(user_id)
         
-        # Get user timezone for display
+        # Get user timezone for display and stale-streak check
         user_timezone = await self._get_user_timezone(user_id)
+        today = self._get_user_local_date(datetime.now(timezone.utc), user_timezone)
+        if (
+            gamification.current_streak > 0
+            and gamification.last_activity_date is not None
+            and gamification.last_activity_date < today - timedelta(days=1)
+        ):
+            gamification.current_streak = 0
+            gamification.updated_at = datetime.now(timezone.utc)
+            self.db_session.add(gamification)
+            await self.db_session.commit()
+            await self.db_session.refresh(gamification)
         
         return {
             "total_xp": gamification.total_xp,
@@ -163,6 +174,55 @@ class GamificationService:
         except Exception as e:
             await self.db_session.rollback()
             logger.error(f"Error recording quiz activity: {str(e)}")
+            raise
+
+    async def record_learning_activity(
+        self,
+        user_id: str,
+        xp_earned: int = 10,
+        submitted_at: Optional[datetime] = None,
+    ) -> Dict[str, Any]:
+        """
+        Record non-quiz learning activity (lesson completion, project submission)
+        and update XP and daily streak.
+        """
+        try:
+            now_utc = submitted_at or datetime.now(timezone.utc)
+            user_timezone = await self._get_user_timezone(user_id)
+            activity_date = self._get_user_local_date(now_utc, user_timezone)
+
+            gamification = await self._get_or_create_gamification(user_id)
+            if xp_earned > 0:
+                gamification.total_xp += xp_earned
+                await self._update_streak(gamification, activity_date)
+
+            gamification.updated_at = datetime.now(timezone.utc)
+            self.db_session.add(gamification)
+
+            await self._log_daily_activity(
+                user_id=user_id,
+                activity_date=activity_date,
+                xp_earned=max(0, xp_earned),
+                is_correct=False,
+                submitted_at=now_utc,
+            )
+
+            await self.db_session.commit()
+            await self.db_session.refresh(gamification)
+
+            logger.info(
+                f"Learning activity recorded for user {user_id}: "
+                f"XP={gamification.total_xp}, Streak={gamification.current_streak}"
+            )
+            return {
+                "total_xp": gamification.total_xp,
+                "current_streak": gamification.current_streak,
+                "xp_earned_now": max(0, xp_earned),
+                "streak_updated": xp_earned > 0,
+            }
+        except Exception as e:
+            await self.db_session.rollback()
+            logger.error(f"Error recording learning activity: {str(e)}")
             raise
 
     async def _update_streak(self, gamification: UserGamification, activity_date: date) -> None:

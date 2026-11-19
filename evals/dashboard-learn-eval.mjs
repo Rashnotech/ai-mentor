@@ -10,7 +10,12 @@ const courseDetails = await readFile("app/courses/[id]/page-client.tsx", "utf8")
 const legacyLearnPage = await readFile("app/courses/[id]/learn/page.tsx", "utf8")
 const dashboardLearnPage = await readFile("app/dashboard/courses/[id]/learn/page-client.tsx", "utf8")
 const aiRoutes = await readFile("api/domains/ai/routes/rubber_duck.py", "utf8")
-const apiLib = await readFile("lib/api.ts", "utf8")
+const apiLib = await readFile("lib/api/courses.ts", "utf8")
+const apiBarrel = await readFile("lib/api.ts", "utf8")
+const gamificationService = await readFile("api/domains/courses/services/gamification_service.py", "utf8")
+const studentRoutes = await readFile("api/domains/courses/routes/student.py", "utf8")
+const studentProgressRoutes = await readFile("api/domains/courses/routes/student_progress.py", "utf8")
+const studentReviewRoutes = await readFile("api/domains/courses/routes/student_reviews.py", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 const checks = [
@@ -146,6 +151,28 @@ const checks = [
       dashboardLearnPage.includes("studentCoursesApi.synthesizeLessonOverviewSpeech") &&
       dashboardLearnPage.includes("Listen to Overview") &&
       dashboardLearnPage.includes("en-NG-EzinneNeural"),
+  ],
+  [
+    "lib/api.ts and student.py are split into domain modules with intact barrel exports and sub-routers",
+    apiBarrel.includes('export * from "./api/client"') &&
+      apiBarrel.includes('export * from "./api/auth"') &&
+      apiBarrel.includes('export * from "./api/courses"') &&
+      apiBarrel.includes('export * from "./api/admin"') &&
+      apiBarrel.includes('export * from "./api/payments-surveys"') &&
+      apiBarrel.includes('export * from "./api/internships-community-sessions"') &&
+      studentRoutes.includes("include_router(progress_router)") &&
+      studentRoutes.includes("include_router(reviews_router)") &&
+      studentReviewRoutes.includes("reviews_router"),
+  ],
+  [
+    "student streak and XP update on lesson, quiz, and project completion and render on dashboard",
+    gamificationService.includes("def record_learning_activity") &&
+      gamificationService.includes("last_activity_date < today - timedelta(days=1)") &&
+      studentProgressRoutes.includes("GamificationService(db_session).record_learning_activity") &&
+      studentProgressRoutes.includes("GamificationService(db_session).record_quiz_activity") &&
+      /gamificationApi\s*\.getMyGamification\(\)/.test(dashboardView) &&
+      dashboardView.includes("streakDays") &&
+      dashboardView.includes("totalXp"),
   ],
 ]
 

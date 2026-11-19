@@ -233,4 +233,3 @@ async def lesson_overview_speech(request: Request, body: LessonOverviewSpeechReq
         media_type="audio/mpeg",
         headers={"Cache-Control": "private, max-age=3600"},
     )
-

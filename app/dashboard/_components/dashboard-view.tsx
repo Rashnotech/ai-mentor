@@ -15,11 +15,18 @@ import {
   ArrowRight,
   Layers,
   PlayCircle,
+  Flame,
+  Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useUserStore } from "@/lib/stores/user-store"
-import { studentCoursesApi, type StudentCourseResponse, type AIMentorFeedbackItem } from "@/lib/api"
+import {
+  studentCoursesApi,
+  gamificationApi,
+  type StudentCourseResponse,
+  type AIMentorFeedbackItem,
+} from "@/lib/api"
 
 const FEEDBACK_ICONS: Record<AIMentorFeedbackItem["category"], typeof Sparkles> = {
   quiz_encouragement: Sparkles,
@@ -50,6 +57,8 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [mentorFeedback, setMentorFeedback] = useState<AIMentorFeedbackItem[]>([])
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(true)
+  const [streakDays, setStreakDays] = useState<number>(user?.streak_days ?? 0)
+  const [totalXp, setTotalXp] = useState<number>(user?.total_xp ?? 0)
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -79,6 +88,18 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
     fetchFeedback()
   }, [])
 
+  useEffect(() => {
+    gamificationApi
+      .getMyGamification()
+      .then((g) => {
+        setStreakDays(g.current_streak)
+        setTotalXp(g.total_xp)
+      })
+      .catch(() => {
+        // Non-blocking
+      })
+  }, [])
+
   // Get the course with most progress for next steps
   const activeCourse =
     enrolledCourses.find((c) => c.progress_percent > 0 && c.progress_percent < 100) ||
@@ -94,9 +115,24 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Welcome & Stats */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {firstName}!</h1>
-        <p className="text-gray-500">Let&apos;s continue your learning journey.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {firstName}!</h1>
+          <p className="text-gray-500">Let&apos;s continue your learning journey.</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FFF7ED] border border-[#FED7AA] text-[#C2410C]">
+            <Flame className="w-4 h-4 text-[#EA580C]" />
+            <span className="text-sm font-bold">{streakDays}</span>
+            <span className="text-xs font-medium">Day Streak</span>
+          </div>
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#EBF2FF] border border-[#BFDBFE] text-[#1D4ED8]">
+            <Zap className="w-4 h-4 text-[#2563EB]" />
+            <span className="text-sm font-bold">{totalXp.toLocaleString()}</span>
+            <span className="text-xs font-medium">XP</span>
+          </div>
+        </div>
       </div>
 
       {/* Three Solid Color Stat Cards */}

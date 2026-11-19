@@ -42,7 +42,7 @@ const [
   read("api/domains/courses/services/enrollment_service.py"),
   read("api/domains/courses/routes/student.py"),
   read("components/payment-modal.tsx"),
-  read("lib/api.ts"),
+  read("lib/api/payments-surveys.ts"),
 ])
 const listSchema = courseListJsonLd([fixture])
 const detailSchema = courseJsonLd(fixture)
