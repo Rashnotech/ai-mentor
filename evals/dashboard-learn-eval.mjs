@@ -21,6 +21,8 @@ const githubPrecheckService = await readFile("api/domains/courses/services/githu
 const projectInterviewService = await readFile("api/domains/ai/services/project_interview_service.py", "utf8")
 const projectInterviewRoutes = await readFile("api/domains/ai/routes/project_interview.py", "utf8")
 const projectDefenseComponent = await readFile("app/dashboard/courses/[id]/learn/_components/project-defense-interview.tsx", "utf8")
+const apiClient = await readFile("lib/api/client.ts", "utf8")
+const authContext = await readFile("lib/auth-context.tsx", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 const checks = [
@@ -209,6 +211,15 @@ const checks = [
       projectDefenseComponent.includes("Mode 1: Project Defense Interview") &&
       !/bg-gradient|bg-linear|radial-gradient/.test(projectDefenseComponent) &&
       dashboardLearnPage.includes("<ProjectDefenseInterview"),
+  ],
+  [
+    "expired access + refresh tokens automatically clear auth state, notify AuthProvider, and redirect to login",
+    apiClient.includes("export function handleSessionExpired") &&
+      apiClient.includes("useUserStore.getState().clearUser()") &&
+      apiClient.includes("auth:session-expired") &&
+      !apiClient.includes("hasOAuthSession") &&
+      authContext.includes('addEventListener("auth:session-expired"') &&
+      authContext.includes('router.replace("/login")'),
   ],
 ]
 

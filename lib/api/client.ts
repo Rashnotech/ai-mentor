@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from "axios"
 import { getAccessToken, getRefreshToken, updateAccessToken, clearAuthData, isAccessTokenExpired } from "../auth-storage"
+import { useUserStore } from "../stores/user-store"
 
 // API Base URL - adjust based on your environment
 export const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/v1` || "http://localhost:8000/api/v1"
@@ -76,6 +77,22 @@ function redirectToLogin() {
   }
 }
 
+/**
+ * Clear all local/Zustand session state, notify AuthProvider, and redirect to login.
+ */
+export function handleSessionExpired() {
+  clearAuthData()
+  try {
+    useUserStore.getState().clearUser()
+  } catch {
+    // Ignore store errors outside React runtime
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("auth:session-expired"))
+  }
+  redirectToLogin()
+}
+
 // Request interceptor for adding auth token
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
@@ -94,7 +111,11 @@ apiClient.interceptors.request.use(
         processQueue(null, token)
       } catch (error) {
         processQueue(error as Error, null)
-        // Don't throw here, let the request proceed and handle 401 in response interceptor
+        // If refresh token itself is expired/invalid, log the user out immediately
+        if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
+          handleSessionExpired()
+          return Promise.reject(error)
+        }
       } finally {
         isRefreshing = false
       }
@@ -165,49 +186,25 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError as Error, null)
-        
-        // Check if it's actually an auth error vs network error
+
+        // Log out on definitive auth failure (401/403 from refresh endpoint) or missing refresh token.
+        // Do not log out on transient network/5xx errors.
         if (axios.isAxiosError(refreshError)) {
           const status = refreshError.response?.status
-          // Only clear auth and redirect for definitive auth failures.
-          // Skip if the user has a cookie-based OAuth session (no refresh token
-          // stored, but a Zustand user exists) — clearing storage would wipe their
-          // session and force an unnecessary login redirect.
           if (status === 401 || status === 403) {
-            const hasOAuthSession = (() => {
-              try {
-                const stored = sessionStorage.getItem("user-storage")
-                return !!(stored && JSON.parse(stored)?.state?.user)
-              } catch { return false }
-            })()
-            if (!hasOAuthSession) {
-              clearAuthData()
-              redirectToLogin()
-            }
+            handleSessionExpired()
           }
-          // For other errors (network, 500, etc), just reject without clearing
         } else {
-          // Non-axios error during refresh (e.g. "No refresh token available").
-          // Only hard-redirect if this isn't an OAuth cookie session.
-          const hasOAuthSession = (() => {
-            try {
-              const stored = sessionStorage.getItem("user-storage")
-              return !!(stored && JSON.parse(stored)?.state?.user)
-            } catch { return false }
-          })()
-          if (!hasOAuthSession) {
-            clearAuthData()
-            redirectToLogin()
-          }
+          handleSessionExpired()
         }
-        
+
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false
       }
     }
-    
-    // Handle 403 with invalid token message
+
+    // Handle 403 with invalid/expired token message
     if (error.response?.status === 403) {
       const errorData = error.response.data as { detail?: string }
       if (errorData?.detail === "Invalid token" || errorData?.detail === "Token expired") {
@@ -221,16 +218,9 @@ apiClient.interceptors.response.use(
               Authorization: `Bearer ${newAccessToken}`,
             }
             return apiClient(originalRequest)
-          } catch {
-            const hasOAuthSession = (() => {
-              try {
-                const stored = sessionStorage.getItem("user-storage")
-                return !!(stored && JSON.parse(stored)?.state?.user)
-              } catch { return false }
-            })()
-            if (!hasOAuthSession) {
-              clearAuthData()
-              redirectToLogin()
+          } catch (refreshError) {
+            if (!axios.isAxiosError(refreshError) || refreshError.response?.status === 401 || refreshError.response?.status === 403) {
+              handleSessionExpired()
             }
           }
         }

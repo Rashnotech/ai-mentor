@@ -21,6 +21,8 @@ const githubPrecheckService = await readFile("api/domains/courses/services/githu
 const projectInterviewService = await readFile("api/domains/ai/services/project_interview_service.py", "utf8")
 const projectInterviewRoutes = await readFile("api/domains/ai/routes/project_interview.py", "utf8")
 const projectDefenseComponent = await readFile("app/dashboard/courses/[id]/learn/_components/project-defense-interview.tsx", "utf8")
+const apiClient = await readFile("lib/api/client.ts", "utf8")
+const authContext = await readFile("lib/auth-context.tsx", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 // 1. No gradients in student dashboard shell, dashboard view, or in-dashboard learn page
@@ -152,5 +154,13 @@ assert.match(projectDefenseComponent, /getDisplayMedia/)
 assert.match(projectDefenseComponent, /Mode 1: Project Defense Interview/)
 assert.doesNotMatch(projectDefenseComponent, /bg-gradient|bg-linear|radial-gradient/)
 assert.match(dashboardLearnPage, /<ProjectDefenseInterview/)
+
+// Session expiration & refresh failure auto-logout contract
+assert.match(apiClient, /export function handleSessionExpired/)
+assert.match(apiClient, /useUserStore\.getState\(\)\.clearUser\(\)/)
+assert.match(apiClient, /auth:session-expired/)
+assert.doesNotMatch(apiClient, /hasOAuthSession/)
+assert.match(authContext, /addEventListener\("auth:session-expired"/)
+assert.match(authContext, /router\.replace\("\/login"\)/)
 
 console.log("Dashboard learn contract: PASS")

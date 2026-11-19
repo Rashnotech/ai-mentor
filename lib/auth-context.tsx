@@ -92,6 +92,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  // Listen for session expiration events dispatched by the API client after refresh failure
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const onSessionExpired = () => {
+      clearAuthData()
+      clearUser()
+      hasSyncedCurrentUser.current = false
+      if (!pathname.includes("/login") && !pathname.includes("/signup")) {
+        router.replace("/login")
+      }
+    }
+    window.addEventListener("auth:session-expired", onSessionExpired)
+    return () => window.removeEventListener("auth:session-expired", onSessionExpired)
+  }, [clearUser, pathname, router])
+
   // Check authentication on mount and route changes
   useEffect(() => {
     // Skip during server prerender and before client mount
