@@ -100,7 +100,8 @@ _TTS_AUDIO_CACHE: dict[str, bytes] = {}
 OVERVIEW_NARRATION_SYSTEM_PROMPT = (
     "You are an engaging technical instructor narrating a concise spoken audio summary of a lesson. "
     "Summarize the core takeaways of the provided lesson into 2 natural, clear spoken sentences "
-    "under 185 characters total. Use plain spoken English only (no markdown, no bullet points, no code)."
+    "under 185 characters total. Use plain spoken English only (no markdown, no bullet points, no code). "
+    "If the lesson contains code examples, simply mention 'See the code sample in the lesson.'"
 )
 
 
@@ -110,21 +111,66 @@ class LessonOverviewSpeechRequest(BaseModel):
 
 
 def _strip_markdown_for_speech(raw: str) -> str:
-    """Convert lesson markdown into clean spoken text for Groq TTS."""
+    """Convert lesson markdown into clean spoken English without markdown tokens, escape chars, or code."""
     text = raw
-    # Replace fenced code blocks with a brief spoken note
-    text = re.sub(r"```[\s\S]*?```", " Code example omitted. ", text)
-    # Remove inline backticks
-    text = re.sub(r"`([^`]+)`", r"\1", text)
-    # Convert markdown links [label](url) -> label
-    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
-    # Strip images ![alt](url)
-    text = re.sub(r"!\[[^\]]*\]\([^)]+\)", "", text)
-    # Strip headings, blockquotes, list markers, bold/italic markers, table pipes
-    text = re.sub(r"^[#>\-*+]+\s*", "", text, flags=re.MULTILINE)
-    text = re.sub(r"[*_~|]+", " ", text)
-    # Collapse whitespace
+    # 1. Normalize literal escaped newlines/tabs/returns (e.g. "\\n", "\\r", "\\t") into real newlines/spaces
+    text = text.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\r", "\n").replace("\\t", " ")
+    # Also remove any stray backslash-letter escape sequences like \n or \t if double-escaped
+    text = re.sub(r"\\[nrt]", "\n", text)
+
+    # 2. Replace fenced code blocks (```...``` or ~~~...~~~) with "See code sample."
+    text = re.sub(r"```[\s\S]*?```", " See code sample. ", text)
+    text = re.sub(r"~~~[\s\S]*?~~~", " See code sample. ", text)
+    # Also handle unclosed fenced code blocks at the end of a string
+    text = re.sub(r"```[\s\S]*$", " See code sample. ", text)
+
+    # 3. Replace HTML <pre>/<code> blocks and strip remaining HTML tags
+    text = re.sub(r"<(pre|code)\b[^>]*>[\s\S]*?</\1>", " See code sample. ", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", " ", text)
+
+    # 4. Replace inline code (`...`) with "see code sample" if it contains code symbols/operators or multiple tokens,
+    #    or keep simple plain-word terms without backticks.
+    def _replace_inline_code(match: re.Match) -> str:
+        inner = match.group(1).strip()
+        if not inner:
+            return ""
+        if len(inner) > 20 or re.search(r"[{}()\[\]=+;<>\\/$#@!%^&*|~.:_-]", inner) or " " in inner:
+            return " see code sample "
+        return f" {inner} "
+
+    text = re.sub(r"`([^`]+)`", _replace_inline_code, text)
+    text = text.replace("`", " ")
+
+    # 5. Strip images ![alt](url) and convert markdown links [label](url) -> label
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", " ", text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r" \1 ", text)
+    # Replace bare URLs with a short spoken reference
+    text = re.sub(r"https?://\S+", " link ", text)
+
+    # 6. Strip markdown table separator lines (e.g. |---|---|) and table pipes
+    text = re.sub(r"^\s*\|?(?:\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?\s*$", " ", text, flags=re.MULTILINE)
+    text = text.replace("|", ", ")
+
+    # 7. Strip heading hashes (#, ##, ###) anywhere they appear
+    text = re.sub(r"(?:^|\s)#+\s*", ". ", text, flags=re.MULTILINE)
+    text = text.replace("#", " ")
+
+    # 8. Strip blockquotes, horizontal rules, and bullet/numbered list markers at line starts
+    text = re.sub(r"^\s*(?:[-*_]{3,})\s*$", " ", text, flags=re.MULTILINE)
+    text = re.sub(r"^\s*(?:>+|\*|-|\+|\d+\.)\s+", ". ", text, flags=re.MULTILINE)
+
+    # 9. Strip remaining markdown formatting symbols (*, _, ~, \, >, <, =, braces, brackets)
+    text = re.sub(r"[*_~\\><={}\[\]]+", " ", text)
+
+    # 10. Turn newlines into sentence pauses and clean up repeated punctuation/spaces
+    text = re.sub(r"\n+", ". ", text)
+    text = re.sub(r"(?:\.\s*){2,}", ". ", text)
+    text = re.sub(r"\s+([.,!?;:])", r"\1", text)
+    text = re.sub(r"^\s*[.,;:]+\s*", "", text)
     text = re.sub(r"\s+", " ", text).strip()
+
+    # Deduplicate consecutive "See code sample." phrases
+    text = re.sub(r"(?:[Ss]ee code sample\.?\s*){2,}", "See code sample. ", text).strip()
     return text
 
 
@@ -272,7 +318,9 @@ async def lesson_overview_speech(request: Request, body: LessonOverviewSpeechReq
         if summarized:
             spoken_script = _strip_markdown_for_speech(summarized) or cleaned_text[:190]
         else:
-            spoken_script = cleaned_text[:190]
+            spoken_script = _strip_markdown_for_speech(cleaned_text[:190])
+    else:
+        spoken_script = _strip_markdown_for_speech(spoken_script)
 
     chunks = _split_into_tts_chunks(spoken_script)
     if not chunks:

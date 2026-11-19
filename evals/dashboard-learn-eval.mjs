@@ -135,6 +135,8 @@ const checks = [
     aiRoutes.includes('TTS_MODEL = "canopylabs/orpheus-v1-english"') &&
       aiRoutes.includes("MAX_TTS_CHUNKS = 2") &&
       aiRoutes.includes("OVERVIEW_NARRATION_SYSTEM_PROMPT") &&
+      aiRoutes.includes("See code sample.") &&
+      aiRoutes.includes('replace("\\\\n", "\\n")') &&
       aiRoutes.includes("client.audio.speech.create") &&
       aiRoutes.includes("response.read()") &&
       aiRoutes.includes("RateLimitError") &&
