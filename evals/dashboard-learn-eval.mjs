@@ -131,21 +131,21 @@ const checks = [
       gateConfig.includes("app/dashboard/_components/profile-view.tsx"),
   ],
   [
-    "lesson overview includes Groq TTS audio endpoint, LLM condensation, 429 backoff, and player controls",
-    aiRoutes.includes('TTS_MODEL = "canopylabs/orpheus-v1-english"') &&
-      aiRoutes.includes("MAX_TTS_CHUNKS = 2") &&
-      aiRoutes.includes("OVERVIEW_NARRATION_SYSTEM_PROMPT") &&
+    "lesson overview uses edge-tts neural voices to read the entire sanitized overview with voice selector",
+    aiRoutes.includes("import edge_tts") &&
+      aiRoutes.includes('DEFAULT_EDGE_TTS_VOICE = "en-US-AriaNeural"') &&
+      aiRoutes.includes("EDGE_TTS_VOICE_MAP") &&
       aiRoutes.includes("See code sample.") &&
       aiRoutes.includes('replace("\\\\n", "\\n")') &&
-      aiRoutes.includes("client.audio.speech.create") &&
-      aiRoutes.includes("response.read()") &&
-      aiRoutes.includes("RateLimitError") &&
+      aiRoutes.includes("edge_tts.Communicate(text=text, voice=voice)") &&
+      aiRoutes.includes('media_type="audio/mpeg"') &&
       aiRoutes.includes("_TTS_AUDIO_CACHE") &&
       aiRoutes.includes('@router.post("/lesson-overview/speech")') &&
       apiLib.includes("synthesizeLessonOverviewSpeech") &&
       dashboardLearnPage.includes("handleToggleOverviewAudio") &&
       dashboardLearnPage.includes("studentCoursesApi.synthesizeLessonOverviewSpeech") &&
-      dashboardLearnPage.includes("Listen to Overview"),
+      dashboardLearnPage.includes("Listen to Overview") &&
+      dashboardLearnPage.includes("en-NG-EzinneNeural"),
   ],
 ]
 

@@ -76,6 +76,7 @@ function LessonContentView({
 }: LessonContentViewProps) {
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false)
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
+  const [selectedVoice, setSelectedVoice] = useState("en-US-AriaNeural")
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -85,7 +86,7 @@ function LessonContentView({
     .trim()
 
   useEffect(() => {
-    // Reset audio player state when switching lessons
+    // Reset audio player state when switching lessons or voice persona
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.currentTime = 0
@@ -96,7 +97,7 @@ function LessonContentView({
       if (prev) URL.revokeObjectURL(prev)
       return null
     })
-  }, [lesson.lesson_id])
+  }, [lesson.lesson_id, selectedVoice])
 
   const handleToggleOverviewAudio = async () => {
     if (!overviewSpeechText) {
@@ -118,7 +119,10 @@ function LessonContentView({
 
     setIsGeneratingAudio(true)
     try {
-      const audioBlob = await studentCoursesApi.synthesizeLessonOverviewSpeech(overviewSpeechText, "autumn")
+      const audioBlob = await studentCoursesApi.synthesizeLessonOverviewSpeech(
+        overviewSpeechText,
+        selectedVoice
+      )
       const objectUrl = URL.createObjectURL(audioBlob)
       setAudioUrl(objectUrl)
       const audio = new Audio(objectUrl)
@@ -129,8 +133,8 @@ function LessonContentView({
       await audio.play()
       setIsPlayingAudio(true)
     } catch (error: any) {
-      console.error("Failed to generate Groq overview audio:", error)
-      const detail = error?.response?.data?.detail || "Failed to generate audio overview with Groq"
+      console.error("Failed to generate overview audio:", error)
+      const detail = error?.response?.data?.detail || "Failed to generate audio overview"
       toast.error(detail)
     } finally {
       setIsGeneratingAudio(false)
@@ -248,12 +252,26 @@ function LessonContentView({
           <div className="flex items-center gap-3">
             <h3 className="text-base font-bold text-gray-900 sm:text-lg">Overview</h3>
             {(lesson.description || lesson.content) && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <select
+                  value={selectedVoice}
+                  onChange={(e) => setSelectedVoice(e.target.value)}
+                  disabled={isGeneratingAudio}
+                  aria-label="Select narrator voice"
+                  className="px-2.5 py-1.5 rounded-xl border border-gray-200 bg-white text-xs font-medium text-gray-700 focus:outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  <option value="en-US-AriaNeural">Aria (US Female)</option>
+                  <option value="en-US-ChristopherNeural">Christopher (US Male)</option>
+                  <option value="en-NG-EzinneNeural">Ezinne (NG Female)</option>
+                  <option value="en-NG-AbeoNeural">Abeo (NG Male)</option>
+                  <option value="en-GB-SoniaNeural">Sonia (UK Female)</option>
+                  <option value="en-GB-RyanNeural">Ryan (UK Male)</option>
+                </select>
                 <button
                   type="button"
                   onClick={handleToggleOverviewAudio}
                   disabled={isGeneratingAudio}
-                  aria-label={isPlayingAudio ? "Pause audio overview" : "Listen to overview with Groq AI"}
+                  aria-label={isPlayingAudio ? "Pause audio overview" : "Listen to overview"}
                   className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60 ${
                     isPlayingAudio
                       ? "bg-[#2563EB] text-white"

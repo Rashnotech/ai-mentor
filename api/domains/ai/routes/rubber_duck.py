@@ -4,17 +4,13 @@ from fastapi import APIRouter, Request, HTTPException, status
 from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel, Field
 from typing import List, AsyncGenerator, Optional
-from groq import Groq, RateLimitError, APIStatusError
+from groq import Groq
 from core.config import settings
 from auth.dependencies import get_currrent_user
-from domains.ai.services.groq_client import generate_text
-import asyncio
+import edge_tts
 import hashlib
-import io
 import json
 import re
-import time
-import wave
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 
@@ -92,22 +88,33 @@ async def rubber_duck_chat(request: Request, body: ChatRequest):
     )
 
 
-TTS_MODEL = "canopylabs/orpheus-v1-english"
-ALLOWED_TTS_VOICES = {"troy", "autumn", "diana", "hannah", "austin", "daniel"}
-MAX_TTS_CHUNKS = 2
+DEFAULT_EDGE_TTS_VOICE = "en-US-AriaNeural"
+EDGE_TTS_VOICE_MAP: dict[str, str] = {
+    # Named / Orpheus aliases -> Edge Neural Voices
+    "autumn": "en-US-AriaNeural",
+    "diana": "en-US-JennyNeural",
+    "hannah": "en-GB-SoniaNeural",
+    "troy": "en-US-ChristopherNeural",
+    "austin": "en-US-GuyNeural",
+    "daniel": "en-GB-RyanNeural",
+    "ezinne": "en-NG-EzinneNeural",
+    "abeo": "en-NG-AbeoNeural",
+    # Direct Edge Neural Voice IDs
+    "en-us-arianeural": "en-US-AriaNeural",
+    "en-us-jennyneural": "en-US-JennyNeural",
+    "en-us-guyneural": "en-US-GuyNeural",
+    "en-us-christopherneural": "en-US-ChristopherNeural",
+    "en-gb-sonianeural": "en-GB-SoniaNeural",
+    "en-gb-ryanneural": "en-GB-RyanNeural",
+    "en-ng-ezinneneural": "en-NG-EzinneNeural",
+    "en-ng-abeoneural": "en-NG-AbeoNeural",
+}
 _TTS_AUDIO_CACHE: dict[str, bytes] = {}
-
-OVERVIEW_NARRATION_SYSTEM_PROMPT = (
-    "You are an engaging technical instructor narrating a concise spoken audio summary of a lesson. "
-    "Summarize the core takeaways of the provided lesson into 2 natural, clear spoken sentences "
-    "under 185 characters total. Use plain spoken English only (no markdown, no bullet points, no code). "
-    "If the lesson contains code examples, simply mention 'See the code sample in the lesson.'"
-)
 
 
 class LessonOverviewSpeechRequest(BaseModel):
-    text: str = Field(..., min_length=1, max_length=20000)
-    voice: Optional[str] = Field(default="autumn")
+    text: str = Field(..., min_length=1, max_length=30000)
+    voice: Optional[str] = Field(default="en-US-AriaNeural")
 
 
 def _strip_markdown_for_speech(raw: str) -> str:
@@ -174,179 +181,56 @@ def _strip_markdown_for_speech(raw: str) -> str:
     return text
 
 
-def _split_into_tts_chunks(text: str, max_chars: int = 190) -> List[str]:
-    """Split spoken text into <=190-character sentence chunks for Orpheus V1, capped at MAX_TTS_CHUNKS."""
-    sentences = re.split(r"(?<=[.!?])\s+", text)
-    chunks: List[str] = []
-    current = ""
-
-    for sentence in sentences:
-        sentence = sentence.strip()
-        if not sentence:
-            continue
-        if len(sentence) > max_chars:
-            if current:
-                chunks.append(current)
-                current = ""
-            words = sentence.split(" ")
-            part = ""
-            for word in words:
-                if len(word) > max_chars:
-                    word = word[:max_chars]
-                if not part:
-                    part = word
-                elif len(part) + 1 + len(word) <= max_chars:
-                    part = f"{part} {word}"
-                else:
-                    chunks.append(part)
-                    part = word
-            if part:
-                chunks.append(part)
-        elif not current:
-            current = sentence
-        elif len(current) + 1 + len(sentence) <= max_chars:
-            current = f"{current} {sentence}"
-        else:
-            chunks.append(current)
-            current = sentence
-
-    if current:
-        chunks.append(current)
-
-    return chunks[:MAX_TTS_CHUNKS]
-
-
-def _synthesize_wav_chunks_sync(chunks: List[str], voice: str) -> bytes:
-    """Call Groq SDK client.audio.speech.create for each chunk and merge WAV frames."""
-    client = Groq(api_key=settings.GROQ_API_KEY)
-    wav_payloads: List[bytes] = []
-
-    for chunk in chunks:
-        audio_bytes: Optional[bytes] = None
-        for attempt in range(3):
-            try:
-                response = client.audio.speech.create(
-                    model=TTS_MODEL,
-                    voice=voice,
-                    response_format="wav",
-                    input=chunk,
-                )
-                audio_bytes = response.read()
-                break
-            except RateLimitError as exc:
-                err_msg = str(exc)
-                # If daily token quota (TPD) or long wait is hit, fail immediately with a clear message
-                if "tokens per day (TPD)" in err_msg or "m" in re.findall(r"try again in ([^\s.]+)", err_msg):
-                    raise RuntimeError(f"Groq TTS rate limit reached (429): {err_msg[:320]}") from exc
-                if attempt < 2:
-                    wait_seconds = 6.5
-                    match = re.search(r"try again in (\d+(?:\.\d+)?)s", err_msg)
-                    if match:
-                        wait_seconds = min(float(match.group(1)) + 0.5, 10.0)
-                    time.sleep(wait_seconds)
-                    continue
-                raise RuntimeError(f"Groq TTS rate limit reached (429): {err_msg[:320]}") from exc
-            except APIStatusError as exc:
-                raise RuntimeError(f"Groq TTS error ({exc.status_code}): {str(exc)[:300]}") from exc
-
-        if not audio_bytes:
-            raise RuntimeError("Groq TTS returned empty audio")
-        wav_payloads.append(audio_bytes)
-
-    if len(wav_payloads) == 1:
-        return wav_payloads[0]
-
-    # Concatenate WAV PCM frames into a single WAV file
-    output_buffer = io.BytesIO()
-    params = None
-    frames: List[bytes] = []
-
-    for wav_bytes in wav_payloads:
-        with wave.open(io.BytesIO(wav_bytes), "rb") as reader:
-            if params is None:
-                params = reader.getparams()
-            frames.append(reader.readframes(reader.getnframes()))
-
-    if params is None:
-        return wav_payloads[0]
-
-    with wave.open(output_buffer, "wb") as writer:
-        writer.setparams(params)
-        for frame_chunk in frames:
-            writer.writeframes(frame_chunk)
-
-    return output_buffer.getvalue()
+async def _synthesize_edge_tts_audio(text: str, voice: str) -> bytes:
+    """Synthesize the complete lesson overview audio stream using Microsoft Edge Neural TTS (edge_tts)."""
+    communicate = edge_tts.Communicate(text=text, voice=voice)
+    audio_chunks: List[bytes] = []
+    async for chunk in communicate.stream():
+        if chunk.get("type") == "audio" and chunk.get("data"):
+            audio_chunks.append(chunk["data"])
+    if not audio_chunks:
+        raise RuntimeError("Edge TTS returned empty audio stream")
+    return b"".join(audio_chunks)
 
 
 @router.post("/lesson-overview/speech")
 async def lesson_overview_speech(request: Request, body: LessonOverviewSpeechRequest):
-    """Synthesize spoken audio for a lesson overview using Groq TTS."""
+    """Synthesize complete spoken audio for a lesson overview using Microsoft Edge Neural TTS (edge-tts)."""
     user = await get_currrent_user(request)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-
-    if not settings.GROQ_API_KEY:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Groq AI service not configured")
 
     cleaned_text = _strip_markdown_for_speech(body.text)
     if not cleaned_text:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No readable overview text provided")
 
-    voice = (body.voice or "autumn").lower()
-    if voice not in ALLOWED_TTS_VOICES:
-        voice = "autumn"
+    requested_voice = (body.voice or DEFAULT_EDGE_TTS_VOICE).strip().lower()
+    resolved_voice = EDGE_TTS_VOICE_MAP.get(requested_voice, DEFAULT_EDGE_TTS_VOICE)
 
-    cache_key = hashlib.sha256(f"{voice}:{cleaned_text}".encode("utf-8")).hexdigest()
-    cached_wav = _TTS_AUDIO_CACHE.get(cache_key)
-    if cached_wav:
+    cache_key = hashlib.sha256(f"{resolved_voice}:{cleaned_text}".encode("utf-8")).hexdigest()
+    cached_mp3 = _TTS_AUDIO_CACHE.get(cache_key)
+    if cached_mp3:
         return Response(
-            content=cached_wav,
-            media_type="audio/wav",
+            content=cached_mp3,
+            media_type="audio/mpeg",
             headers={"Cache-Control": "private, max-age=3600"},
         )
 
-    # Condense long lesson markdown into a natural spoken overview via Groq LLM
-    # so Orpheus TTS fits inside 1 single request (<= 190 chars) and preserves TPD/RPM quota.
-    spoken_script = cleaned_text
-    if len(cleaned_text) > 190:
-        summarized = await generate_text(
-            OVERVIEW_NARRATION_SYSTEM_PROMPT,
-            cleaned_text[:4000],
-            max_tokens=90,
-            temperature=0.5,
-        )
-        if summarized:
-            spoken_script = _strip_markdown_for_speech(summarized) or cleaned_text[:190]
-        else:
-            spoken_script = _strip_markdown_for_speech(cleaned_text[:190])
-    else:
-        spoken_script = _strip_markdown_for_speech(spoken_script)
-
-    chunks = _split_into_tts_chunks(spoken_script)
-    if not chunks:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No readable overview text provided")
-
     try:
-        wav_bytes = await asyncio.to_thread(_synthesize_wav_chunks_sync, chunks, voice)
+        mp3_bytes = await _synthesize_edge_tts_audio(cleaned_text, resolved_voice)
     except Exception as exc:
-        err_str = str(exc)
-        status_code = (
-            status.HTTP_429_TOO_MANY_REQUESTS
-            if "429" in err_str or "rate limit" in err_str.lower()
-            else status.HTTP_502_BAD_GATEWAY
-        )
         raise HTTPException(
-            status_code=status_code,
-            detail=f"Failed to generate lesson audio with Groq: {err_str}",
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to generate lesson audio: {str(exc)}",
         )
 
     if len(_TTS_AUDIO_CACHE) >= 128:
         _TTS_AUDIO_CACHE.clear()
-    _TTS_AUDIO_CACHE[cache_key] = wav_bytes
+    _TTS_AUDIO_CACHE[cache_key] = mp3_bytes
 
     return Response(
-        content=wav_bytes,
-        media_type="audio/wav",
+        content=mp3_bytes,
+        media_type="audio/mpeg",
         headers={"Cache-Control": "private, max-age=3600"},
     )
 

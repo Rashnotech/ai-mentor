@@ -2289,11 +2289,11 @@ export const studentCoursesApi = {
   },
 
   /**
-   * Synthesize spoken audio (WAV) for a lesson overview using Groq TTS.
+   * Synthesize full spoken audio (MP3) for a lesson overview using Microsoft Edge Neural TTS (edge-tts).
    */
   synthesizeLessonOverviewSpeech: async (
     text: string,
-    voice: string = "autumn"
+    voice: string = "en-US-AriaNeural"
   ): Promise<Blob> => {
     const response = await apiClient.post(
       "/ai/lesson-overview/speech",
