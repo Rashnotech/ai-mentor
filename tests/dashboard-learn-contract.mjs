@@ -18,6 +18,9 @@ const studentProgressRoutes = await readFile("api/domains/courses/routes/student
 const studentReviewRoutes = await readFile("api/domains/courses/routes/student_reviews.py", "utf8")
 const milestoneService = await readFile("api/domains/courses/services/project_milestone_service.py", "utf8")
 const githubPrecheckService = await readFile("api/domains/courses/services/github_precheck_service.py", "utf8")
+const projectInterviewService = await readFile("api/domains/ai/services/project_interview_service.py", "utf8")
+const projectInterviewRoutes = await readFile("api/domains/ai/routes/project_interview.py", "utf8")
+const projectDefenseComponent = await readFile("app/dashboard/courses/[id]/learn/_components/project-defense-interview.tsx", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 // 1. No gradients in student dashboard shell, dashboard view, or in-dashboard learn page
@@ -139,5 +142,15 @@ assert.match(projectsView, /milestones checked/)
 assert.match(dashboardLearnPage, /Project Micro-Milestones/)
 assert.match(dashboardLearnPage, /Pre-Check Repo/)
 assert.match(dashboardLearnPage, /GitHub Pre-Flight Check/)
+
+// Mode 1: Project Defense Interview (Groq Vision + Text)
+assert.match(projectInterviewService, /meta-llama\/llama-4-scout-17b-16e-instruct/)
+assert.match(projectInterviewService, /build_multimodal_user_content/)
+assert.match(projectInterviewRoutes, /\/ai\/project-interview/)
+assert.match(apiLib, /runProjectDefenseTurn/)
+assert.match(projectDefenseComponent, /getDisplayMedia/)
+assert.match(projectDefenseComponent, /Mode 1: Project Defense Interview/)
+assert.doesNotMatch(projectDefenseComponent, /bg-gradient|bg-linear|radial-gradient/)
+assert.match(dashboardLearnPage, /<ProjectDefenseInterview/)
 
 console.log("Dashboard learn contract: PASS")

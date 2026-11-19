@@ -51,6 +51,7 @@ import {
 import { toast } from "sonner"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { ProjectDefenseInterview } from "./_components/project-defense-interview"
 
 // ============================================
 // LESSON CONTENT VIEW
@@ -1050,6 +1051,9 @@ function ProjectContentView({
           )}
         </div>
       )}
+
+      {/* Mode 1: Project Defense Interview at the end of each project */}
+      <ProjectDefenseInterview project={project} previewMode={previewMode} />
 
       {hasNext && (
         <div className="border-t border-gray-100 pt-4 flex justify-end">

@@ -18,6 +18,9 @@ const studentProgressRoutes = await readFile("api/domains/courses/routes/student
 const studentReviewRoutes = await readFile("api/domains/courses/routes/student_reviews.py", "utf8")
 const milestoneService = await readFile("api/domains/courses/services/project_milestone_service.py", "utf8")
 const githubPrecheckService = await readFile("api/domains/courses/services/github_precheck_service.py", "utf8")
+const projectInterviewService = await readFile("api/domains/ai/services/project_interview_service.py", "utf8")
+const projectInterviewRoutes = await readFile("api/domains/ai/routes/project_interview.py", "utf8")
+const projectDefenseComponent = await readFile("app/dashboard/courses/[id]/learn/_components/project-defense-interview.tsx", "utf8")
 const gateConfig = await readFile("tsconfig.gate.json", "utf8")
 
 const checks = [
@@ -195,6 +198,17 @@ const checks = [
       apiLib.includes("precheckProjectRepo") &&
       dashboardLearnPage.includes("Pre-Check Repo") &&
       dashboardLearnPage.includes("GitHub Pre-Flight Check"),
+  ],
+  [
+    "end of each project includes Mode 1 Project Defense Interview with Groq llama-4-scout Vision + screen share",
+    projectInterviewService.includes("meta-llama/llama-4-scout-17b-16e-instruct") &&
+      projectInterviewService.includes("build_multimodal_user_content") &&
+      projectInterviewRoutes.includes("/ai/project-interview") &&
+      apiLib.includes("runProjectDefenseTurn") &&
+      projectDefenseComponent.includes("getDisplayMedia") &&
+      projectDefenseComponent.includes("Mode 1: Project Defense Interview") &&
+      !/bg-gradient|bg-linear|radial-gradient/.test(projectDefenseComponent) &&
+      dashboardLearnPage.includes("<ProjectDefenseInterview"),
   ],
 ]
 

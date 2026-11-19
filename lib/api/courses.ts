@@ -166,6 +166,30 @@ export interface GitHubPrecheckResponse {
   bullets: string[]
 }
 
+export interface ProjectInterviewMessage {
+  role: "user" | "assistant"
+  content: string
+}
+
+export interface ProjectInterviewEvaluation {
+  score_percent: number
+  passed: boolean
+  strengths: string[]
+  gaps: string[]
+  mentor_note: string
+  xp_awarded: number
+}
+
+export interface ProjectInterviewTurnResponse {
+  message: string
+  question_number: number
+  max_questions: number
+  is_complete: boolean
+  used_vision: boolean
+  model: string
+  evaluation: ProjectInterviewEvaluation | null
+}
+
 export interface ProjectContent {
   project_id: number
   submission_id: number | null  // ID needed for updating the URL
@@ -1403,6 +1427,22 @@ export const studentCoursesApi = {
       {
         repo_url: repoUrl,
       }
+    )
+    return response.data
+  },
+
+  /**
+   * Run one turn of Mode 1: Project Defense Interview (Groq Vision + Text)
+   */
+  runProjectDefenseTurn: async (payload: {
+    project_id: number
+    transcript: ProjectInterviewMessage[]
+    screenshot_data_url?: string | null
+    repo_url?: string | null
+  }): Promise<ProjectInterviewTurnResponse> => {
+    const response = await apiClient.post<ProjectInterviewTurnResponse>(
+      "/ai/project-interview/turn",
+      payload
     )
     return response.data
   },
