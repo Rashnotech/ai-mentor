@@ -168,4 +168,12 @@ assert.match(procfile, /^release:\s*python scripts\/heroku_release\.py/m)
 assert.match(herokuRelease, /alembic/)
 assert.match(herokuRelease, /choose_baseline_revisions/)
 
+// Bulk queries + gradual module loading (no N+1, 60s timeout)
+assert.match(studentRoutes, /Lesson\.module_id\.in_\(module_ids\)/)
+assert.match(studentRoutes, /lite: bool = Query/)
+assert.match(studentRoutes, /content_loaded/)
+assert.match(apiLib, /timeout: 60000/)
+assert.match(dashboardLearnPage, /hydrateModule/)
+assert.match(dashboardLearnPage, /lite: true/)
+
 console.log("Dashboard learn contract: PASS")

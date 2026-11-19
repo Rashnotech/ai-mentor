@@ -230,6 +230,15 @@ const checks = [
       herokuRelease.includes("choose_baseline_revisions") &&
       herokuRelease.includes("upgrade"),
   ],
+  [
+    "learn content eliminates N+1 queries and loads active module first with gradual background hydration",
+    studentRoutes.includes("Lesson.module_id.in_(module_ids)") &&
+      studentRoutes.includes("lite: bool = Query") &&
+      studentRoutes.includes('"content_loaded": include_full_body') &&
+      apiLib.includes("timeout: 60000") &&
+      dashboardLearnPage.includes("hydrateModule") &&
+      dashboardLearnPage.includes("lite: true"),
+  ],
 ]
 
 const passed = checks.filter(([, ok]) => ok).length

@@ -288,6 +288,8 @@ async def check_enrollment_status_by_slug(
 async def get_learning_content_by_slug(
     slug: str,
     preview: bool = Query(False, description="Allow mentors and admins to preview course content without enrollment"),
+    lite: bool = Query(False, description="When true, only include full content for the active/target module for fast gradual loading"),
+    module_id: Optional[int] = Query(None, description="Target module_id to hydrate in full when lite=true"),
     current_user: User = Depends(get_current_user),
     db_session: AsyncSession = Depends(get_db_session),
 ):
@@ -507,41 +509,95 @@ async def get_learning_content_by_slug(
             if sub.status in ['approved', 'submitted', 'in_review']
         }
         
-        # Build modules with content
+        # Build modules with content using bulk queries (eliminates N+1 round-trips)
+        from collections import defaultdict
+        from domains.courses.services.project_milestone_service import (
+            build_project_milestones,
+            get_completed_milestones_map,
+        )
+
+        module_ids = [m.module_id for m in modules]
+        lessons_by_module = defaultdict(list)
+        projects_by_module = defaultdict(list)
+        questions_by_module = defaultdict(list)
+        all_question_ids = []
+        all_project_ids = []
+
+        if module_ids:
+            all_lessons_stmt = (
+                select(Lesson)
+                .where(Lesson.module_id.in_(module_ids))
+                .order_by(Lesson.module_id, Lesson.order)
+            )
+            for l in (await db_session.execute(all_lessons_stmt)).scalars().all():
+                lessons_by_module[l.module_id].append(l)
+
+            all_projects_stmt = (
+                select(Project)
+                .where(Project.module_id.in_(module_ids))
+                .order_by(Project.module_id, Project.order)
+            )
+            for p in (await db_session.execute(all_projects_stmt)).scalars().all():
+                projects_by_module[p.module_id].append(p)
+                all_project_ids.append(p.project_id)
+
+            all_questions_stmt = (
+                select(AssessmentQuestion)
+                .where(AssessmentQuestion.module_id.in_(module_ids))
+                .order_by(AssessmentQuestion.module_id, AssessmentQuestion.order)
+            )
+            for q in (await db_session.execute(all_questions_stmt)).scalars().all():
+                questions_by_module[q.module_id].append(q)
+                all_question_ids.append(q.question_id)
+
+        user_responses = {}
+        if all_question_ids and not is_preview_mode:
+            responses_stmt = select(AssessmentResponse).where(
+                AssessmentResponse.user_id == user_id,
+                AssessmentResponse.question_id.in_(all_question_ids),
+            )
+            for resp in (await db_session.execute(responses_stmt)).scalars().all():
+                user_responses[resp.question_id] = resp
+
+        milestones_map = (
+            await get_completed_milestones_map(db_session, user_id, all_project_ids)
+            if all_project_ids and not is_preview_mode
+            else {}
+        )
+
+        # When lite=True, choose a single module to hydrate in full for instant first paint
+        target_module_id: Optional[int] = None
+        if lite and modules:
+            if module_id and any(m.module_id == module_id for m in modules):
+                target_module_id = module_id
+            else:
+                for m in modules:
+                    m_lessons = lessons_by_module.get(m.module_id, [])
+                    m_projects = projects_by_module.get(m.module_id, [])
+                    m_questions = questions_by_module.get(m.module_id, [])
+                    has_incomplete_lesson = any(l.lesson_id not in completed_lessons for l in m_lessons)
+                    has_incomplete_project = any(p.project_id not in completed_projects for p in m_projects)
+                    has_incomplete_quiz = bool(m_questions) and any(
+                        q.question_id not in user_responses for q in m_questions
+                    )
+                    if has_incomplete_lesson or has_incomplete_quiz or has_incomplete_project:
+                        target_module_id = m.module_id
+                        break
+                if target_module_id is None:
+                    target_module_id = modules[0].module_id
+
         modules_data = []
         total_lessons = 0
         completed_lessons_count = 0
         total_projects = 0
         completed_projects_count = 0
-        
+
         for module in modules:
-            # Get lessons
-            lessons_stmt = select(Lesson).where(Lesson.module_id == module.module_id).order_by(Lesson.order)
-            lessons_result = await db_session.execute(lessons_stmt)
-            lessons = lessons_result.scalars().all()
-            
-            # Get projects
-            projects_stmt = select(Project).where(Project.module_id == module.module_id).order_by(Project.order)
-            projects_result = await db_session.execute(projects_stmt)
-            projects = projects_result.scalars().all()
-            
-            # Get assessment questions (quiz)
-            questions_stmt = select(AssessmentQuestion).where(AssessmentQuestion.module_id == module.module_id).order_by(AssessmentQuestion.order)
-            questions_result = await db_session.execute(questions_stmt)
-            questions = questions_result.scalars().all()
-            
-            # Get user's quiz responses for this module
-            question_ids = [q.question_id for q in questions]
-            user_responses = {}
-            if question_ids and not is_preview_mode:
-                responses_stmt = select(AssessmentResponse).where(
-                    AssessmentResponse.user_id == user_id,
-                    AssessmentResponse.question_id.in_(question_ids)
-                )
-                responses_result = await db_session.execute(responses_stmt)
-                for resp in responses_result.scalars().all():
-                    user_responses[resp.question_id] = resp
-            
+            lessons = lessons_by_module.get(module.module_id, [])
+            projects = projects_by_module.get(module.module_id, [])
+            questions = questions_by_module.get(module.module_id, [])
+            include_full_body = (not lite) or (module.module_id == target_module_id)
+
             lessons_data = []
             for lesson in lessons:
                 total_lessons += 1
@@ -551,28 +607,18 @@ async def get_learning_content_by_slug(
                 lessons_data.append({
                     "lesson_id": lesson.lesson_id,
                     "title": lesson.title,
-                    "description": lesson.description,
-                    "content": lesson.content,
+                    "description": lesson.description if include_full_body else None,
+                    "content": lesson.content if include_full_body else None,
                     "order": lesson.order,
                     "content_type": lesson.content_type.value if lesson.content_type else None,
-                    "content_url": lesson.youtube_video_url,
-                    "youtube_video_url": lesson.youtube_video_url,
-                    "external_resources": lesson.external_resources or [],
-                    "expected_outcomes": lesson.expected_outcomes or [],
+                    "content_url": lesson.youtube_video_url if include_full_body else None,
+                    "youtube_video_url": lesson.youtube_video_url if include_full_body else None,
+                    "external_resources": (lesson.external_resources or []) if include_full_body else [],
+                    "expected_outcomes": (lesson.expected_outcomes or []) if include_full_body else [],
                     "estimated_minutes": lesson.estimated_minutes,
                     "is_completed": is_completed,
                 })
-            
-            from domains.courses.services.project_milestone_service import (
-                build_project_milestones,
-                get_completed_milestones_map,
-            )
 
-            milestones_map = await get_completed_milestones_map(
-                db_session,
-                user_id,
-                [p.project_id for p in projects],
-            )
             projects_data = []
             for project in projects:
                 total_projects += 1
@@ -594,7 +640,7 @@ async def get_learning_content_by_slug(
                     "submission_id": submission.submission_id if submission else None,  # Add submission_id for updates
                     "module_id": module.module_id,
                     "title": project.title,
-                    "description": project.description,
+                    "description": project.description if include_full_body else None,
                     "order": project.order,
                     "estimated_hours": project.estimated_hours,
                     "starter_repo_url": project.starter_repo_url,
@@ -626,21 +672,22 @@ async def get_learning_content_by_slug(
                         answered_count += 1
                         if is_correct:
                             correct_count += 1
-                    quiz_questions.append({
-                        "question_id": q.question_id,
-                        "question_text": q.question_text,
-                        "question_type": q.question_type,
-                        "difficulty_level": q.difficulty_level,
-                        "order": q.order,
-                        "options": q.options or [],
-                        "points": q.points,
-                        "user_answer": user_resp.response_text if user_resp else None,
-                        "is_answered": is_answered,
-                        "is_correct": is_correct,
-                        # Include correct_answer and explanation after user has answered
-                        "correct_answer": q.correct_answer if is_answered else None,
-                        "explanation": q.explanation if is_answered else None,
-                    })
+                    if include_full_body:
+                        quiz_questions.append({
+                            "question_id": q.question_id,
+                            "question_text": q.question_text,
+                            "question_type": q.question_type,
+                            "difficulty_level": q.difficulty_level,
+                            "order": q.order,
+                            "options": q.options or [],
+                            "points": q.points,
+                            "user_answer": user_resp.response_text if user_resp else None,
+                            "is_answered": is_answered,
+                            "is_correct": is_correct,
+                            # Include correct_answer and explanation after user has answered
+                            "correct_answer": q.correct_answer if is_answered else None,
+                            "explanation": q.explanation if is_answered else None,
+                        })
                 
                 quiz_completed = answered_count == len(questions) and len(questions) > 0
                 quiz_data = {
@@ -663,6 +710,7 @@ async def get_learning_content_by_slug(
                 "description": module.description,
                 "order": module.order,
                 "estimated_hours": module.estimated_hours,
+                "content_loaded": include_full_body,
                 "progress_percent": module_progress,
                 "lessons": lessons_data,
                 "projects": projects_data,

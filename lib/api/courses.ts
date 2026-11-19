@@ -243,6 +243,7 @@ export interface ModuleContent {
   description: string | null
   order: number
   estimated_hours: number | null
+  content_loaded?: boolean
   progress_percent: number
   lessons: LessonContent[]
   projects: ProjectContent[]
@@ -1313,17 +1314,20 @@ export const studentCoursesApi = {
   },
 
   /**
-   * Get full learning content for an enrolled course
+   * Get full or gradual (lite) learning content for an enrolled course
    */
   getLearningContentBySlug: async (
     slug: string,
-    options?: { preview?: boolean }
+    options?: { preview?: boolean; lite?: boolean; moduleId?: number }
   ): Promise<LearningContentResponse> => {
     const searchParams = new URLSearchParams()
     if (options?.preview) searchParams.append("preview", "true")
+    if (options?.lite) searchParams.append("lite", "true")
+    if (options?.moduleId !== undefined) searchParams.append("module_id", String(options.moduleId))
     const query = searchParams.toString()
     const response = await apiClient.get<LearningContentResponse>(
-      `/enrollments/courses/by-slug/${slug}/learning-content${query ? `?${query}` : ""}`
+      `/enrollments/courses/by-slug/${slug}/learning-content${query ? `?${query}` : ""}`,
+      { timeout: 60000 }
     )
     return response.data
   },

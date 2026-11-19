@@ -1887,14 +1887,43 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
   const [isOtherModulesOpen, setIsOtherModulesOpen] = useState(false)
   const [isMobileRailOpen, setIsMobileRailOpen] = useState(false)
   const mainStageRef = useRef<HTMLDivElement>(null)
+  const hydratingModuleIdsRef = useRef<Set<number>>(new Set())
+
+  const hydrateModule = async (moduleId: number) => {
+    if (hydratingModuleIdsRef.current.has(moduleId)) return
+    hydratingModuleIdsRef.current.add(moduleId)
+    try {
+      const partial = await studentCoursesApi.getLearningContentBySlug(id, {
+        preview: isPreviewMode,
+        lite: true,
+        moduleId,
+      })
+      const hydratedMod = partial.modules.find((m) => m.module_id === moduleId)
+      if (hydratedMod) {
+        setCourseContent((prev) => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            modules: prev.modules.map((m) =>
+              m.module_id === moduleId ? { ...hydratedMod, content_loaded: true } : m
+            ),
+          }
+        })
+      }
+    } catch (err) {
+      console.warn(`Background hydration skipped for module ${moduleId}:`, err)
+    } finally {
+      hydratingModuleIdsRef.current.delete(moduleId)
+    }
+  }
 
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const content = await studentCoursesApi.getLearningContentBySlug(
-          id,
-          isPreviewMode ? { preview: true } : undefined
-        )
+        const content = await studentCoursesApi.getLearningContentBySlug(id, {
+          preview: isPreviewMode,
+          lite: true,
+        })
         setCourseContent(content)
         setIsEnrolled(true)
 
@@ -1908,7 +1937,7 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
               selected = true
               break
             }
-            if (mod.quiz && !mod.quiz.is_completed && mod.quiz.questions.length > 0) {
+            if (mod.quiz && !mod.quiz.is_completed && (mod.quiz.questions.length > 0 || mod.quiz.total_questions > 0)) {
               setActiveItemId(`quiz-${mod.module_id}`)
               setActiveItemType("quiz")
               selected = true
@@ -1928,7 +1957,7 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
             if (firstMod.lessons.length > 0) {
               setActiveItemId(`lesson-${firstMod.lessons[0].lesson_id}`)
               setActiveItemType("lesson")
-            } else if (firstMod.quiz && firstMod.quiz.questions.length > 0) {
+            } else if (firstMod.quiz && (firstMod.quiz.questions.length > 0 || firstMod.quiz.total_questions > 0)) {
               setActiveItemId(`quiz-${firstMod.module_id}`)
               setActiveItemType("quiz")
             } else if (firstMod.projects.length > 0) {
@@ -1971,16 +2000,47 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
     window.scrollTo({ top: 0, behavior: "smooth" })
   }, [activeItemId])
 
+  // Gradually download remaining modules one-by-one in the background
+  useEffect(() => {
+    if (!courseContent) return
+    const nextUnhydrated = courseContent.modules.find((m) => m.content_loaded === false)
+    if (!nextUnhydrated) return
+
+    let cancelled = false
+    const timer = setTimeout(() => {
+      if (!cancelled) {
+        void hydrateModule(nextUnhydrated.module_id)
+      }
+    }, 150)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [courseContent])
+
   const handleSelectItem = (itemId: string, type: "lesson" | "project" | "quiz") => {
     setActiveItemId(itemId)
     setActiveItemType(type)
+    if (courseContent) {
+      const targetMod = courseContent.modules.find((mod) => {
+        if (type === "quiz") return itemId === `quiz-${mod.module_id}`
+        if (type === "lesson") return mod.lessons.some((l) => itemId === `lesson-${l.lesson_id}`)
+        return mod.projects.some((p) => itemId === `project-${p.project_id}`)
+      })
+      if (targetMod && targetMod.content_loaded === false) {
+        void hydrateModule(targetMod.module_id)
+      }
+    }
   }
 
   const handleSelectModule = (mod: ModuleContent) => {
+    if (mod.content_loaded === false) {
+      void hydrateModule(mod.module_id)
+    }
     if (mod.lessons.length > 0) {
       setActiveItemId(`lesson-${mod.lessons[0].lesson_id}`)
       setActiveItemType("lesson")
-    } else if (mod.quiz && mod.quiz.questions.length > 0) {
+    } else if (mod.quiz && (mod.quiz.questions.length > 0 || mod.quiz.total_questions > 0)) {
       setActiveItemId(`quiz-${mod.module_id}`)
       setActiveItemType("quiz")
     } else if (mod.projects.length > 0) {
@@ -2042,7 +2102,7 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
       for (const lesson of mod.lessons) {
         allItems.push({ id: `lesson-${lesson.lesson_id}`, type: "lesson", moduleId: mod.module_id })
       }
-      if (mod.quiz && mod.quiz.questions.length > 0) {
+      if (mod.quiz && (mod.quiz.questions.length > 0 || mod.quiz.total_questions > 0)) {
         allItems.push({ id: `quiz-${mod.module_id}`, type: "quiz", moduleId: mod.module_id })
       }
       for (const project of mod.projects) {
@@ -2343,43 +2403,55 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
             </Sheet>
           </div>
 
-          {activeLesson && (
-            <LessonContentView
-              courseTitle={courseContent.course.title}
-              moduleOrder={currentModuleOrder}
-              lesson={activeLesson}
-              onComplete={handleCompleteLesson}
-              onNext={handleNext}
-              hasNext={hasNextItem()}
-              isCompleting={isCompleting}
-              previewMode={isPreviewMode}
-            />
-          )}
+          {activeModule?.content_loaded === false ? (
+            <div className="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 text-center">
+              <Loader2 className="w-7 h-7 animate-spin text-[#2563EB] mb-3" />
+              <p className="text-sm font-semibold text-gray-800">Loading module content...</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Downloading lessons and exercises for {activeModule.title}
+              </p>
+            </div>
+          ) : (
+            <>
+              {activeLesson && (
+                <LessonContentView
+                  courseTitle={courseContent.course.title}
+                  moduleOrder={currentModuleOrder}
+                  lesson={activeLesson}
+                  onComplete={handleCompleteLesson}
+                  onNext={handleNext}
+                  hasNext={hasNextItem()}
+                  isCompleting={isCompleting}
+                  previewMode={isPreviewMode}
+                />
+              )}
 
-          {activeProject && (
-            <ProjectContentView
-              courseTitle={courseContent.course.title}
-              moduleOrder={currentModuleOrder}
-              project={activeProject.project}
-              onSubmit={handleSubmitProject}
-              onToggleMilestone={handleToggleProjectMilestone}
-              onNext={handleNext}
-              hasNext={hasNextItem()}
-              previewMode={isPreviewMode}
-            />
-          )}
+              {activeProject && (
+                <ProjectContentView
+                  courseTitle={courseContent.course.title}
+                  moduleOrder={currentModuleOrder}
+                  project={activeProject.project}
+                  onSubmit={handleSubmitProject}
+                  onToggleMilestone={handleToggleProjectMilestone}
+                  onNext={handleNext}
+                  hasNext={hasNextItem()}
+                  previewMode={isPreviewMode}
+                />
+              )}
 
-          {activeQuiz && (
-            <QuizContentView
-              courseTitle={courseContent.course.title}
-              moduleOrder={currentModuleOrder}
-              quiz={activeQuiz.quiz}
-              moduleTitle={activeQuiz.moduleTitle}
-              onSubmitAnswer={handleSubmitQuizAnswer}
-              onNext={handleNext}
-              hasNext={hasNextItem()}
-              previewMode={isPreviewMode}
-            />
+              {activeQuiz && (
+                <QuizContentView
+                  courseTitle={courseContent.course.title}
+                  moduleOrder={currentModuleOrder}
+                  quiz={activeQuiz.quiz}
+                  moduleTitle={activeQuiz.moduleTitle}
+                  onSubmitAnswer={handleSubmitQuizAnswer}
+                  onNext={handleNext}
+                  hasNext={hasNextItem()}
+                  previewMode={isPreviewMode}
+                />
+              )}
+            </>
           )}
 
           {!activeLesson && !activeProject?.project && !activeQuiz && (
