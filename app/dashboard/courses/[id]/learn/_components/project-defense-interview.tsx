@@ -14,6 +14,7 @@ import {
   Send,
   ShieldCheck,
   Volume2,
+  VolumeX,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -52,6 +53,22 @@ export function ProjectDefenseInterview({
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<any>(null)
 
+  // Automatic Edge TTS neural voice reader
+  const [autoReadEnabled, setAutoReadEnabled] = useState(true)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioUrlRef = useRef<string | null>(null)
+
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current)
+      audioUrlRef.current = null
+    }
+  }
+
   const stopScreenShare = () => {
     if (screenStreamRef.current) {
       screenStreamRef.current.getTracks().forEach((t) => t.stop())
@@ -63,6 +80,14 @@ export function ProjectDefenseInterview({
     setIsSharingScreen(false)
   }
 
+  // Attach MediaStream after <video> mounts into the DOM
+  useEffect(() => {
+    if (isSharingScreen && videoRef.current && screenStreamRef.current) {
+      videoRef.current.srcObject = screenStreamRef.current
+      videoRef.current.play().catch(() => {})
+    }
+  }, [isSharingScreen])
+
   useEffect(() => {
     // Reset interview state when switching projects
     setHasStarted(false)
@@ -73,8 +98,10 @@ export function ProjectDefenseInterview({
     setUsedVisionLastTurn(false)
     setEvaluation(null)
     stopScreenShare()
+    stopAudio()
     return () => {
       stopScreenShare()
+      stopAudio()
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop()
@@ -105,12 +132,6 @@ export function ProjectDefenseInterview({
           stopScreenShare()
         }
       }
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          videoRef.current.play().catch(() => {})
-        }
-      })
       toast.success("Screen shared! Snapshots will be analyzed when you answer.")
     } catch {
       toast.error("Screen share was cancelled or blocked.")
@@ -133,12 +154,23 @@ export function ProjectDefenseInterview({
     return canvas.toDataURL("image/jpeg", 0.72)
   }
 
-  const speakQuestion = (text: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.rate = 1.0
-    window.speechSynthesis.speak(utterance)
+  const speakQuestion = async (text: string) => {
+    if (!text.trim()) return
+    stopAudio()
+    try {
+      const audioBlob = await studentCoursesApi.synthesizeLessonOverviewSpeech(
+        text,
+        "en-US-AriaNeural"
+      )
+      const blobUrl = URL.createObjectURL(audioBlob)
+      audioUrlRef.current = blobUrl
+      const audio = new Audio(blobUrl)
+      audioRef.current = audio
+      audio.onended = () => stopAudio()
+      await audio.play()
+    } catch (err) {
+      console.warn("Could not auto-read interview question:", err)
+    }
   }
 
   const handleToggleVoiceInput = () => {
@@ -193,9 +225,12 @@ export function ProjectDefenseInterview({
       setQuestionNumber(res.question_number)
       setMaxQuestions(res.max_questions)
       setUsedVisionLastTurn(res.used_vision)
+      if (autoReadEnabled) {
+        void speakQuestion(res.message)
+      }
     } catch (error) {
-      console.error("Failed to start project defense:", error)
-      toast.error("Could not start Project Defense Interview.")
+      console.error("Failed to start project interview:", error)
+      toast.error("Could not start Project Interview.")
       setHasStarted(false)
     } finally {
       setIsLoading(false)
@@ -205,6 +240,7 @@ export function ProjectDefenseInterview({
   const handleSendAnswer = async () => {
     const trimmed = answerText.trim()
     if (!trimmed || isLoading || isComplete) return
+    stopAudio()
     const nextTranscript: ProjectInterviewMessage[] = [
       ...messages,
       { role: "user", content: trimmed },
@@ -225,10 +261,13 @@ export function ProjectDefenseInterview({
       setMaxQuestions(res.max_questions)
       setUsedVisionLastTurn(res.used_vision)
       setIsComplete(res.is_complete)
+      if (autoReadEnabled) {
+        void speakQuestion(res.message)
+      }
       if (res.evaluation) {
         setEvaluation(res.evaluation)
         if (res.evaluation.xp_awarded > 0) {
-          toast.success(`Project Defense complete! +${res.evaluation.xp_awarded} XP`)
+          toast.success(`Project Interview complete! +${res.evaluation.xp_awarded} XP`)
         }
       }
     } catch (error) {
@@ -249,7 +288,7 @@ export function ProjectDefenseInterview({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h4 className="text-sm font-bold text-gray-900">
-                Mode 1: Project Defense Interview
+                Project Interview
               </h4>
               <span className="px-2 py-0.5 rounded-md bg-[#2563EB] text-white text-[11px] font-semibold">
                 Vision + Text
@@ -262,12 +301,38 @@ export function ProjectDefenseInterview({
               )}
             </div>
             <p className="text-xs text-gray-500 mt-0.5">
-              Defend your {project.title} work in 4 targeted questions. Share your code/browser screen for live visual review.
+              Walk through your {project.title} work in 4 targeted questions. Share your code or browser screen for live visual review.
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {!previewMode && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const next = !autoReadEnabled
+                setAutoReadEnabled(next)
+                if (!next) stopAudio()
+              }}
+              className="rounded-xl text-xs font-semibold border-gray-300 text-gray-700 hover:bg-gray-50"
+              title={autoReadEnabled ? "Auto-read questions enabled" : "Auto-read questions muted"}
+            >
+              {autoReadEnabled ? (
+                <>
+                  <Volume2 className="w-3.5 h-3.5 mr-1.5 text-[#2563EB]" />
+                  Auto Voice
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
+                  Muted
+                </>
+              )}
+            </Button>
+          )}
           {!previewMode && (
             <Button
               type="button"
@@ -306,7 +371,7 @@ export function ProjectDefenseInterview({
               ) : (
                 <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
               )}
-              Start Defense
+              Start Interview
             </Button>
           )}
         </div>
@@ -323,9 +388,10 @@ export function ProjectDefenseInterview({
           </div>
           <video
             ref={videoRef}
+            autoPlay
             muted
             playsInline
-            className="w-full max-h-48 object-contain rounded-lg bg-black"
+            className="w-full max-h-56 object-contain rounded-lg bg-black"
           />
         </div>
       )}
@@ -336,7 +402,7 @@ export function ProjectDefenseInterview({
           <div className="flex items-center justify-between text-xs text-gray-500">
             <span className="font-semibold text-gray-700">
               {isComplete
-                ? "Defense Completed"
+                ? "Interview Completed"
                 : `Question ${Math.max(1, questionNumber)} of ${maxQuestions}`}
             </span>
             <button
@@ -446,7 +512,7 @@ export function ProjectDefenseInterview({
                     }`}
                   />
                   <span className="text-sm font-bold text-gray-900">
-                    Defense Score: {evaluation.score_percent}%
+                    Interview Score: {evaluation.score_percent}%
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -460,7 +526,7 @@ export function ProjectDefenseInterview({
                       evaluation.passed ? "bg-[#16A34A]" : "bg-[#EA580C]"
                     }`}
                   >
-                    {evaluation.passed ? "Defense Passed" : "Needs Deeper Review"}
+                    {evaluation.passed ? "Interview Passed" : "Needs Deeper Review"}
                   </span>
                 </div>
               </div>

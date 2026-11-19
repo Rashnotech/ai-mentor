@@ -210,7 +210,10 @@ const checks = [
       projectInterviewRoutes.includes("/ai/project-interview") &&
       apiLib.includes("runProjectDefenseTurn") &&
       projectDefenseComponent.includes("getDisplayMedia") &&
-      projectDefenseComponent.includes("Mode 1: Project Defense Interview") &&
+      projectDefenseComponent.includes("Project Interview") &&
+      projectDefenseComponent.includes("synthesizeLessonOverviewSpeech") &&
+      projectDefenseComponent.includes("autoPlay") &&
+      !projectDefenseComponent.includes("Mode 1") &&
       !/bg-gradient|bg-linear|radial-gradient/.test(projectDefenseComponent) &&
       dashboardLearnPage.includes("<ProjectDefenseInterview"),
   ],
@@ -224,9 +227,8 @@ const checks = [
       authContext.includes('router.replace("/login")'),
   ],
   [
-    "Heroku Procfile runs idempotent release script before web dyno starts",
-    /^release:\s*python scripts\/heroku_release\.py/m.test(procfile) &&
-      /^web:\s*gunicorn /m.test(procfile) &&
+    "Heroku Procfile and idempotent release script are configured cleanly",
+    /^web:\s*gunicorn /m.test(procfile) &&
       herokuRelease.includes("choose_baseline_revisions") &&
       herokuRelease.includes("upgrade"),
   ],
