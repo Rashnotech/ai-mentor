@@ -5,7 +5,7 @@ Student enrollment and progress routes.
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
-from typing import List
+from typing import List, Optional
 
 from auth.dependencies import get_current_user, get_db_session
 from domains.courses.services.enrollment_service import EnrollmentService
