@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Rashnotech Learning Platform",
     short_name: "Rashnotech",
-    description: "Project-based technology learning, mentorship, and career development.",
+    description: "An environment where we focus our attention on learning, mentorship, and career development.",
     start_url: "/",
     display: "standalone",
     background_color: "#1a1f2e",
