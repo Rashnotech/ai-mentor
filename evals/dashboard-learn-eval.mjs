@@ -21,6 +21,10 @@ const bookingService = await readFile("api/domains/sessions/booking_service.py",
 const sessionRoutes = await readFile("api/domains/sessions/routes.py", "utf8")
 const sessionsApiClient = await readFile("lib/api/internships-community-sessions.ts", "utf8")
 const sessionsPage = await readFile("app/dashboard/sessions/page-client.tsx", "utf8")
+const notificationModel = await readFile("api/domains/users/models/notification.py", "utf8")
+const notificationService = await readFile("api/domains/users/services/notification_service.py", "utf8")
+const notificationRoutes = await readFile("api/domains/users/routes/notifications.py", "utf8")
+const authApiClient = await readFile("lib/api/auth.ts", "utf8")
 const studentProgressRoutes = await readFile("api/domains/courses/routes/student_progress.py", "utf8")
 const studentReviewRoutes = await readFile("api/domains/courses/routes/student_reviews.py", "utf8")
 const milestoneService = await readFile("api/domains/courses/services/project_milestone_service.py", "utf8")
@@ -234,8 +238,9 @@ const checks = [
       authContext.includes('router.replace("/login")'),
   ],
   [
-    "Heroku Procfile and idempotent release script are configured cleanly",
-    /^web:\s*gunicorn /m.test(procfile) &&
+    "Heroku Procfile runs idempotent release script before web dyno starts",
+    /^release:\s*python scripts\/heroku_release\.py/m.test(procfile) &&
+      /^web:\s*gunicorn /m.test(procfile) &&
       herokuRelease.includes("choose_baseline_revisions") &&
       herokuRelease.includes("upgrade"),
   ],
@@ -271,6 +276,15 @@ const checks = [
       sessionsPage.includes("Available Mentors") &&
       sessionsPage.includes("Book Mentor") &&
       !/bg-gradient|bg-linear|radial-gradient/.test(sessionsPage),
+  ],
+  [
+    "dashboard notification bell is wired to persisted user_notifications API with mark-read support",
+    notificationModel.includes("class UserNotification") &&
+      notificationService.includes("async def list_user_notifications") &&
+      notificationRoutes.includes("/read-all") &&
+      authApiClient.includes("export const notificationsApi") &&
+      dashboardLayout.includes("notificationsApi.list") &&
+      !dashboardLayout.includes("const NOTIFICATIONS ="),
   ],
 ]
 

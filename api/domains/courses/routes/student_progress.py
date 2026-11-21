@@ -348,15 +348,26 @@ async def submit_project(
             description=request.description,
         )
 
-        # Update daily streak and award XP for project submission (best-effort)
+        # Update daily streak, award XP, and create notification (best-effort)
         try:
             await GamificationService(db_session).record_learning_activity(
                 user_id=user_id,
                 xp_earned=25,
                 submitted_at=datetime.now(timezone.utc),
             )
+            from domains.users.services.notification_service import create_notification
+
+            await create_notification(
+                db=db_session,
+                user_id=user_id,
+                category="project_submitted",
+                title="Project Submitted for Review",
+                message="Your project submission was received and is queued for mentor review (+25 XP).",
+                link_url="/dashboard/projects",
+                commit=True,
+            )
         except Exception as gam_err:
-            logger.error(f"Gamification update failed on project submit: {str(gam_err)}")
+            logger.error(f"Gamification/notification update failed on project submit: {str(gam_err)}")
 
         return ProjectSubmissionResponse(
             submission_id=submission.submission_id,

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { ProtectedRoute } from "@/components/protected-route"
 import {
   Bell,
@@ -24,15 +24,25 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { useUserStore } from "@/lib/stores/user-store"
 import { useAuth } from "@/lib/auth-context"
+import { notificationsApi, type NotificationItem } from "@/lib/api"
 import RubberDuckChat from "./_components/rubber-duck-chat"
 import { LearningSurveyModal } from "@/components/learning-survey-modal"
 
-// --- Mock Data ---
-const NOTIFICATIONS = [
-  { id: 1, text: "Your project 'Portfolio' was reviewed by AI.", time: "1 hour ago", read: false },
-  { id: 2, text: "New module unlocked in Advanced Python.", time: "3 hours ago", read: false },
-  { id: 3, text: "You earned the 'Bug Squasher' badge!", time: "1 day ago", read: true },
-]
+function formatNotificationTime(iso: string | null) {
+  if (!iso) return ""
+  try {
+    const diffMs = Date.now() - new Date(iso).getTime()
+    const mins = Math.floor(diffMs / 60000)
+    if (mins < 1) return "Just now"
+    if (mins < 60) return `${mins}m ago`
+    const hrs = Math.floor(mins / 60)
+    if (hrs < 24) return `${hrs}h ago`
+    const days = Math.floor(hrs / 24)
+    return `${days}d ago`
+  } catch {
+    return ""
+  }
+}
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -49,15 +59,63 @@ export default function DashboardLayoutClient({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const isLearnRoute = /^\/dashboard\/courses\/[^/]+\/learn/.test(pathname)
   
   const user = useUserStore((state) => state.user)
   const { logout } = useAuth()
+
+  const loadNotifications = async () => {
+    try {
+      const res = await notificationsApi.list(20)
+      setNotifications(res.items || [])
+      setUnreadCount(res.unread_count || 0)
+    } catch {
+      // Non-blocking if notification fetch fails
+    }
+  }
+
+  useEffect(() => {
+    if (!user) return
+    void loadNotifications()
+    const timer = setInterval(() => {
+      void loadNotifications()
+    }, 60000)
+    return () => clearInterval(timer)
+  }, [user?.id, pathname])
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationsApi.markAllRead()
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+      setUnreadCount(0)
+    } catch {
+      toast.error("Could not mark notifications as read")
+    }
+  }
+
+  const handleNotificationClick = async (n: NotificationItem) => {
+    if (!n.is_read) {
+      setNotifications((prev) =>
+        prev.map((item) =>
+          item.notification_id === n.notification_id ? { ...item, is_read: true } : item
+        )
+      )
+      setUnreadCount((c) => Math.max(0, c - 1))
+      notificationsApi.markRead(n.notification_id).catch(() => {})
+    }
+    setShowNotifications(false)
+    if (n.link_url) {
+      router.push(n.link_url)
+    }
+  }
 
   // Get user initials for avatar
   const userInitials = user?.full_name
@@ -255,10 +313,19 @@ export default function DashboardLayoutClient({
                   variant="ghost"
                   size="icon"
                   className="relative text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
-                  onClick={() => setShowNotifications(!showNotifications)}
+                  onClick={() => {
+                    const next = !showNotifications
+                    setShowNotifications(next)
+                    if (next) void loadNotifications()
+                  }}
+                  aria-label="Notifications"
                 >
                   <Bell className="w-5 h-5" />
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 min-w-4 h-4 px-1 bg-[#DC2626] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
                 </Button>
 
                 {/* Notifications Dropdown */}
@@ -267,19 +334,47 @@ export default function DashboardLayoutClient({
                     <div className="fixed inset-0 z-10" onClick={() => setShowNotifications(false)} />
                     <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-20 py-2">
                       <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
-                        <span className="font-semibold text-sm">Notifications</span>
-                        <button className="text-xs text-blue-600 hover:underline">Mark all read</button>
+                        <span className="font-semibold text-sm">
+                          Notifications {unreadCount > 0 ? `(${unreadCount})` : ""}
+                        </span>
+                        {unreadCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleMarkAllRead}
+                            className="text-xs text-[#2563EB] hover:underline font-medium"
+                          >
+                            Mark all read
+                          </button>
+                        )}
                       </div>
                       <div className="max-h-[300px] overflow-y-auto">
-                        {NOTIFICATIONS.map((n) => (
-                          <div
-                            key={n.id}
-                            className={`px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 ${!n.read ? "bg-blue-50/50" : ""}`}
-                          >
-                            <p className="text-sm text-gray-800 mb-1">{n.text}</p>
-                            <p className="text-xs text-gray-400">{n.time}</p>
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-8 text-center text-xs text-gray-400">
+                            No notifications yet. Activity updates will appear here.
                           </div>
-                        ))}
+                        ) : (
+                          notifications.map((n) => (
+                            <button
+                              key={n.notification_id}
+                              type="button"
+                              onClick={() => handleNotificationClick(n)}
+                              className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 ${
+                                !n.is_read ? "bg-blue-50/60" : ""
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-xs font-semibold text-gray-900">{n.title}</p>
+                                {!n.is_read && (
+                                  <span className="w-2 h-2 rounded-full bg-[#2563EB] shrink-0 mt-1" />
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">{n.message}</p>
+                              <p className="text-[11px] text-gray-400 mt-1">
+                                {formatNotificationTime(n.created_at)}
+                              </p>
+                            </button>
+                          ))
+                        )}
                       </div>
                     </div>
                   </>

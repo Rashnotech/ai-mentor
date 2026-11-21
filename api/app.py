@@ -16,6 +16,7 @@ from domains.payments.routes import router as payments_router
 from domains.payments.admin_routes import router as payments_admin_router
 from domains.ai.routes.rubber_duck import router as rubber_duck_router
 from domains.ai.routes.project_interview import router as project_interview_router
+from domains.users.routes.notifications import router as notifications_router
 from domains.internships.routes import router as internships_router
 from domains.internships.routes import admin_router as internships_admin_router
 from domains.surveys.routes import router as surveys_router
@@ -89,6 +90,7 @@ app.include_router(payments_router, prefix=settings.API_V1_STR)
 app.include_router(payments_admin_router, prefix=settings.API_V1_STR)
 app.include_router(rubber_duck_router, prefix=settings.API_V1_STR)
 app.include_router(project_interview_router, prefix=settings.API_V1_STR)
+app.include_router(notifications_router, prefix=settings.API_V1_STR)
 app.include_router(internships_router, prefix=settings.API_V1_STR)
 app.include_router(internships_admin_router, prefix=settings.API_V1_STR)
 app.include_router(surveys_router, prefix=settings.API_V1_STR)

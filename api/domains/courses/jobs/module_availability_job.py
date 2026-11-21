@@ -211,6 +211,7 @@ class ModuleAvailabilityService:
     ) -> None:
         """Persist an in-app notification in ai_mentor_feedback when a module becomes active."""
         from domains.ai.models.feedback import AIMentorFeedback
+        from domains.users.services.notification_service import create_notification
 
         existing = await self.session.execute(
             select(AIMentorFeedback).where(
@@ -222,18 +223,28 @@ class ModuleAvailabilityService:
         if existing.scalar_one_or_none():
             return
 
+        title = f"Module Active: {module.title}"
+        message = (
+            f"Your module '{module.title}' in {course_title} is now active. "
+            "Jump in today to stay on pace for your 5-day sprint!"
+        )
         self.session.add(
             AIMentorFeedback(
                 user_id=user_id,
                 category="module_unlocked",
-                title=f"Module Active: {module.title}",
-                message=(
-                    f"Your module '{module.title}' in {course_title} is now active. "
-                    "Jump in today to stay on pace for your 5-day sprint!"
-                ),
+                title=title,
+                message=message,
                 module_id=module.module_id,
                 context_title=module.title,
             )
+        )
+        await create_notification(
+            db=self.session,
+            user_id=user_id,
+            category="module_unlocked",
+            title=title,
+            message=message,
+            link_url="/dashboard/courses",
         )
 
     async def schedule_modules_for_user(

@@ -135,6 +135,30 @@ async def create_mentor_booking(
         status="confirmed",
     )
     db.add(booking)
+
+    try:
+        from domains.users.services.notification_service import create_notification
+
+        when_label = start_utc.strftime("%b %d at %H:%M UTC")
+        await create_notification(
+            db=db,
+            user_id=student_id,
+            category="booking_confirmed",
+            title=f"Session Booked with {mentor.full_name}",
+            message=f"Your 1-on-1 '{booking.topic}' session is confirmed for {when_label}.",
+            link_url="/dashboard/sessions",
+        )
+        await create_notification(
+            db=db,
+            user_id=mentor_id,
+            category="booking_confirmed",
+            title="New 1-on-1 Session Booked",
+            message=f"A student booked '{booking.topic}' for {when_label}.",
+            link_url="/mentor/sessions",
+        )
+    except Exception as notif_err:
+        logger.warning(f"Booking notification creation failed: {notif_err}")
+
     await db.commit()
     await db.refresh(booking)
 

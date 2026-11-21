@@ -357,3 +357,34 @@ export interface ContactSubmissionResponse {
   success: boolean
   message: string
 }
+
+export interface NotificationItem {
+  notification_id: number
+  category: string
+  title: string
+  message: string
+  link_url: string | null
+  is_read: boolean
+  created_at: string | null
+}
+
+export const notificationsApi = {
+  list: async (limit: number = 20): Promise<{ items: NotificationItem[]; unread_count: number }> => {
+    const response = await apiClient.get<{ items: NotificationItem[]; unread_count: number }>(
+      `/notifications?limit=${limit}`
+    )
+    return response.data
+  },
+
+  markRead: async (notificationId: number): Promise<NotificationItem> => {
+    const response = await apiClient.patch<NotificationItem>(
+      `/notifications/${notificationId}/read`
+    )
+    return response.data
+  },
+
+  markAllRead: async (): Promise<{ marked_count: number }> => {
+    const response = await apiClient.post<{ marked_count: number }>("/notifications/read-all")
+    return response.data
+  },
+}

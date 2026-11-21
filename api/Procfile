@@ -1,1 +1,2 @@
+release: python scripts/heroku_release.py
 web: gunicorn -k uvicorn.workers.UvicornWorker app:app
