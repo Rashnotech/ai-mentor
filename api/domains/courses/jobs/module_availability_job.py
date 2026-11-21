@@ -185,17 +185,56 @@ class ModuleAvailabilityService:
                     course_title = course.title
             
             # Send the email
-            return await email_service.send_module_unlock_notification(
+            email_ok = await email_service.send_module_unlock_notification(
                 user_email=user.email,
                 user_name=user.full_name if hasattr(user, 'full_name') else None,
                 module_title=module.title,
                 course_title=course_title,
                 module_description=module.description,
             )
+            await self.create_module_active_notification(
+                user_id=user_id,
+                module=module,
+                course_title=course_title,
+            )
+            return email_ok
             
         except Exception as e:
             logger.error(f"Error sending notification to user {user_id}: {str(e)}")
             return False
+
+    async def create_module_active_notification(
+        self,
+        user_id: str,
+        module: Module,
+        course_title: str,
+    ) -> None:
+        """Persist an in-app notification in ai_mentor_feedback when a module becomes active."""
+        from domains.ai.models.feedback import AIMentorFeedback
+
+        existing = await self.session.execute(
+            select(AIMentorFeedback).where(
+                AIMentorFeedback.user_id == user_id,
+                AIMentorFeedback.category == "module_unlocked",
+                AIMentorFeedback.module_id == module.module_id,
+            )
+        )
+        if existing.scalar_one_or_none():
+            return
+
+        self.session.add(
+            AIMentorFeedback(
+                user_id=user_id,
+                category="module_unlocked",
+                title=f"Module Active: {module.title}",
+                message=(
+                    f"Your module '{module.title}' in {course_title} is now active. "
+                    "Jump in today to stay on pace for your 5-day sprint!"
+                ),
+                module_id=module.module_id,
+                context_title=module.title,
+            )
+        )
 
     async def schedule_modules_for_user(
         self,
@@ -222,6 +261,17 @@ class ModuleAvailabilityService:
             result = await self.session.execute(stmt)
             modules = result.scalars().all()
 
+            from domains.courses.services.programme_schedule_service import (
+                add_business_days,
+                compute_module_windows,
+                resolve_programme_anchor,
+            )
+
+            anchor_dt = resolve_programme_anchor(registration_date)
+            windows_by_mod = {
+                w["module_id"]: w for w in compute_module_windows(anchor_dt, modules)
+            }
+
             availability_records = []
             for module in modules:
                 # Check if availability record already exists
@@ -235,26 +285,32 @@ class ModuleAvailabilityService:
                 if existing_result.scalar_one_or_none():
                     continue
 
-                # Calculate scheduled unlock date
-                scheduled_unlock = registration_date + timedelta(days=module.unlock_after_days)
+                # Calculate scheduled unlock date excluding weekends (5-business-day sprint)
+                window = windows_by_mod.get(module.module_id)
+                if module.unlock_after_days and module.unlock_after_days > 0:
+                    scheduled_unlock = add_business_days(anchor_dt, module.unlock_after_days)
+                elif window:
+                    scheduled_unlock = window["unlock_at"]
+                else:
+                    scheduled_unlock = anchor_dt
                 
                 # Determine if module should be immediately available
                 now = datetime.now(timezone.utc)
                 is_unlocked = module.is_available_by_default or scheduled_unlock <= now
                 unlocked_at = now if is_unlocked else None
                 
-                # Calculate deadlines if module is unlocked
-                first_deadline = None
+                # Calculate deadlines if module is unlocked (excluding weekends)
+                first_deadline = window["due_at"] if window else None
                 second_deadline = None
                 third_deadline = None
                 
                 if is_unlocked and unlocked_at:
                     if module.first_deadline_days:
-                        first_deadline = unlocked_at + timedelta(days=module.first_deadline_days)
+                        first_deadline = add_business_days(unlocked_at, module.first_deadline_days)
                     if module.second_deadline_days:
-                        second_deadline = unlocked_at + timedelta(days=module.second_deadline_days)
+                        second_deadline = add_business_days(unlocked_at, module.second_deadline_days)
                     if module.third_deadline_days:
-                        third_deadline = unlocked_at + timedelta(days=module.third_deadline_days)
+                        third_deadline = add_business_days(unlocked_at, module.third_deadline_days)
 
                 availability = UserModuleAvailability(
                     user_id=user_id,

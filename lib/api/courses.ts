@@ -244,10 +244,27 @@ export interface ModuleContent {
   order: number
   estimated_hours: number | null
   content_loaded?: boolean
+  start_day?: number
+  due_day?: number
+  unlock_at?: string
+  due_at?: string
+  is_unlocked?: boolean
   progress_percent: number
   lessons: LessonContent[]
   projects: ProjectContent[]
   quiz: QuizContent | null
+}
+
+export interface ProgrammeSchedule {
+  duration_business_days: number
+  excludes_weekends: boolean
+  start_date: string
+  end_date: string
+  current_business_day: number
+  business_days_left: number
+  hours_remaining: number
+  required_daily_hours: number
+  pace_status: "on_track" | "at_risk" | "behind" | "ended"
 }
 
 export interface LearningContentResponse {
@@ -272,6 +289,8 @@ export interface LearningContentResponse {
     completed_projects: number
     overall_percent: number
   }
+  programme_schedule?: ProgrammeSchedule
+  newly_unlocked_modules?: Array<{ module_id: number; title: string }>
   modules: ModuleContent[]
 }
 

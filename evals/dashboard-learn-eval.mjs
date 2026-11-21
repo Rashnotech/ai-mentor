@@ -14,6 +14,8 @@ const apiLib = await readFile("lib/api/courses.ts", "utf8")
 const apiBarrel = await readFile("lib/api.ts", "utf8")
 const gamificationService = await readFile("api/domains/courses/services/gamification_service.py", "utf8")
 const studentRoutes = await readFile("api/domains/courses/routes/student.py", "utf8")
+const programmeScheduleService = await readFile("api/domains/courses/services/programme_schedule_service.py", "utf8")
+const moduleAvailabilityJob = await readFile("api/domains/courses/jobs/module_availability_job.py", "utf8")
 const studentProgressRoutes = await readFile("api/domains/courses/routes/student_progress.py", "utf8")
 const studentReviewRoutes = await readFile("api/domains/courses/routes/student_reviews.py", "utf8")
 const milestoneService = await readFile("api/domains/courses/services/project_milestone_service.py", "utf8")
@@ -240,6 +242,17 @@ const checks = [
       apiLib.includes("timeout: 60000") &&
       dashboardLearnPage.includes("hydrateModule") &&
       dashboardLearnPage.includes("lite: true"),
+  ],
+  [
+    "5-business-day programme schedule excludes weekends and notifies students when modules become active",
+    programmeScheduleService.includes("DEFAULT_PROGRAMME_BUSINESS_DAYS = 5") &&
+      programmeScheduleService.includes("def compute_module_windows") &&
+      programmeScheduleService.includes("def compute_pace_status") &&
+      moduleAvailabilityJob.includes("create_module_active_notification") &&
+      studentRoutes.includes("newly_unlocked_modules") &&
+      studentRoutes.includes("programme_schedule") &&
+      dashboardLearnPage.includes("5-Day Sprint (weekends excluded)") &&
+      dashboardLearnPage.includes("Module Active:"),
   ],
 ]
 

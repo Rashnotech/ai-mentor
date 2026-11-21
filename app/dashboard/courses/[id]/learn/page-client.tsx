@@ -1927,6 +1927,12 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
         setCourseContent(content)
         setIsEnrolled(true)
 
+        if (content.newly_unlocked_modules && content.newly_unlocked_modules.length > 0) {
+          for (const unlocked of content.newly_unlocked_modules) {
+            toast.success(`Module Active: ${unlocked.title} is now unlocked!`)
+          }
+        }
+
         if (content.modules.length > 0) {
           let selected = false
           for (const mod of content.modules) {
@@ -2402,6 +2408,47 @@ export default function DashboardLearningPage({ params }: { params: Promise<{ id
               </SheetContent>
             </Sheet>
           </div>
+
+          {courseContent.programme_schedule && (
+            <div className="mb-5 rounded-2xl border border-gray-200 bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 text-xs text-gray-700">
+                <span className="px-2.5 py-1 rounded-lg bg-[#0F172A] text-white font-bold">
+                  Day {Math.max(1, courseContent.programme_schedule.current_business_day)} of{" "}
+                  {courseContent.programme_schedule.duration_business_days}
+                </span>
+                <span className="font-medium">
+                  5-Day Sprint (weekends excluded) · Ends{" "}
+                  {new Date(courseContent.programme_schedule.end_date).toLocaleDateString()} ·{" "}
+                  {courseContent.programme_schedule.business_days_left} business{" "}
+                  {courseContent.programme_schedule.business_days_left === 1 ? "day" : "days"} left
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-gray-500">
+                  {courseContent.programme_schedule.required_daily_hours}h/day needed
+                </span>
+                <span
+                  className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold text-white ${
+                    courseContent.programme_schedule.pace_status === "on_track"
+                      ? "bg-[#16A34A]"
+                      : courseContent.programme_schedule.pace_status === "at_risk"
+                      ? "bg-[#EA580C]"
+                      : courseContent.programme_schedule.pace_status === "behind"
+                      ? "bg-[#DC2626]"
+                      : "bg-gray-500"
+                  }`}
+                >
+                  {courseContent.programme_schedule.pace_status === "on_track"
+                    ? "On Track"
+                    : courseContent.programme_schedule.pace_status === "at_risk"
+                    ? "At Risk"
+                    : courseContent.programme_schedule.pace_status === "behind"
+                    ? "Behind Pace"
+                    : "Sprint Ended"}
+                </span>
+              </div>
+            </div>
+          )}
 
           {activeModule?.content_loaded === false ? (
             <div className="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 text-center">

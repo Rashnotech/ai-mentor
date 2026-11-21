@@ -717,7 +717,111 @@ async def get_learning_content_by_slug(
                 "quiz": quiz_data,
             })
         
-        # Calculate overall progress
+        # Calculate overall progress & 5-business-day programme schedule (Algorithm A + B)
+        from datetime import datetime, timezone
+        from domains.courses.models.progress import UserModuleAvailability
+        from domains.courses.services.programme_schedule_service import (
+            DEFAULT_PROGRAMME_BUSINESS_DAYS,
+            add_business_days,
+            compute_module_windows,
+            compute_pace_status,
+            resolve_programme_anchor,
+        )
+        from domains.courses.jobs.module_availability_job import ModuleAvailabilityService
+
+        now_utc = datetime.now(timezone.utc)
+        enrolled_at_dt = now_utc
+        if not is_preview_mode:
+            enr_row = (
+                await db_session.execute(
+                    select(UserCourseEnrollment).where(
+                        UserCourseEnrollment.user_id == user_id,
+                        UserCourseEnrollment.course_id == course.course_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if enr_row and enr_row.enrolled_at:
+                enrolled_at_dt = enr_row.enrolled_at
+
+        anchor_dt = resolve_programme_anchor(enrolled_at_dt)
+        end_dt = add_business_days(anchor_dt, DEFAULT_PROGRAMME_BUSINESS_DAYS - 1)
+        windows_by_mod = {w["module_id"]: w for w in compute_module_windows(anchor_dt, modules)}
+
+        # Check module availability and unlock + notify on-demand if scheduled_unlock_date has arrived
+        newly_unlocked_modules = []
+        avail_by_mod = {}
+        if module_ids and not is_preview_mode:
+            avail_rows = (
+                await db_session.execute(
+                    select(UserModuleAvailability).where(
+                        UserModuleAvailability.user_id == user_id,
+                        UserModuleAvailability.module_id.in_(module_ids),
+                    )
+                )
+            ).scalars().all()
+            avail_by_mod = {a.module_id: a for a in avail_rows}
+
+            mod_lookup = {m.module_id: m for m in modules}
+            avail_service = ModuleAvailabilityService(db_session)
+            changed_avail = False
+            for avail in avail_rows:
+                if (
+                    not avail.is_unlocked
+                    and avail.scheduled_unlock_date is not None
+                    and avail.scheduled_unlock_date <= now_utc
+                ):
+                    avail.is_unlocked = True
+                    avail.unlocked_at = now_utc
+                    avail.updated_at = now_utc
+                    mod_obj = mod_lookup.get(avail.module_id)
+                    if mod_obj:
+                        newly_unlocked_modules.append(
+                            {"module_id": mod_obj.module_id, "title": mod_obj.title}
+                        )
+                        try:
+                            await avail_service.create_module_active_notification(
+                                user_id=user_id,
+                                module=mod_obj,
+                                course_title=course.title,
+                            )
+                            if avail.email_sent_at is None:
+                                email_ok = await avail_service._send_unlock_notification(
+                                    user_id=user_id,
+                                    module=mod_obj,
+                                    path_id=avail.path_id,
+                                )
+                                if email_ok:
+                                    avail.email_sent_at = now_utc
+                        except Exception as notify_err:
+                            logger.warning(f"Module active notification error: {notify_err}")
+                    changed_avail = True
+            if changed_avail:
+                await db_session.commit()
+
+        incomplete_hours = 0.0
+        for mod_obj, mod_dict in zip(modules, modules_data):
+            win = windows_by_mod.get(mod_obj.module_id)
+            avail = avail_by_mod.get(mod_obj.module_id)
+            if win:
+                mod_dict["start_day"] = win["start_day"]
+                mod_dict["due_day"] = win["due_day"]
+                mod_dict["unlock_at"] = (
+                    avail.scheduled_unlock_date.isoformat()
+                    if avail and avail.scheduled_unlock_date
+                    else win["unlock_at"].isoformat()
+                )
+                mod_dict["due_at"] = win["due_at"].isoformat()
+            mod_dict["is_unlocked"] = bool(avail.is_unlocked) if avail else True
+            if mod_dict["progress_percent"] < 100:
+                incomplete_hours += max(float(mod_obj.estimated_hours or 1.0), 0.5)
+
+        programme_schedule = compute_pace_status(
+            today_date=now_utc.date(),
+            start_at=anchor_dt,
+            end_at=end_dt,
+            incomplete_hours=incomplete_hours,
+        )
+
         total_items = total_lessons + total_projects
         completed_items = completed_lessons_count + completed_projects_count
         overall_progress = round((completed_items / total_items * 100)) if total_items > 0 else 0
@@ -744,6 +848,8 @@ async def get_learning_content_by_slug(
                 "completed_projects": completed_projects_count,
                 "overall_percent": overall_progress,
             },
+            "programme_schedule": programme_schedule,
+            "newly_unlocked_modules": newly_unlocked_modules,
             "modules": modules_data,
         }
         
