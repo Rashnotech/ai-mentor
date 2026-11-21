@@ -509,6 +509,76 @@ export const sessionsApi = {
     const response = await apiClient.get<SessionResponse>(`/sessions/attend/${attendanceToken}/info`)
     return response.data
   },
+
+  // ---------- Available Mentors & 1-on-1 Booking ----------
+
+  listAvailableMentors: async (): Promise<{ mentors: AvailableMentorResponse[]; total: number }> => {
+    const response = await apiClient.get<{ mentors: AvailableMentorResponse[]; total: number }>(
+      "/sessions/mentors"
+    )
+    return response.data
+  },
+
+  listMyBookings: async (): Promise<{ bookings: MentorBookingResponse[]; total: number }> => {
+    const response = await apiClient.get<{ bookings: MentorBookingResponse[]; total: number }>(
+      "/sessions/bookings/me"
+    )
+    return response.data
+  },
+
+  bookMentorSession: async (
+    payload: CreateMentorBookingPayload
+  ): Promise<MentorBookingResponse> => {
+    const response = await apiClient.post<MentorBookingResponse>("/sessions/bookings", payload)
+    return response.data
+  },
+
+  cancelBooking: async (bookingId: number): Promise<MentorBookingResponse> => {
+    const response = await apiClient.delete<MentorBookingResponse>(`/sessions/bookings/${bookingId}`)
+    return response.data
+  },
+}
+
+export interface AvailableMentorResponse {
+  mentor_id: string
+  full_name: string
+  avatar_url: string | null
+  bio: string | null
+  title: string
+  company: string | null
+  expertise: string[]
+  languages: string[]
+  availability: string
+  timezone: string
+  years_experience: number | null
+  total_sessions: number
+  rating: number
+}
+
+export interface MentorBookingResponse {
+  booking_id: number
+  student_id: string
+  mentor_id: string
+  mentor_name: string | null
+  mentor_avatar_url: string | null
+  topic: string
+  notes: string | null
+  scheduled_start: string
+  scheduled_end: string
+  duration_minutes: number
+  platform: "zoom" | "google_meet" | "microsoft_teams" | "custom"
+  meeting_link: string | null
+  status: string
+  created_at: string | null
+}
+
+export interface CreateMentorBookingPayload {
+  mentor_id: string
+  topic: string
+  notes?: string
+  scheduled_start: string
+  duration_minutes?: number
+  platform?: "zoom" | "google_meet" | "microsoft_teams" | "custom"
 }
 
 // ─── Payment Types ───────────────────────────────────────────

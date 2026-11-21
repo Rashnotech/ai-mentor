@@ -118,6 +118,16 @@ class SessionResponse(BaseModel):
     scheduled_date: str
     start_time: str
     end_time: str
+
+
+class MentorBookingCreateRequest(BaseModel):
+    """Request payload to book a 1-on-1 session with an available mentor."""
+    mentor_id: str = Field(..., min_length=1, max_length=36)
+    topic: str = Field(..., min_length=3, max_length=255)
+    notes: Optional[str] = Field(None, max_length=2000)
+    scheduled_start: str = Field(..., description="ISO-8601 datetime string for session start")
+    duration_minutes: int = Field(default=30, ge=15, le=60)
+    platform: SessionPlatform = Field(default=SessionPlatform.google_meet)
     timezone: str
 
     attendance_token: str

@@ -16,6 +16,11 @@ const gamificationService = await readFile("api/domains/courses/services/gamific
 const studentRoutes = await readFile("api/domains/courses/routes/student.py", "utf8")
 const programmeScheduleService = await readFile("api/domains/courses/services/programme_schedule_service.py", "utf8")
 const moduleAvailabilityJob = await readFile("api/domains/courses/jobs/module_availability_job.py", "utf8")
+const sessionModels = await readFile("api/domains/sessions/models.py", "utf8")
+const bookingService = await readFile("api/domains/sessions/booking_service.py", "utf8")
+const sessionRoutes = await readFile("api/domains/sessions/routes.py", "utf8")
+const sessionsApiClient = await readFile("lib/api/internships-community-sessions.ts", "utf8")
+const sessionsPage = await readFile("app/dashboard/sessions/page-client.tsx", "utf8")
 const studentProgressRoutes = await readFile("api/domains/courses/routes/student_progress.py", "utf8")
 const studentReviewRoutes = await readFile("api/domains/courses/routes/student_reviews.py", "utf8")
 const milestoneService = await readFile("api/domains/courses/services/project_milestone_service.py", "utf8")
@@ -253,6 +258,19 @@ const checks = [
       studentRoutes.includes("programme_schedule") &&
       dashboardLearnPage.includes("5-Day Sprint (weekends excluded)") &&
       dashboardLearnPage.includes("Module Active:"),
+  ],
+  [
+    "student dashboard sessions page displays available mentors and supports 1-on-1 booking",
+    sessionModels.includes("class MentorBooking") &&
+      bookingService.includes("async def list_available_mentors") &&
+      bookingService.includes("async def create_mentor_booking") &&
+      sessionRoutes.includes('@router.get("/mentors")') &&
+      sessionRoutes.includes('@router.post("/bookings"') &&
+      sessionsApiClient.includes("listAvailableMentors") &&
+      sessionsApiClient.includes("bookMentorSession") &&
+      sessionsPage.includes("Available Mentors") &&
+      sessionsPage.includes("Book Mentor") &&
+      !/bg-gradient|bg-linear|radial-gradient/.test(sessionsPage),
   ],
 ]
 

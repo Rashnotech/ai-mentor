@@ -167,3 +167,43 @@ class SessionAttendance(Base):
         ),
         Index("idx_attendance_student", "student_id"),
     )
+
+
+class MentorBooking(Base):
+    """Student 1-on-1 session booking with an available mentor."""
+
+    __tablename__ = "mentor_bookings"
+
+    booking_id = Column(Integer, primary_key=True, autoincrement=True)
+    student_id = Column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    mentor_id = Column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    topic = Column(String(255), nullable=False)
+    notes = Column(Text, nullable=True)
+    scheduled_start = Column(DateTime(timezone=True), nullable=False, index=True)
+    scheduled_end = Column(DateTime(timezone=True), nullable=False)
+    duration_minutes = Column(Integer, nullable=False, default=30)
+    platform = Column(
+        SQLEnum(SessionPlatform, name="session_platform", create_type=False),
+        nullable=False,
+        default=SessionPlatform.GOOGLE_MEET,
+    )
+    meeting_link = Column(String(500), nullable=True)
+    status = Column(String(30), nullable=False, default="confirmed", index=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    __table_args__ = (
+        Index("idx_mentor_booking_mentor_time", "mentor_id", "scheduled_start"),
+    )

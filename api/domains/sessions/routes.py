@@ -18,6 +18,7 @@ from domains.sessions.schemas import (
     SessionListResponse,
     AttendanceResponse,
     AttendanceMarkResponse,
+    MentorBookingCreateRequest,
 )
 from domains.users.models.user import User, UserRole
 from core.config import settings
@@ -292,3 +293,86 @@ async def get_session_by_token(
     except Exception as e:
         logger.error(f"get_session_by_token error: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch session info")
+
+
+# =============================================================================
+# AVAILABLE MENTORS & 1-ON-1 BOOKING ENDPOINTS
+# =============================================================================
+
+@router.get("/mentors")
+async def get_available_mentors(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """List active, available mentors for students to browse and book."""
+    try:
+        from domains.sessions.booking_service import list_available_mentors
+        mentors = await list_available_mentors(db)
+        return {"mentors": mentors, "total": len(mentors)}
+    except Exception as e:
+        logger.error(f"get_available_mentors error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch available mentors")
+
+
+@router.get("/bookings/me")
+async def get_my_mentor_bookings(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """List 1-on-1 mentor session bookings for the current student."""
+    try:
+        from domains.sessions.booking_service import list_student_bookings
+        student_id = current_user.get("user_id")
+        bookings = await list_student_bookings(db, student_id)
+        return {"bookings": bookings, "total": len(bookings)}
+    except Exception as e:
+        logger.error(f"get_my_mentor_bookings error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch bookings")
+
+
+@router.post("/bookings", status_code=status.HTTP_201_CREATED)
+async def book_mentor_session(
+    request: MentorBookingCreateRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Book a 1-on-1 mentoring session with an available mentor."""
+    try:
+        from domains.sessions.booking_service import create_mentor_booking
+        student_id = current_user.get("user_id")
+        booking = await create_mentor_booking(
+            db=db,
+            student_id=student_id,
+            mentor_id=request.mentor_id,
+            topic=request.topic,
+            notes=request.notes,
+            scheduled_start=_parse_dt(request.scheduled_start),
+            duration_minutes=request.duration_minutes,
+            platform=SessionPlatform(request.platform.value),
+        )
+        return booking
+    except AppError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid date format: {e}")
+    except Exception as e:
+        logger.error(f"book_mentor_session error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to book mentor session")
+
+
+@router.delete("/bookings/{booking_id}")
+async def cancel_my_booking(
+    booking_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Cancel a student's own 1-on-1 mentor booking."""
+    try:
+        from domains.sessions.booking_service import cancel_student_booking
+        student_id = current_user.get("user_id")
+        return await cancel_student_booking(db, student_id, booking_id)
+    except AppError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.error(f"cancel_my_booking error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to cancel booking")
