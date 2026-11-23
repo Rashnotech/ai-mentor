@@ -280,14 +280,14 @@ export function ProjectDefenseInterview({
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-start gap-3">
+      <div className="space-y-4">
+        <div className="flex items-start gap-3.5 w-full">
           <div className="w-10 h-10 rounded-xl bg-[#0F172A] text-white flex items-center justify-center shrink-0">
             <Bot className="w-5 h-5" />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h4 className="text-sm font-bold text-gray-900">
+              <h4 className="text-base font-bold text-gray-900">
                 Project Interview
               </h4>
               <span className="px-2 py-0.5 rounded-md bg-[#2563EB] text-white text-[11px] font-semibold">
@@ -300,13 +300,13 @@ export function ProjectDefenseInterview({
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Walk through your {project.title} work in 4 targeted questions. Share your code or browser screen for live visual review.
+            <p className="text-xs sm:text-sm text-gray-600 mt-1.5 leading-relaxed">
+              Walk through your <span className="font-semibold text-gray-800">{project.title}</span> work in 4 targeted questions tailored to your project requirements. Share your code or browser screen for live visual review.
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 pt-1 border-t border-gray-100">
           {!previewMode && (
             <Button
               type="button"

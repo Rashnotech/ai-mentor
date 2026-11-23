@@ -218,6 +218,9 @@ const checks = [
     "end of each project includes Mode 1 Project Defense Interview with Groq llama-4-scout Vision + screen share",
     projectInterviewService.includes("meta-llama/llama-4-scout-17b-16e-instruct") &&
       projectInterviewService.includes("build_multimodal_user_content") &&
+      projectInterviewService.includes("build_project_milestones") &&
+      projectInterviewService.includes("run_github_precheck") &&
+      projectInterviewService.includes("groq_client.generate_text") &&
       projectInterviewRoutes.includes("/ai/project-interview") &&
       apiLib.includes("runProjectDefenseTurn") &&
       projectDefenseComponent.includes("getDisplayMedia") &&

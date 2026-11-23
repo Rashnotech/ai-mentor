@@ -18,16 +18,19 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
-from domains.courses.models.course import Project
+from domains.ai.services import groq_client
+from domains.courses.models.course import Lesson, Module, Project
 from domains.courses.models.progress import ProjectSubmission
 from domains.courses.services.gamification_service import GamificationService
-from domains.courses.services.github_precheck_service import parse_github_repo_url
+from domains.courses.services.github_precheck_service import parse_github_repo_url, run_github_precheck
+from domains.courses.services.project_milestone_service import build_project_milestones
 
 logger = logging.getLogger(__name__)
 
 VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 MAX_INTERVIEW_QUESTIONS = 4
 _DATA_IMAGE_RE = re.compile(r"^data:image/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$")
+_REPO_CONTEXT_CACHE: Dict[str, str] = {}
 
 
 def is_valid_screenshot_data_url(data_url: Optional[str]) -> bool:
@@ -58,16 +61,37 @@ def build_multimodal_user_content(
     return text_prompt
 
 
-def _build_rubric_summary(project: Project, repo_url: Optional[str]) -> str:
+def _build_rubric_summary(
+    project: Project,
+    repo_url: Optional[str],
+    module_title: Optional[str] = None,
+    lesson_titles: Optional[List[str]] = None,
+    milestones: Optional[List[Dict[str, Any]]] = None,
+    repo_summary: Optional[str] = None,
+) -> str:
     skills = ", ".join(project.required_skills or []) or "Core project skills"
-    desc = (project.description or "No detailed description provided.").strip()[:1200]
-    repo_line = f"Submitted Repository URL: {repo_url}" if repo_url else "Submitted Repository URL: Not submitted yet (student may share screen instead)"
-    return (
-        f"Project Title: {project.title}\n"
-        f"Required Skills / Rubric: {skills}\n"
-        f"{repo_line}\n"
-        f"Project Description:\n{desc}"
+    desc = (project.description or "No detailed description provided.").strip()[:2000]
+    repo_line = (
+        f"Submitted Repository URL: {repo_url}"
+        if repo_url
+        else "Submitted Repository URL: Not submitted yet (student may share screen instead)"
     )
+    parts = [
+        f"Project Title: {project.title}",
+        f"Module: {module_title}" if module_title else "",
+        f"Module Lessons Covered: {', '.join(lesson_titles[:8])}" if lesson_titles else "",
+        f"Required Skills / Rubric: {skills}",
+        (
+            "Project Milestones:\n"
+            + "\n".join(f"- {m['title']}: {m.get('description', '')}" for m in (milestones or []))
+            if milestones
+            else ""
+        ),
+        repo_line,
+        f"Repository Inspection Summary:\n{repo_summary}" if repo_summary else "",
+        f"Project Brief & Requirements:\n{desc}",
+    ]
+    return "\n".join(p for p in parts if p)
 
 
 def _generate_multimodal_sync(
@@ -110,32 +134,42 @@ def _parse_json_object(raw: Optional[str]) -> Optional[Dict[str, Any]]:
     return None
 
 
-def _fallback_question(project: Project, question_number: int, has_vision: bool) -> str:
-    skills = project.required_skills or ["your main module"]
-    primary_skill = skills[0] if skills else "your implementation"
+def _fallback_question(
+    project: Project,
+    question_number: int,
+    has_vision: bool,
+    milestones: Optional[List[Dict[str, Any]]] = None,
+    lesson_titles: Optional[List[str]] = None,
+) -> str:
+    skills = project.required_skills or []
+    primary_skill = skills[0] if skills else project.title
+    m1_title = milestones[0]["title"] if milestones and len(milestones) > 0 else "your initial setup"
+    m2_title = milestones[1]["title"] if milestones and len(milestones) > 1 else "your core implementation"
+    lesson_ref = lesson_titles[0] if lesson_titles else project.title
+
     if question_number == 1:
         if has_vision:
             return (
-                f"I can see your shared screen. Walk me through how you structured {project.title} "
-                f"and how {primary_skill} fits into your main flow."
+                f"I can see your shared screen for {project.title}. Walk me through how you approached "
+                f"{m1_title} and how you applied {primary_skill}."
             )
         return (
-            f"Let's start your defense for {project.title}. Walk me through how you structured "
-            f"your project and handled state or data flow using {primary_skill}."
+            f"Let's discuss your {project.title} project. How did you apply concepts from '{lesson_ref}' "
+            f"when completing {m1_title}?"
         )
     if question_number == 2:
         return (
-            "Show me or point to the trickiest function or component you wrote, and explain why you "
-            "chose that design over an alternative."
+            f"For {m2_title} in {project.title}, walk me through the main logic or deliverable you built "
+            f"using {primary_skill} and why you structured it that way."
         )
     if question_number == 3:
         return (
-            "What happens in your project when invalid input or a network/API error occurs? "
-            "Walk me through your error handling."
+            f"What edge case, validation issue, or error did you run into while building {project.title}, "
+            "and how did you verify your fix?"
         )
     return (
-        "If you had to scale or extend this project for production tomorrow, what single refactor "
-        "or test would you add first and why?"
+        f"Looking at the requirements for {project.title}, what one improvement or test would you add "
+        "next before presenting this work to a reviewer?"
     )
 
 
@@ -178,6 +212,26 @@ async def run_project_defense_turn(
     if not project:
         raise ValueError("Project not found")
 
+    # Fetch module title, module lessons, and project milestones for project-grounded questions
+    module_title: Optional[str] = None
+    lesson_titles: List[str] = []
+    if project.module_id:
+        mod_obj = (
+            await db_session.execute(select(Module).where(Module.module_id == project.module_id))
+        ).scalar_one_or_none()
+        if mod_obj:
+            module_title = mod_obj.title
+        lesson_rows = (
+            await db_session.execute(
+                select(Lesson.title)
+                .where(Lesson.module_id == project.module_id)
+                .order_by(Lesson.order)
+            )
+        ).scalars().all()
+        lesson_titles = [str(t) for t in lesson_rows if t]
+
+    milestones = build_project_milestones(project)
+
     # Fetch latest student submission URL if not explicitly provided
     effective_repo_url = repo_url
     if not effective_repo_url:
@@ -204,44 +258,76 @@ async def run_project_defense_turn(
     is_final_evaluation = asked_so_far >= MAX_INTERVIEW_QUESTIONS and user_answers_count >= MAX_INTERVIEW_QUESTIONS
     next_question_number = min(asked_so_far + 1, MAX_INTERVIEW_QUESTIONS)
 
-    rubric = _build_rubric_summary(project, effective_repo_url)
     parsed_repo = parse_github_repo_url(effective_repo_url) if effective_repo_url else None
+    repo_summary: Optional[str] = None
+    if parsed_repo and effective_repo_url:
+        cache_key = f"{project_id}:{effective_repo_url.strip()}"
+        if cache_key in _REPO_CONTEXT_CACHE:
+            repo_summary = _REPO_CONTEXT_CACHE[cache_key]
+        else:
+            try:
+                precheck = await asyncio.wait_for(
+                    run_github_precheck(project, effective_repo_url),
+                    timeout=8.0,
+                )
+                if precheck.get("is_public") and not precheck.get("is_empty"):
+                    repo_summary = (
+                        f"Repo: {precheck.get('repo_full_name')} | Stack: {', '.join(precheck.get('detected_stack') or [])}\n"
+                        f"Key Files: {', '.join((precheck.get('key_files') or [])[:10])}\n"
+                        f"Precheck Notes: {' ; '.join(precheck.get('bullets') or [])}"
+                    )
+                    if len(_REPO_CONTEXT_CACHE) > 200:
+                        _REPO_CONTEXT_CACHE.clear()
+                    _REPO_CONTEXT_CACHE[cache_key] = repo_summary
+            except Exception as repo_err:
+                logger.warning(f"Could not fetch repo context for interview: {repo_err}")
+
+    rubric = _build_rubric_summary(
+        project=project,
+        repo_url=effective_repo_url,
+        module_title=module_title,
+        lesson_titles=lesson_titles,
+        milestones=milestones,
+        repo_summary=repo_summary,
+    )
     repo_note = f"GitHub repo: {parsed_repo[0]}/{parsed_repo[1]}" if parsed_repo else ""
 
     if is_final_evaluation:
         system_prompt = (
-            "You are a senior technical interviewer concluding a Mode 1 Project Defense Interview. "
-            "Evaluate the student's understanding based on the project rubric, transcript, and any shared screen snapshot. "
+            "You are a senior technical interviewer concluding a Project Interview. "
+            "Evaluate the student's understanding specifically against the project brief, milestones, lessons, "
+            "transcript, and any shared screen snapshot or GitHub files. "
             "Return ONLY valid JSON with keys: "
             '{"message": string, "score_percent": integer 0-100, "passed": boolean, '
             '"strengths": [2 short strings], "gaps": [1-2 short strings], "mentor_note": string}.'
         )
         user_text = (
             f"{rubric}\n{repo_note}\n\n"
-            f"The student has answered all {MAX_INTERVIEW_QUESTIONS} defense questions. "
+            f"The student has answered all {MAX_INTERVIEW_QUESTIONS} interview questions. "
             "Provide a fair final evaluation JSON."
         )
     else:
         system_prompt = (
-            "You are a technical interviewer running a Mode 1 Project Defense Interview at the end of a student project. "
-            "Your job is to verify the student truly understands what they built. "
+            "You are a technical interviewer conducting a Project Interview at the end of a student's project. "
+            "Every question MUST be directly grounded in THIS specific project's brief, milestones, module lessons, "
+            "and (when available) the student's actual GitHub files or shared screen snapshot. "
             "Rules:\n"
-            "1. Ask ONE sharp, targeted question per turn (max 2-3 sentences).\n"
-            "2. Reference specific details from their shared screen snapshot (code, file tree, terminal, or UI) if attached, "
-            "or from the project rubric and repo.\n"
-            "3. Probe state/data flow, architecture choices, edge cases, or debugging.\n"
+            "1. Ask ONE sharp, project-specific question per turn (max 2-3 sentences).\n"
+            "2. Never ask generic questions detached from the project domain — explicitly reference the project title, "
+            "a milestone, a lesson topic, a file from their repo, or what is visible on their screen.\n"
+            "3. Probe how they built it, why they made a specific choice, or how they handled an edge case.\n"
             "4. Never give long lectures; keep it conversational and focused."
         )
         vision_hint = (
-            "A current screen snapshot from the student is attached — inspect what is visible on their screen and reference it."
+            "A current screen snapshot from the student is attached — inspect what is visible on their screen and reference it directly."
             if has_vision
-            else "No screen snapshot attached this turn; reference their project rubric/repo or invite them to share their screen if helpful."
+            else "No screen snapshot attached this turn; ground your question directly in the project brief, milestones, lessons, and repo files above."
         )
         user_text = (
             f"{rubric}\n{repo_note}\n"
             f"Interview Progress: Asking question {next_question_number} of {MAX_INTERVIEW_QUESTIONS}.\n"
             f"{vision_hint}\n"
-            "Respond with your next concise interview question (or brief 1-sentence acknowledgement + next question)."
+            "Respond with your next concise, project-specific interview question."
         )
 
     groq_messages: List[Dict[str, Any]] = [{"role": "system", "content": system_prompt}]
@@ -268,6 +354,20 @@ async def run_project_defense_turn(
         except Exception as exc:
             logger.error(f"Groq multimodal project interview failed: {exc}")
             ai_text = None
+
+    # Text-LLM fallback if multimodal call failed so questions remain project-grounded
+    if not ai_text and settings.GROQ_API_KEY:
+        transcript_text = "\n".join(
+            f"{m.get('role', 'user').upper()}: {m.get('content', '')}"
+            for m in transcript[-8:]
+            if m.get("content")
+        )
+        ai_text = await groq_client.generate_text(
+            system_prompt=system_prompt,
+            user_prompt=f"{user_text}\n\nConversation so far:\n{transcript_text}",
+            max_tokens=420,
+            temperature=0.4,
+        )
 
     if is_final_evaluation:
         parsed_eval = _parse_json_object(ai_text) or _fallback_evaluation(transcript, project)
@@ -310,7 +410,13 @@ async def run_project_defense_turn(
             },
         }
 
-    reply_message = ai_text or _fallback_question(project, next_question_number, has_vision)
+    reply_message = ai_text or _fallback_question(
+        project=project,
+        question_number=next_question_number,
+        has_vision=has_vision,
+        milestones=milestones,
+        lesson_titles=lesson_titles,
+    )
     return {
         "message": reply_message,
         "question_number": next_question_number,
