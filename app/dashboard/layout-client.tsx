@@ -70,26 +70,26 @@ export default function DashboardLayoutClient({
   const isLearnRoute = /^\/dashboard\/courses\/[^/]+\/learn/.test(pathname)
   
   const user = useUserStore((state) => state.user)
-  const { logout } = useAuth()
+  const { logout, isAuthenticated, isLoading: isAuthLoading } = useAuth()
 
   const loadNotifications = async () => {
     try {
       const res = await notificationsApi.list(20)
-      setNotifications(res.items || [])
-      setUnreadCount(res.unread_count || 0)
+      setNotifications(Array.isArray(res?.items) ? res.items : [])
+      setUnreadCount(typeof res?.unread_count === "number" ? res.unread_count : 0)
     } catch {
       // Non-blocking if notification fetch fails
     }
   }
 
   useEffect(() => {
-    if (!user) return
+    if (isAuthLoading || !isAuthenticated || !user?.id) return
     void loadNotifications()
     const timer = setInterval(() => {
       void loadNotifications()
     }, 60000)
     return () => clearInterval(timer)
-  }, [user?.id, pathname])
+  }, [isAuthLoading, isAuthenticated, user?.id, pathname])
 
   const handleMarkAllRead = async () => {
     try {

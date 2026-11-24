@@ -54,24 +54,32 @@ async def list_user_notifications(
     limit: int = 20,
 ) -> Dict[str, Any]:
     """Fetch recent notifications and unread count for a user."""
-    items_stmt = (
-        select(UserNotification)
-        .where(UserNotification.user_id == user_id)
-        .order_by(UserNotification.created_at.desc(), UserNotification.notification_id.desc())
-        .limit(limit)
-    )
-    rows = (await db.execute(items_stmt)).scalars().all()
+    try:
+        items_stmt = (
+            select(UserNotification)
+            .where(UserNotification.user_id == user_id)
+            .order_by(UserNotification.created_at.desc(), UserNotification.notification_id.desc())
+            .limit(limit)
+        )
+        rows = (await db.execute(items_stmt)).scalars().all()
 
-    unread_stmt = select(func.count(UserNotification.notification_id)).where(
-        UserNotification.user_id == user_id,
-        UserNotification.is_read == False,
-    )
-    unread_count = int((await db.execute(unread_stmt)).scalar() or 0)
+        unread_stmt = select(func.count(UserNotification.notification_id)).where(
+            UserNotification.user_id == user_id,
+            UserNotification.is_read == False,
+        )
+        unread_count = int((await db.execute(unread_stmt)).scalar() or 0)
 
-    return {
-        "items": [serialize_notification(r) for r in rows],
-        "unread_count": unread_count,
-    }
+        return {
+            "items": [serialize_notification(r) for r in rows],
+            "unread_count": unread_count,
+        }
+    except Exception as exc:
+        logger.warning(f"Failed to list notifications for user {user_id}: {exc}")
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+        return {"items": [], "unread_count": 0}
 
 
 async def mark_notification_read(
@@ -80,31 +88,47 @@ async def mark_notification_read(
     notification_id: int,
 ) -> Optional[Dict[str, Any]]:
     """Mark a single notification as read for the owning user."""
-    stmt = select(UserNotification).where(
-        UserNotification.notification_id == notification_id,
-        UserNotification.user_id == user_id,
-    )
-    notif = (await db.execute(stmt)).scalar_one_or_none()
-    if not notif:
+    try:
+        stmt = select(UserNotification).where(
+            UserNotification.notification_id == notification_id,
+            UserNotification.user_id == user_id,
+        )
+        notif = (await db.execute(stmt)).scalar_one_or_none()
+        if not notif:
+            return None
+        if not notif.is_read:
+            notif.is_read = True
+            db.add(notif)
+            await db.commit()
+            await db.refresh(notif)
+        return serialize_notification(notif)
+    except Exception as exc:
+        logger.warning(f"Failed to mark notification {notification_id} read: {exc}")
+        try:
+            await db.rollback()
+        except Exception:
+            pass
         return None
-    if not notif.is_read:
-        notif.is_read = True
-        db.add(notif)
-        await db.commit()
-        await db.refresh(notif)
-    return serialize_notification(notif)
 
 
 async def mark_all_notifications_read(db: AsyncSession, user_id: str) -> int:
     """Mark all unread notifications as read for a user and return updated count."""
-    stmt = (
-        update(UserNotification)
-        .where(
-            UserNotification.user_id == user_id,
-            UserNotification.is_read == False,
+    try:
+        stmt = (
+            update(UserNotification)
+            .where(
+                UserNotification.user_id == user_id,
+                UserNotification.is_read == False,
+            )
+            .values(is_read=True)
         )
-        .values(is_read=True)
-    )
-    res = await db.execute(stmt)
-    await db.commit()
-    return int(res.rowcount or 0)
+        res = await db.execute(stmt)
+        await db.commit()
+        return int(res.rowcount or 0)
+    except Exception as exc:
+        logger.warning(f"Failed to mark all notifications read for user {user_id}: {exc}")
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+        return 0

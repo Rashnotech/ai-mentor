@@ -284,9 +284,11 @@ const checks = [
     "dashboard notification bell is wired to persisted user_notifications API with mark-read support",
     notificationModel.includes("class UserNotification") &&
       notificationService.includes("async def list_user_notifications") &&
+      notificationService.includes('return {"items": [], "unread_count": 0}') &&
       notificationRoutes.includes("/read-all") &&
       authApiClient.includes("export const notificationsApi") &&
       dashboardLayout.includes("notificationsApi.list") &&
+      dashboardLayout.includes("isAuthLoading || !isAuthenticated") &&
       !dashboardLayout.includes("const NOTIFICATIONS ="),
   ],
 ]
