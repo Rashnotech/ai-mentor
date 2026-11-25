@@ -28,11 +28,12 @@ import {
   type AIMentorFeedbackItem,
 } from "@/lib/api"
 
-const FEEDBACK_ICONS: Record<AIMentorFeedbackItem["category"], typeof Sparkles> = {
+const FEEDBACK_ICONS: Record<string, typeof Sparkles> = {
   quiz_encouragement: Sparkles,
   quiz_correction: BookMarked,
   project_guidance: Compass,
   inactivity_checkin: HeartHandshake,
+  module_unlocked: BookOpen,
 }
 
 function timeAgo(dateStr: string): string {
@@ -325,7 +326,7 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
               </div>
             ) : (
               (() => {
-                const Icon = FEEDBACK_ICONS[latestFeedback.category]
+                const Icon = FEEDBACK_ICONS[latestFeedback.category] ?? Sparkles
                 return (
                   <div key={latestFeedback.feedback_id} className="border-l-2 border-yellow-400 pl-3.5">
                     <div className="flex items-center gap-2 text-sm font-semibold text-white">

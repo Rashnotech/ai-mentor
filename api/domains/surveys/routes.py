@@ -42,10 +42,13 @@ async def get_eligible_survey(
     current_user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ):
-    survey = await SurveyService(session).get_eligible_survey(
-        current_user.get("user_id"), current_user.get("role", "")
-    )
-    return EligibleSurveyResponse(survey=survey)
+    try:
+        survey = await SurveyService(session).get_eligible_survey(
+            current_user.get("user_id"), current_user.get("role", "")
+        )
+        return EligibleSurveyResponse(survey=survey)
+    except Exception:
+        return EligibleSurveyResponse(survey=None)
 
 
 @router.post(

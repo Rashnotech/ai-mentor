@@ -225,5 +225,7 @@ assert.match(authApiClient, /export const notificationsApi/)
 assert.match(dashboardLayout, /notificationsApi\.list/)
 assert.match(dashboardLayout, /isAuthLoading \|\| !isAuthenticated/)
 assert.doesNotMatch(dashboardLayout, /const NOTIFICATIONS =/)
+assert.match(dashboardView, /module_unlocked:/)
+assert.match(dashboardView, /FEEDBACK_ICONS\[latestFeedback\.category\] \?\? Sparkles/)
 
 console.log("Dashboard learn contract: PASS")

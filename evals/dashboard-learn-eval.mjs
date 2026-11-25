@@ -289,7 +289,9 @@ const checks = [
       authApiClient.includes("export const notificationsApi") &&
       dashboardLayout.includes("notificationsApi.list") &&
       dashboardLayout.includes("isAuthLoading || !isAuthenticated") &&
-      !dashboardLayout.includes("const NOTIFICATIONS ="),
+      !dashboardLayout.includes("const NOTIFICATIONS =") &&
+      dashboardView.includes("module_unlocked:") &&
+      dashboardView.includes("FEEDBACK_ICONS[latestFeedback.category] ?? Sparkles"),
   ],
 ]
 
