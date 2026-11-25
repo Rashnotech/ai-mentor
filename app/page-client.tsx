@@ -28,6 +28,10 @@ import {
   Users,
   TrendingUp,
   Award,
+  Mic,
+  Video,
+  Monitor,
+  PhoneOff,
 } from "lucide-react"
 
 const footerLinks = {
@@ -626,6 +630,141 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                   </article>
                 )
               })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 1-on-1 Mentor Training Showcase Section */}
+      <section className="border-b border-slate-200/80 bg-white py-20 text-[#071c2d] lg:py-24">
+        <div className="mx-auto w-full max-w-[1400px] px-6 lg:px-12">
+          <div className="grid items-center gap-12 lg:grid-cols-12">
+            {/* Left Copy */}
+            <div className="lg:col-span-5 space-y-5">
+              <div className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-bold tracking-wide text-[#1d4ed8]">
+                <Video className="h-3.5 w-3.5" />
+                <span>1-on-1 Mentor Training</span>
+              </div>
+
+              <h2 className="text-3xl font-extrabold tracking-tight leading-[1.15] text-[#071c2d] sm:text-4xl">
+                Direct Access to 1-on-1 Mentor Training
+              </h2>
+
+              <p className="text-base leading-[1.75] text-slate-600">
+                Never stay stuck on a bug or project requirement. Book live 1-on-1 sessions with
+                industry mentors for real-time screen sharing, architecture reviews, and career
+                coaching.
+              </p>
+
+              <ul className="space-y-2.5 text-sm font-medium text-slate-700 pt-1">
+                <li className="flex items-center gap-2.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#16A34A] text-white text-[11px] font-bold">
+                    ✓
+                  </span>
+                  Live screen-share debugging &amp; walkthroughs
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#16A34A] text-white text-[11px] font-bold">
+                    ✓
+                  </span>
+                  Book available mentors directly from your dashboard
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#16A34A] text-white text-[11px] font-bold">
+                    ✓
+                  </span>
+                  Personalized project feedback before final review
+                </li>
+              </ul>
+
+              <div className="flex flex-wrap items-center gap-4 pt-2">
+                <Link
+                  href="/dashboard/sessions"
+                  className="group inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-6 py-3.5 text-sm font-bold text-white transition-colors hover:bg-[#1D4ED8]"
+                >
+                  <span>Book a 1-on-1 Mentor</span>
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </Link>
+                <Link
+                  href="/signup"
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-[#071c2d] transition-colors hover:bg-slate-50"
+                >
+                  <span>Start Free</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Live Video Call Showcase Card */}
+            <div className="lg:col-span-7">
+              <div className="relative rounded-3xl border border-slate-200 bg-white p-3 sm:p-4 shadow-[0_24px_60px_rgba(7,28,45,0.10)]">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  {/* Main Instructor Frame */}
+                  <div className="relative sm:col-span-8 min-h-[260px] sm:min-h-[340px] rounded-2xl overflow-hidden bg-[#0F172A]">
+                    <img
+                      src={mentors[1].image || "/hub-4.jpg"}
+                      alt="1-on-1 Live Mentor Session"
+                      className="w-full h-full object-cover object-top"
+                    />
+                    <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-black/65 px-2.5 py-1 text-xs font-semibold text-white">
+                      <span className="h-2 w-2 rounded-full bg-[#16A34A]" />
+                      <span>Instructor · 1-on-1 Live</span>
+                    </div>
+
+                    {/* Floating Call Control Bar */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-2xl bg-black/55 px-3 py-2 backdrop-blur-xs">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
+                        <Mic className="h-4 w-4" />
+                      </span>
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
+                        <Video className="h-4 w-4" />
+                      </span>
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
+                        <Monitor className="h-4 w-4" />
+                      </span>
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
+                        <MessageSquare className="h-4 w-4" />
+                      </span>
+                      <span className="flex h-9 w-11 items-center justify-center rounded-xl bg-[#DC2626] text-white">
+                        <PhoneOff className="h-4 w-4" />
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right Stacked Participant Tiles */}
+                  <div className="sm:col-span-4 grid grid-cols-2 sm:grid-cols-1 gap-2.5">
+                    {[
+                      { name: "Mr. Abdulrasheed", img: mentors[0].image },
+                      { name: "Dr. Callistus", img: mentors[2].image },
+                      { name: "Project Review", img: "/hub-4.jpg" },
+                      { name: "Cohort Lab", img: "/funded.jpg" },
+                    ].map((tile) => (
+                      <div
+                        key={tile.name}
+                        className="relative h-20 rounded-xl overflow-hidden bg-[#1E293B]"
+                      >
+                        <img
+                          src={tile.img || "/hub-4.jpg"}
+                          alt={tile.name}
+                          className="w-full h-full object-cover object-top"
+                        />
+                        <span className="absolute bottom-1.5 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                          {tile.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Floating Mentor Note Bubble */}
+                <div className="hidden md:flex items-center gap-2.5 absolute -bottom-4 right-6 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 shadow-lg">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2563EB] text-white text-xs font-bold shrink-0">
+                    M
+                  </span>
+                  <p className="text-xs font-medium text-slate-700 max-w-[230px]">
+                    &ldquo;Great progress on your project! Share your screen and let&apos;s review it together.&rdquo;
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

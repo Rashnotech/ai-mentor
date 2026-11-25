@@ -25,6 +25,7 @@ const notificationModel = await readFile("api/domains/users/models/notification.
 const notificationService = await readFile("api/domains/users/services/notification_service.py", "utf8")
 const notificationRoutes = await readFile("api/domains/users/routes/notifications.py", "utf8")
 const authApiClient = await readFile("lib/api/auth.ts", "utf8")
+const homePageClient = await readFile("app/page-client.tsx", "utf8")
 const studentProgressRoutes = await readFile("api/domains/courses/routes/student_progress.py", "utf8")
 const studentReviewRoutes = await readFile("api/domains/courses/routes/student_reviews.py", "utf8")
 const milestoneService = await readFile("api/domains/courses/services/project_milestone_service.py", "utf8")
@@ -81,7 +82,7 @@ const checks = [
   ],
   [
     "dashboard sidebar and header match reference layout with solid colors and active indicator dot",
-    dashboardLayout.includes("bg-[#F4F5F2]") &&
+    dashboardLayout.includes("bg-white border-r border-gray-200") &&
       dashboardLayout.includes("bg-[#EBF2FF]") &&
       dashboardLayout.includes("Search Class...") &&
       dashboardLayout.includes("w-2 h-2 rounded-full bg-blue-600"),
@@ -292,6 +293,12 @@ const checks = [
       !dashboardLayout.includes("const NOTIFICATIONS =") &&
       dashboardView.includes("module_unlocked:") &&
       dashboardView.includes("FEEDBACK_ICONS[latestFeedback.category] ?? Sparkles"),
+  ],
+  [
+    "homepage showcases 1-on-1 mentor training below Skills for the Modern Workforce and dashboard sidebar is white",
+    !dashboardLayout.includes("bg-[#F4F5F2]") &&
+      homePageClient.includes("Direct Access to 1-on-1 Mentor Training") &&
+      homePageClient.includes("Book a 1-on-1 Mentor"),
   ],
 ]
 

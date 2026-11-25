@@ -174,7 +174,7 @@ export default function DashboardLayoutClient({
         <aside
           className={`fixed lg:static inset-y-0 left-0 z-50 ${
             isSidebarCollapsed ? "w-64 lg:w-20" : "w-64"
-          } bg-[#F4F5F2] border-r border-gray-200/80 transform transition-all duration-200 ease-in-out ${
+          } bg-white border-r border-gray-200 transform transition-all duration-200 ease-in-out ${
             showMobileMenu ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }`}
         >
