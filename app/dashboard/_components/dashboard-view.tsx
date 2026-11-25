@@ -75,7 +75,7 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
     fetchCourses()
   }, [])
 
-  useEffect(() => {
+  /*useEffect(() => {
     const fetchFeedback = async () => {
       try {
         const items = await studentCoursesApi.getMentorFeedback(10)
@@ -87,9 +87,9 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
       }
     }
     fetchFeedback()
-  }, [])
+  }, [])*/
 
-  useEffect(() => {
+  /*useEffect(() => {
     gamificationApi
       .getMyGamification()
       .then((g) => {
@@ -99,7 +99,7 @@ export function DashboardView({ onChangeView }: DashboardViewProps) {
       .catch(() => {
         // Non-blocking
       })
-  }, [])
+  }, [])*/
 
   // Get the course with most progress for next steps
   const activeCourse =
