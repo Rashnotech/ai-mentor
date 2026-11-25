@@ -26,6 +26,7 @@ const notificationService = await readFile("api/domains/users/services/notificat
 const notificationRoutes = await readFile("api/domains/users/routes/notifications.py", "utf8")
 const authApiClient = await readFile("lib/api/auth.ts", "utf8")
 const homePageClient = await readFile("app/page-client.tsx", "utf8")
+const servicesPageClient = await readFile("app/services/page-client.tsx", "utf8")
 const studentProgressRoutes = await readFile("api/domains/courses/routes/student_progress.py", "utf8")
 const studentReviewRoutes = await readFile("api/domains/courses/routes/student_reviews.py", "utf8")
 const milestoneService = await readFile("api/domains/courses/services/project_milestone_service.py", "utf8")
@@ -233,5 +234,15 @@ assert.match(dashboardView, /FEEDBACK_ICONS\[latestFeedback\.category\] \?\? Spa
 assert.doesNotMatch(dashboardLayout, /bg-\[#F4F5F2\]/)
 assert.match(homePageClient, /Direct Access to 1-on-1 Mentor Training/)
 assert.match(homePageClient, /Book a 1-on-1 Mentor/)
+
+// Restructured luxury Services page (services, delivered projects, WhatsApp/Call/Video appointment)
+assert.match(servicesPageClient, /E-Commerce/)
+assert.match(servicesPageClient, /Mobile & Web Applications/)
+assert.match(servicesPageClient, /Digital Skill Training/)
+assert.match(servicesPageClient, /Cybersecurity/)
+assert.match(servicesPageClient, /DELIVERED_PROJECTS/)
+assert.match(servicesPageClient, /wa\.me\/2348172992396/)
+assert.match(servicesPageClient, /tel:\+2348172992396/)
+assert.match(servicesPageClient, /Book Video Appointment/)
 
 console.log("Dashboard learn contract: PASS")

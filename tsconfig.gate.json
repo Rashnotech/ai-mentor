@@ -4,6 +4,8 @@
     "app/layout.tsx",
     "app/page.tsx",
     "app/page-client.tsx",
+    "app/services/page.tsx",
+    "app/services/page-client.tsx",
     "app/courses/page.tsx",
     "app/courses/page-client.tsx",
     "app/courses/[id]/page.tsx",
