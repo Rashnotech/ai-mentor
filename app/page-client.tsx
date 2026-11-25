@@ -697,61 +697,35 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
             {/* Right Live Video Call Showcase Card */}
             <div className="lg:col-span-7">
               <div className="relative rounded-3xl border border-slate-200 bg-white p-3 sm:p-4 shadow-[0_24px_60px_rgba(7,28,45,0.10)]">
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  {/* Main Instructor Frame */}
-                  <div className="relative sm:col-span-8 min-h-[260px] sm:min-h-[340px] rounded-2xl overflow-hidden bg-[#0F172A]">
-                    <img
-                      src="/ai_mentor.jpg"
-                      alt="1-on-1 Live Mentor Session"
-                      className="w-full h-full object-cover object-top"
-                    />
-                    <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-black/65 px-2.5 py-1 text-xs font-semibold text-white">
-                      <span className="h-2 w-2 rounded-full bg-[#16A34A]" />
-                      <span>Instructor · 1-on-1 Live</span>
-                    </div>
-
-                    {/* Floating Call Control Bar */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-2xl bg-black/55 px-3 py-2 backdrop-blur-xs">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
-                        <Mic className="h-4 w-4" />
-                      </span>
-                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
-                        <Video className="h-4 w-4" />
-                      </span>
-                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
-                        <Monitor className="h-4 w-4" />
-                      </span>
-                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
-                        <MessageSquare className="h-4 w-4" />
-                      </span>
-                      <span className="flex h-9 w-11 items-center justify-center rounded-xl bg-[#DC2626] text-white">
-                        <PhoneOff className="h-4 w-4" />
-                      </span>
-                    </div>
+                {/* Main Instructor Frame */}
+                <div className="relative min-h-[280px] sm:min-h-[360px] rounded-2xl overflow-hidden bg-[#0F172A]">
+                  <img
+                    src="/ai_mentor.jpg"
+                    alt="1-on-1 Live Mentor Session"
+                    className="w-full h-full object-cover object-top"
+                  />
+                  <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-black/65 px-2.5 py-1 text-xs font-semibold text-white">
+                    <span className="h-2 w-2 rounded-full bg-[#16A34A]" />
+                    <span>Instructor · 1-on-1 Live</span>
                   </div>
 
-                  {/* Right Stacked Participant Tiles */}
-                  <div className="sm:col-span-4 grid grid-cols-2 sm:grid-cols-1 gap-2.5">
-                    {[
-                      { name: "Mr. Abdulrasheed", img: mentors[0].image },
-                      { name: "Dr. Callistus", img: mentors[2].image },
-                      { name: "Project Review", img: "/hub-4.jpg" },
-                      { name: "Cohort Lab", img: "/funded.jpg" },
-                    ].map((tile) => (
-                      <div
-                        key={tile.name}
-                        className="relative h-20 rounded-xl overflow-hidden bg-[#1E293B]"
-                      >
-                        <img
-                          src={tile.img || "/hub-4.jpg"}
-                          alt={tile.name}
-                          className="w-full h-full object-cover object-top"
-                        />
-                        <span className="absolute bottom-1.5 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                          {tile.name}
-                        </span>
-                      </div>
-                    ))}
+                  {/* Floating Call Control Bar */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-2xl bg-black/55 px-3 py-2 backdrop-blur-xs">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
+                      <Mic className="h-4 w-4" />
+                    </span>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
+                      <Video className="h-4 w-4" />
+                    </span>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
+                      <Monitor className="h-4 w-4" />
+                    </span>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
+                      <MessageSquare className="h-4 w-4" />
+                    </span>
+                    <span className="flex h-9 w-11 items-center justify-center rounded-xl bg-[#DC2626] text-white">
+                      <PhoneOff className="h-4 w-4" />
+                    </span>
                   </div>
                 </div>
 
