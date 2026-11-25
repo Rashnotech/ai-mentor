@@ -701,7 +701,7 @@ export default function LandingPage({ initialCourses = [] }: { initialCourses?: 
                   {/* Main Instructor Frame */}
                   <div className="relative sm:col-span-8 min-h-[260px] sm:min-h-[340px] rounded-2xl overflow-hidden bg-[#0F172A]">
                     <img
-                      src={mentors[1].image || "/hub-4.jpg"}
+                      src="/ai_mentor.jpg"
                       alt="1-on-1 Live Mentor Session"
                       className="w-full h-full object-cover object-top"
                     />
